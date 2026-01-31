@@ -104,7 +104,7 @@ void main()
     if (color.a < 0.0)
     {
         // Background
-         outColor = vec4(0.05f, 0.09f, 0.20f, 1.0f);
+         outColor = vec4(0.05, 0.05, 0.05f, 1.0f);
     }
     else
     {
