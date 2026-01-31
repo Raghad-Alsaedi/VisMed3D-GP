@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useState } from "react";
+import Link from "next/link";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
