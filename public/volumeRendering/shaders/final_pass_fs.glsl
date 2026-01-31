@@ -1,11 +1,13 @@
 #version 300 es
 precision highp float;
+precision highp sampler3D;
 
 in vec2 vPosition2D;
 out vec4 outColor;
 
 uniform sampler2D uFrontFaceTexture;
 uniform sampler2D uBackFaceTexture;
+uniform sampler3D uVolumeTexture;
 
 const float EPSILON = 0.001;
 const int MAX_STEPS = 500;
@@ -17,13 +19,7 @@ const float STEP_SIZE = 0.01;
 //=============================================================
 float get_scalar_value(vec3 sample_pos)
 {
-    vec3 c = vec3(0.5);
-    float r = 0.25;
-
-    if (distance(sample_pos, c) <= r)
-        return 1.0;
-    else
-        return 0.0;
+    return texture(uVolumeTexture, sample_pos).r;
 }
 
 //=============================================================
@@ -31,8 +27,8 @@ float get_scalar_value(vec3 sample_pos)
 //=============================================================
 vec4 get_color_TF(float scalar)
 {
-    if (scalar >= 1.0)
-        return vec4(1.0, 0.0, 0.0, 0.5); // red sphere
+    if (scalar >= 0.4)
+        return vec4(1.0, 1.0, 1.0, 0.5); // red sphere
     else
         return vec4(0.0);
 }

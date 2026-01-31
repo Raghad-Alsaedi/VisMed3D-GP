@@ -1,4 +1,22 @@
+// ================= VOLUME LOADER =================
+async function loadVolume(url, width, height, depth) {
 
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to load volume");
+
+  const buffer = await res.arrayBuffer();
+  const data = new Uint8Array(buffer);
+
+  // if (datatype != ???) {
+  //throw new Error(`Volume: datatype '${datatype}' not supported`);
+    
+  return {
+    data,
+    width,
+    height,
+    depth
+  };
+}  
 /**   program = await initShaders(gl, "/volumeRendering/shaders/vs.glsl", "/volumeRendering/shaders/fs.glsl");
     final_program = await initShaders(gl, "/volumeRendering/shaders/final_pass_vs.glsl", "/volumeRendering/shaders/final_pass_fs.glsl"); */
 // Helper: save a texture to image (PNG/JPEG)
@@ -59,6 +77,7 @@ function saveTextureAsImage(gl, texture, width, height, filename = 'texture.png'
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(fb);
 }
+
 /** Load a shader from a URL, compile it, and return it */
 async function loadShader(gl, url, type) {
   const response = await fetch(url);
@@ -154,6 +173,46 @@ const cubeVBO = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
 gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
 //=================================================
+///===================================
+const volume = await loadVolume(
+  "/volumeRendering/data/volume/head256x256x109",   // غيري الاسم حسب ملفك
+  256, 256, 109                        // غيري الأبعاد حسب الفوليوم
+);
+
+//const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك
+ // 183, 255, 125);
+ 
+const volumeTexture = gl.createTexture();
+//gl.activeTexture(gl.TEXTURE2);   // نستخدم TEXTURE2
+gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
+gl.texStorage3D(
+  gl.TEXTURE_3D,
+  1,
+  gl.R8,
+  volume.width,
+  volume.height,
+  volume.depth
+);
+
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+gl.texSubImage3D(
+  gl.TEXTURE_3D,
+  0,
+  0,0,0,
+  volume.width,
+  volume.height,
+  volume.depth,
+  gl.RED,
+  gl.UNSIGNED_BYTE,
+  volume.data
+);
+
+console.log(" Volume uploaded to GPU");
 //===================================
 // create to render to
 const frontFaceTexture = gl.createTexture();
@@ -359,6 +418,10 @@ mvpInverseMatrix = inverse4(mvpMatrix);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, backFaceTexture);
     gl.uniform1i(gl.getUniformLocation(final_program, "uBackFaceTexture"), 1);
+
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uVolumeTexture"), 2);
 
     // fullscreen triangle
     gl.drawArrays(gl.TRIANGLES, 0, 3);
