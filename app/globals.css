@@ -1,0 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+
+
+
+.font-inter {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+/* ===== Page ===== */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #040A16;            
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+
+/* ===== Login Card ===== */
+.login-card {
+  width: 100%;
+  max-width: 500px;               
+  padding: 48px 44px;
+  border-radius: 24px;           
+  border: none;                   
+  background: #0D1A2D;  
+  position: relative;
+}
+
+/* ===== Brand ===== */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  margin-bottom: 0px;
+  margin-top: 12px;
+}
+
+.brand-logo {
+  object-fit: contain;
+}
+
+/* النص بجانب اللوقو إذا كان موجود */
+.brand-name {
+  font-size: 22px;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Title ===== */
+.title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+  margin-bottom: 3px;
+  color: #FFFFFF;
+}
+
+/* ===== Form ===== */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== Field ===== */
+.field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ===== Labels ===== */
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ===== Inputs & Select ===== */
+.input,
+.select {
+  width: 100%;
+  height: 56px;                   
+  border-radius: 12px;           
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0a1420;            
+  color: #FFFFFF;
+  padding: 0 20px;
+  font-size: 15px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.input::placeholder,
+.select::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* Focus state */
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: #0d1825;
+}
+
+/* Select styling */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 46px;
+  cursor: pointer;
+  background-image: none;         
+}
+
+.select-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* Arrow icon */
+.chev {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* ===== Button ===== */
+.btn {
+  margin-top: 16px;
+  height: 56px;
+  border-radius: 12px;
+  border: none;
+  background: #17387C;  
+  color: #FFFFFF;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+/*
+.btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+*/
+.btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Accessibility ===== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .login-card {
+    padding: 40px 32px;
+    max-width: 95%;
+    border-radius: 20px;
+  }
+
+  .title {
+    font-size: 24px;
+    margin-bottom: 28px;
+  }
+
+  .label {
+    font-size: 13px;
+  }
+
+  .input,
+  .select,
+  .btn {
+    height: 52px;
+    font-size: 15px;
+  }
+
+  .btn {
+    font-size: 16px;
+  }
+}
