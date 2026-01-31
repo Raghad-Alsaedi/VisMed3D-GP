@@ -83,8 +83,9 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      <div className="glow glow-1"></div>
-      <div className="glow glow-2"></div>
+     <Link href={"/viewimg"} className="absolute top-0 left-0 m-2">
+      go to Image
+      </Link>
 
       <main className="login-card">
         <div
