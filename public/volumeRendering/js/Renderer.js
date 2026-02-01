@@ -115,6 +115,14 @@ async function initShaders(gl, vertexUrl, fragmentUrl) {
 /** Main function to draw a triangle */
 async function main() {
 
+//========================adding by Shaima Ham ===========================================================
+    let rotationX = 0;
+    let rotationY = 0;
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+//===================================================================================
+
   const canvas = document.getElementById('demo-canvas');
   if (!canvas) {
     throw new Error('Could not find HTML canvas element');
@@ -135,6 +143,26 @@ async function main() {
   //2K resolution is 2048×1080
   canvas.width = 1280;
   canvas.height = 720;
+
+//========================adding by Shaima Ham ===========================================================
+  canvas.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => { isDragging = false; });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      rotationY += (e.clientX - lastMouseX) * 0.5; 
+      rotationX += (e.clientY - lastMouseY) * 0.5; 
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      render(); 
+    }
+  });
+  //===================================================================================
 
   //=========================================
  // =========================================
@@ -328,6 +356,16 @@ mvpMatrix=mult(projectionMatrix, mvpMatrix);    // P * (V * M)
 
 let mvpInverseMatrix = mat4();
 mvpInverseMatrix = inverse4(mvpMatrix);
+
+//========================adding by Shaima Ham ==================================
+function render() {
+    modelMatrix = mat4();
+    modelMatrix = mult(modelMatrix, translate(0.5, 0.5, 0.5));
+    modelMatrix = mult(modelMatrix, rotate(rotationX, vec3(1, 0, 0)));
+    modelMatrix = mult(modelMatrix, rotate(rotationY, vec3(0, 1, 0)));
+    modelMatrix = mult(modelMatrix, translate(-0.5, -0.5, -0.5));
+    let mvpMatrix = mult(projectionMatrix, mult(viewMatrix, modelMatrix));
+    mvpInverseMatrix = inverse4(mvpMatrix);
   //==============================================
 // First Pass: Render Front Faces into frontFaceTexture
 {
@@ -425,7 +463,10 @@ mvpInverseMatrix = inverse4(mvpMatrix);
 
     // fullscreen triangle
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
 }
+}
+    render(); //==========adding by Shaima Ham ==========
 
 // Save front-face texture
 //saveTextureAsImage(gl, frontFaceTexture, canvas.width, canvas.height, 'front_face.png');
