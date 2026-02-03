@@ -3,6 +3,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
 import { useState } from "react";
+import { ArrowL } from "./icons";
 
 const Header = () => {
   const router = useRouter();
@@ -74,48 +75,34 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full flex flex-wrap justify-between items-center gap-2 md:gap-3">
-      {!(isTech && fromUpload) && (
-        <button
-          className="text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30 p-2 sm:p-3 md:p-4 bg-[#0D1A2D] flex items-center justify-center transition-all hover:scale-110"
-          onClick={() => router.back()}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            className="sm:w-6 sm:h-6"
+    <header className="header-container">
+      {/* Left Section */}
+      <div className="header-left-section">
+        {!(isTech && fromUpload) && (
+          <button
+            className="header-back-button"
+            onClick={() => router.back()}
           >
-            <path
-              fill="currentColor"
-              d="m7.825 13l4.9 4.9q.3.3.288.7t-.313.7q-.3.275-.7.288t-.7-.288l-6.6-6.6q-.15-.15-.213-.325T4.426 12t.063-.375t.212-.325l6.6-6.6q.275-.275.688-.275t.712.275q.3.3.3.713t-.3.712L7.825 11H19q.425 0 .713.288T20 12t-.288.713T19 13z"
-            />
-          </svg>
-        </button>
-      )}
+            <ArrowL />
+          </button>
+        )}
+      </div>
 
-      {isTech && fromUpload && (
-        <Link
-          href={"/radio_tech/uploadFile"}
-          className="bg-[#0D1A2D] text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105 disabled:opacity-50"
-        >
-          <span className="hidden sm:inline">Back to Files</span>
-          <span className="sm:hidden">Back</span>
-        </Link>
-      )}
+      {/* Center Section - Name */}
+      <div className="header-center-section">
+        <h1 className="header-title">
+          Nasser Saeed
+        </h1>
+      </div>
 
-      <h1 className="text-white font-semibold text-base sm:text-lg md:text-xl lg:text-2xl">
-        Nasser Saeed
-      </h1>
-
-      <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center flex-wrap">
+      {/* Right Section */}
+      <div className="header-right-section">
         {isTech && fromUpload && (
           <>
             <button 
               onClick={handleCancel}
               disabled={isSaving}
-              className="bg-[#0D1A2D] text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105 disabled:opacity-50"
+              className="header-cancel-button"
             >
               Cancel
             </button>
@@ -123,22 +110,22 @@ const Header = () => {
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="bg-[#0D1A2D] text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105 disabled:opacity-50"
+              className="header-save-button"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
           </>
         )}
 
-        <button className="bg-[#0D1A2D] text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl cursor-pointer border border-white/30 transition-all text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105">
-          <span className="hidden sm:inline">Reset The View</span>
-          <span className="sm:hidden">Reset</span>
+        <button className="header-reset-button">
+          <span className="header-reset-text-full">Reset The View</span>
+          <span className="header-reset-text-short">Reset</span>
         </button>
 
         {!isTech && !isReport && (
           <Link
             href="/doctor/writingReport"
-            className="bg-[#0D1A2D] text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105"
+            className="header-report-link"
           >
             <span>Report</span>
           </Link>

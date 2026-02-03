@@ -1,212 +1,1065 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 @import "tailwindcss";
 
+/* ============================================
+   TAILWIND V4 THEME CONFIGURATION
+   ============================================ */
+@theme {
+  /* Background Colors */
+  --color-bg-primary: #040A16;
+  --color-bg-secondary: #0D1A2D;
+  --color-bg-tertiary: #0a1420;
+  
+  /* Error & Alert Colors */
+  --color-error: #dc3545;
+  
+  /* Button Colors */
+  --color-btn-primary: #17387C;
+  --color-btn-primary-hover: #092664;
+  --color-btn-danger: #8D1717;
+  --color-btn-danger-hover: #711111;
+  
+  /* Additional Colors for Tailwind */
+  --color-gray-900: #0a1825;
+  --color-red-500: #dc3545;
+  --color-green-500: #10b981;
+  --color-blue-500: #3b82f6;
+  --color-cyan-400: #22d3ee;
+}
 
-
-
+/* ============================================
+   FONT FAMILY
+   ============================================ */
 .font-inter {
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 }
 
-/* ===== Page ===== */
+/* ============================================
+   LAYOUT CONTAINERS
+   ============================================ */
+
+.page-container {
+  @apply h-screen flex flex-col p-4;
+  background: var(--color-bg-primary);
+}
+
+.content-area {
+  @apply mt-4 flex-1 min-h-0;
+}
+
+.header-wrapper {
+  @apply w-full flex justify-between items-center py-2 flex-shrink-0;
+}
+
+.header-wrapper-responsive {
+  @apply w-full flex flex-wrap justify-between items-center gap-2 md:gap-3;
+}
+
+.header-title-centered {
+  @apply absolute left-1/2 -translate-x-1/2 text-center;
+}
+
+/* ============================================
+   MAIN SECTION CONTAINER
+   Used in: DoctorPatients.jsx, HomeDoctor.jsx, HomeTech.jsx
+   ============================================ */
+.main-section-container {
+  @apply bg-[#0D1A2D] min-h-screen overflow-y-auto p-4 md:p-8 pl-4 md:pl-[270px] pt-16 md:pt-8;
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+.header-title {
+  @apply text-white font-semibold text-base sm:text-lg md:text-xl lg:text-2xl;
+}
+
+.header-subtitle {
+  @apply text-white/60 text-sm;
+}
+
+.text-upload-primary {
+  @apply text-6xl font-bold mb-8 text-gray-400;
+}
+
+.text-upload-primary-complete {
+  @apply text-6xl font-bold mb-8 text-white;
+}
+
+.text-upload-secondary {
+  @apply text-2xl font-semibold mb-2 text-gray-400;
+}
+
+.text-upload-tertiary {
+  @apply text-gray-500 mb-8;
+}
+
+.text-dropzone-title {
+  @apply text-3xl font-semibold mb-2;
+}
+
+.text-dropzone-subtitle {
+  @apply text-gray-400;
+}
+
+.text-file-info {
+  @apply mt-6 text-sm text-gray-500;
+}
+
+.footer-text {
+  @apply text-white text-xs;
+}
+
+/* ============================================
+   BUTTONS - BASE + MODIFIERS SYSTEM
+   ============================================ */
+
+.btn-back {
+  @apply text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30 
+         p-2 sm:p-3 md:p-4 flex items-center justify-center 
+         transition-all hover:scale-110;
+  background: var(--color-bg-secondary);
+}
+
+.btn-action {
+  @apply text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 
+         rounded-xl md:rounded-2xl border border-white/30 
+         transition-all flex items-center gap-2 
+         text-xs sm:text-sm md:text-base font-semibold 
+         hover:font-bold hover:scale-105
+         disabled:opacity-50 cursor-pointer;
+  background: var(--color-bg-secondary);
+}
+
+.btn-large {
+  @apply py-3 px-10 md:py-3.5 md:px-12 rounded-[10px] 
+         cursor-pointer transition-all text-base md:text-lg
+         hover:font-bold;
+}
+
+.btn-large-primary {
+  @apply py-3 px-10 md:py-3.5 md:px-12 rounded-[10px] 
+         cursor-pointer transition-all text-base md:text-lg
+         hover:font-bold border border-white/30;
+  background: var(--color-btn-primary);
+  cursor: pointer;
+}
+
+.btn-large-primary:hover {
+  background: var(--color-btn-primary-hover);
+}
+
+.btn-large-danger {
+  @apply py-3 px-10 md:py-3.5 md:px-12 rounded-[10px] 
+         cursor-pointer transition-all text-base md:text-lg
+         hover:font-bold;
+  background: var(--color-btn-danger);
+  cursor: pointer;
+}
+
+.btn-large-danger:hover {
+  background: var(--color-btn-danger-hover);
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+
+.card-dark {
+  @apply rounded-3xl flex flex-col justify-center items-center text-white text-center;
+  background: var(--color-bg-secondary);
+}
+
+.card-dropzone {
+  @apply h-full border-2 cursor-pointer transition-all duration-200;
+  background: var(--color-bg-secondary);
+}
+
+.card-upload-progress {
+  @apply h-full border border-white/30 p-20;
+  background: var(--color-bg-secondary);
+}
+
+/* ============================================
+   PROFILE CARDS
+   Used in: HomeDoctor.jsx, HomeTech.jsx
+   ============================================ */
+
+/* Main profile card container */
+.profile-card-container {
+  @apply py-4 md:py-5 px-4 md:px-6 rounded-[20px] border border-[#FFFFFF]/30 bg-[#040A16] shadow-sm mb-6 md:mb-8 overflow-hidden whitespace-nowrap flex items-center justify-center;
+}
+
+/* Mobile layout wrapper */
+.profile-layout-mobile {
+  @apply md:hidden flex flex-col items-center space-y-4;
+}
+
+/* Desktop layout wrapper */
+.profile-layout-desktop {
+  @apply hidden md:grid grid-cols-[220px_1fr] gap-12 text-white;
+}
+
+/* Photo section */
+.profile-photo-section {
+  @apply flex flex-col items-center space-y-3;
+}
+
+.profile-photo-mobile {
+  @apply w-[120px] h-[120px] rounded-[8px] bg-gray-600 overflow-hidden;
+}
+
+.profile-photo-desktop {
+  @apply w-[140px] h-[140px] rounded-[8px] bg-gray-600 overflow-hidden;
+}
+
+.profile-photo-img {
+  @apply w-full h-full object-cover;
+}
+
+/* Name and role */
+.profile-name-mobile {
+  @apply text-base font-bold text-white mb-1;
+}
+
+.profile-name-desktop {
+  @apply text-lg font-bold text-white mb-1;
+}
+
+.profile-role-subtitle {
+  @apply text-xs text-gray-400;
+}
+
+.profile-role-subtitle-desktop {
+  @apply text-sm text-gray-400;
+}
+
+/* Info grid section */
+.profile-info-wrapper-mobile {
+  @apply w-full space-y-4 pt-2;
+}
+
+.profile-info-grid-desktop {
+  @apply grid grid-cols-1 gap-4 content-start;
+}
+
+.profile-info-item-mobile {
+  @apply flex items-start gap-3;
+}
+
+.profile-info-item-desktop {
+  @apply flex items-start gap-4;
+}
+
+.profile-info-icon-wrapper {
+  @apply flex-shrink-0 mt-1;
+}
+
+.profile-info-label-mobile {
+  @apply text-sm text-white min-w-[120px] font-medium;
+}
+
+.profile-info-label-desktop {
+  @apply text-base lg:text-lg text-white min-w-[150px] font-medium;
+}
+
+.profile-info-value-mobile {
+  @apply text-sm text-white;
+}
+
+.profile-info-value-desktop {
+  @apply text-base lg:text-lg text-white;
+}
+
+/* ============================================
+   DATA TABLES
+   Used in: DoctorPatients.jsx, HomeDoctor.jsx, HomeTech.jsx
+   ============================================ */
+
+/* Table card wrapper */
+.data-table-card {
+  @apply py-4 md:py-5 px-4 md:px-6 rounded-[20px] border border-[#FFFFFF]/30 bg-[#040A16] shadow-sm mb-6 md:mb-8;
+}
+
+.data-table-title {
+  @apply text-white font-semibold text-base md:text-lg mb-4;
+}
+
+/* Table container with scroll */
+.data-table-wrapper {
+  @apply overflow-x-auto border border-[#FFFFFF]/30 rounded-lg;
+}
+
+.data-table-base {
+  @apply w-full text-white;
+}
+
+/* Table header */
+.data-table-header {
+  @apply border-b border-[#FFFFFF]/20;
+}
+
+.data-table-header-cell {
+  @apply py-3 px-2 md:px-3 text-xs md:text-sm lg:text-base font-medium text-center;
+}
+
+/* Table rows */
+.data-table-row {
+  @apply border-b border-[#FFFFFF]/20 transition-colors bg-[#040A16] hover:bg-[#0D1A2D];
+}
+
+.data-table-cell {
+  @apply py-3 px-2 md:px-3 text-xs md:text-sm lg:text-base text-center;
+}
+
+.data-table-link {
+  @apply hover:text-blue-300 cursor-pointer;
+}
+
+/* ============================================
+   PATIENT CARDS (DoctorPatients)
+   Used in: DoctorPatients.jsx
+   ============================================ */
+
+.patient-list-title {
+  @apply text-xl md:text-2xl font-semibold text-white mb-4 md:mb-5 md:-mt-4;
+}
+
+.patient-card-container {
+  @apply border-2 rounded-lg p-3 md:p-4 mb-3 md:mb-4 flex items-center cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-[#0A1A2D] bg-[#040A16];
+  border-color: #FFFFFF;
+}
+
+.patient-avatar {
+  @apply w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 mr-3 md:mr-4 overflow-hidden flex-shrink-0;
+}
+
+.patient-avatar-img {
+  @apply w-full h-full object-cover;
+}
+
+.patient-info-wrapper {
+  @apply flex-1 min-w-0;
+}
+
+.patient-name-text {
+  @apply text-sm md:text-base font-semibold text-white mb-1 truncate;
+}
+
+.patient-mrn-text {
+  @apply text-xs md:text-sm text-gray-200 truncate;
+}
+
+.patient-chevron-icon {
+  @apply text-white text-lg md:text-xl flex-shrink-0;
+}
+
+/* ============================================
+   SEARCH INPUT (DoctorPatients)
+   Used in: DoctorPatients.jsx
+   ============================================ */
+
+.search-input-wrapper {
+  @apply relative mb-4 md:mb-5;
+}
+
+.search-input-icon {
+  @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4;
+}
+
+.search-input-field {
+  @apply w-full pl-11 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 text-white bg-[#040A16];
+  border-color: #FFFFFF;
+}
+
+/* ============================================
+   BASIC INFORMATION CARD (DoctorPatients)
+   Used in: DoctorPatients.jsx
+   ============================================ */
+
+.basic-info-card {
+  @apply rounded-xl p-4 md:p-6 mb-6 md:mb-8 shadow-sm border bg-[#040A16];
+  border-color: #FFFFFF;
+}
+
+.basic-info-title {
+  @apply text-lg md:text-xl font-semibold text-white mb-4 md:mb-5;
+}
+
+.basic-info-row {
+  @apply flex justify-between py-3 border-b;
+  border-color: #0D1A2D;
+}
+
+.basic-info-row-last {
+  @apply flex justify-between py-3;
+}
+
+.basic-info-label {
+  @apply font-medium text-gray-300 text-sm md:text-base;
+}
+
+.basic-info-value {
+  @apply text-white font-medium text-sm md:text-base;
+}
+
+/* ============================================
+   FILES TABLE CARD (DoctorPatients)
+   Used in: DoctorPatients.jsx
+   ============================================ */
+
+.files-card {
+  @apply rounded-xl p-4 md:p-6 shadow-sm border bg-[#040A16];
+  border-color: #FFFFFF;
+}
+
+.files-title {
+  @apply text-lg md:text-xl font-semibold text-white mb-4 md:mb-5;
+}
+
+.files-table-wrapper {
+  @apply max-h-[300px] overflow-y-auto overflow-x-auto border border-white;
+}
+
+.files-table-base {
+  @apply w-full border-collapse text-white;
+}
+
+.files-table-header {
+  @apply border-b border-[#FFFFFF]/20;
+}
+
+.files-table-header-cell {
+  @apply py-3 px-2 md:px-3 text-xs md:text-sm font-medium text-center whitespace-nowrap;
+}
+
+.files-table-row {
+  @apply border-b border-[#FFFFFF]/20 transition-colors bg-[#040A16] hover:bg-[#0D1A2D];
+}
+
+.files-table-cell {
+  @apply py-3 px-2 md:px-3 text-xs md:text-sm text-center whitespace-nowrap;
+}
+
+/* ============================================
+   LAYOUT UTILITIES (DoctorPatients)
+   Used in: DoctorPatients.jsx
+   ============================================ */
+
+.layout-flex-container {
+  @apply flex flex-col md:flex-row gap-4 md:gap-8;
+}
+
+.layout-left-column {
+  @apply w-full md:w-5/12;
+}
+
+.layout-right-column {
+  @apply w-full md:w-7/12;
+}
+
+.vertical-divider {
+  @apply hidden md:block w-px self-stretch;
+  background-color: #FFFFFF;
+}
+
+/* ============================================
+   CONTENT WRAPPER (HomeDoctor, HomeTech)
+   Used in: HomeDoctor.jsx, HomeTech.jsx
+   ============================================ */
+
+.content-wrapper {
+  @apply max-w-4xl mx-auto p-4;
+}
+
+/* ============================================
+   ALERTS
+   ============================================ */
+
+.alert-base {
+  @apply fixed top-20 left-1/2 -translate-x-1/2 
+         px-8 py-4 rounded-lg shadow-2xl z-50 
+         border-2 text-center;
+  min-width: 300px;
+}
+
+.alert-error {
+  @apply fixed top-20 left-1/2 -translate-x-1/2 
+         px-8 py-4 rounded-lg shadow-2xl z-50 
+         border-2 text-center border-red-300;
+  background: var(--color-red-500);
+  color: #f3f4f6;
+  min-width: 300px;
+}
+
+.alert-success {
+  @apply fixed top-20 left-1/2 -translate-x-1/2 
+         px-8 py-4 rounded-lg shadow-2xl z-50 
+         border-2 text-center border-green-300;
+  background: var(--color-green-500);
+  color: #f3f4f6;
+  min-width: 300px;
+}
+
+.alert-icon-wrapper {
+  @apply flex items-center justify-center gap-2;
+}
+
+/* ============================================
+   ICONS
+   ============================================ */
+
+.icon-upload {
+  @apply w-32 h-32 mb-6 stroke-white transition-transform duration-200;
+}
+
+.icon-svg-sm {
+  @apply w-6 h-6;
+}
+
+.icon-svg-responsive {
+  @apply w-5 h-5 sm:w-6 sm:h-6;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+.footer-wrapper {
+  @apply flex items-center justify-center pt-4 flex-shrink-0;
+}
+
+.footer-logo {
+  @apply w-10 h-10 object-contain;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.spacer {
+  @apply w-12;
+}
+
+/* ============================================
+   LOGIN PAGE STYLES
+   ============================================ */
+
 .login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #040A16;            
+  @apply h-screen w-screen flex items-center justify-center overflow-hidden p-4;
+  background: var(--color-bg-primary);            
   color: #FFFFFF;
-  position: relative;
-  overflow: hidden;
-  padding: 20px;
 }
 
-
-/* ===== Login Card ===== */
 .login-card {
-  width: 100%;
-  max-width: 500px;               
-  padding: 48px 44px;
-  border-radius: 24px;           
-  border: none;                   
-  background: #0D1A2D;  
-  position: relative;
+  @apply w-[90%] max-w-[500px] p-8 px-10 rounded-3xl flex flex-col gap-4;
+  border: none;
+  background: var(--color-bg-secondary);
 }
 
-/* ===== Brand ===== */
 .brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  margin-bottom: 0px;
-  margin-top: 12px;
+  @apply flex items-center justify-center mb-0 mt-3 flex-shrink-0;
+}
+
+.brand-login {
+  @apply flex items-center justify-center flex-shrink-0 -mt-2;
 }
 
 .brand-logo {
-  object-fit: contain;
+  @apply object-contain max-w-full h-auto w-[180px];
 }
 
-/* النص بجانب اللوقو إذا كان موجود */
 .brand-name {
-  font-size: 22px;
-  font-weight: 600;
-  color: #FFFFFF;
+  @apply text-[22px] font-semibold text-white;
   letter-spacing: 0.5px;
 }
 
-/* ===== Title ===== */
 .title {
-  text-align: center;
-  font-size: 28px;
-  font-weight: 700;
+  @apply text-center text-[28px] font-bold text-white flex-shrink-0;
   letter-spacing: 1.5px;
   margin-top: 2px;
   margin-bottom: 3px;
-  color: #FFFFFF;
 }
 
-/* ===== Form ===== */
+.title-login {
+  @apply text-center text-[28px] font-bold text-white flex-shrink-0;
+  letter-spacing: 1.5px;
+}
+
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  @apply flex flex-col gap-4 flex-shrink-0;
 }
 
-/* ===== Field ===== */
 .field {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  @apply w-full flex flex-col gap-2;
 }
 
-/* ===== Labels ===== */
 .label {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-  display: block;
-  margin-bottom: 6px;
+  @apply text-sm font-medium text-white/80 block;
 }
 
-/* ===== Inputs & Select ===== */
 .input,
 .select {
-  width: 100%;
-  height: 56px;                   
-  border-radius: 12px;           
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #0a1420;            
-  color: #FFFFFF;
-  padding: 0 20px;
-  font-size: 15px;
+  @apply w-full h-14 rounded-xl border border-white/[0.08] text-white px-5 text-[15px] 
+         transition-all duration-200;
+  background: var(--color-bg-tertiary);
   box-sizing: border-box;
-  transition: all 0.2s ease;
 }
 
 .input::placeholder,
 .select::placeholder {
-  color: rgba(255, 255, 255, 0.25);
+  @apply text-white/25;
 }
 
-/* Focus state */
 .input:focus,
 .select:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.15);
-  background: #0d1825;
+  @apply outline-none border-white/15;
+  background: var(--color-gray-900);
 }
 
-/* Select styling */
 .select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 46px;
-  cursor: pointer;
-  background-image: none;         
+  @apply appearance-none pr-[46px] cursor-pointer;
+  background-image: none;
 }
 
 .select-wrap {
-  position: relative;
-  width: 100%;
+  @apply relative w-full;
 }
 
-/* Arrow icon */
 .chev {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  pointer-events: none;
+  @apply absolute right-5 top-1/2 -translate-y-1/2 text-white/50 text-sm pointer-events-none;
 }
 
-/* ===== Button ===== */
 .btn {
-  margin-top: 16px;
-  height: 56px;
-  border-radius: 12px;
-  border: none;
-  background: #17387C;  
-  color: #FFFFFF;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  @apply h-14 rounded-xl border-none text-white text-lg font-semibold cursor-pointer 
+         transition-all duration-300;
+  background: var(--color-btn-primary);
   letter-spacing: 0.5px;
 }
 
-/*
-.btn:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-}
-*/
 .btn:active {
-  transform: translateY(0);
+  @apply translate-y-0;
 }
 
-/* ===== Accessibility ===== */
+.error-message {
+  @apply px-4 py-2.5 rounded-md text-center text-white text-[13px] flex-shrink-0;
+  background: var(--color-error);
+}
+
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+  @apply absolute w-px h-px overflow-hidden whitespace-nowrap;
   clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
 }
 
-/* ===== Responsive ===== */
+/* ============================================
+   VIEWER PAGE STYLES
+   ============================================ */
+
+.viewer-container {
+  @apply w-full h-full flex flex-col overflow-hidden;
+}
+
+.viewer-iframe-wrapper {
+  @apply flex-1 min-h-0 flex items-center justify-center bg-gray-900;
+}
+
+.viewer-iframe {
+  @apply w-full h-full border-none max-w-full max-h-full object-contain;
+}
+
+/* ============================================
+   LOGOUT PAGE STYLES
+   ============================================ */
+
+.logout-page {
+  @apply min-h-screen;
+  background: var(--color-bg-primary);
+}
+
+.logout-title {
+  @apply text-white text-center text-3xl font-semibold 
+         pt-8 pb-4 sticky top-0 z-10;
+  background: var(--color-bg-primary);
+}
+
+.logout-content-wrapper {
+  @apply flex justify-center items-center px-4;
+  min-height: calc(100vh - 96px);
+}
+
+.logout-card {
+  @apply border border-white/30 rounded-[20px] 
+         p-6 md:p-8 text-white text-center 
+         max-w-md w-full;
+  background: var(--color-bg-secondary);
+}
+
+.logout-message {
+  @apply font-semibold text-lg md:text-xl lg:text-2xl 
+         mb-12 md:mb-16;
+}
+
+.logout-buttons-wrapper {
+  @apply flex flex-col sm:flex-row justify-center gap-6 md:gap-8;
+}
+
+/* ============================================
+   PATIENTS PAGE STYLES
+   ============================================ */
+
+.patients-page {
+  @apply h-screen flex flex-col;
+  background: var(--color-bg-secondary);
+}
+
+.patients-nav {
+  @apply h-16 flex flex-row px-6 items-center justify-between flex-shrink-0;
+}
+
+.patients-nav-logo-wrapper {
+  @apply mt-4 h-10 md:h-14 lg:h-14 overflow-hidden;
+}
+
+.patients-main {
+  @apply flex-1 px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 min-h-0 overflow-y-auto;
+}
+
+.patients-grid {
+  @apply gap-6 lg:gap-8 max-w-[1400px] mx-auto flex flex-col lg:flex-row mt-4;
+}
+
+.patients-card {
+  @apply border border-white/30 rounded-2xl sm:rounded-[20px];
+  background: var(--color-bg-primary);
+}
+
+.patients-card-profile {
+  @apply border border-white/30 rounded-2xl sm:rounded-[20px] py-6 px-5 sm:py-7 sm:px-6 md:p-8 lg:flex-[3] lg:order-2;
+  background: var(--color-bg-primary);
+}
+
+.patients-card-table {
+  @apply border border-white/30 rounded-2xl sm:rounded-[20px] py-6 px-5 sm:py-7 sm:px-6 lg:flex-[7] lg:order-1;
+  background: var(--color-bg-primary);
+}
+
+/* ============================================
+   PATIENTS PAGE - PROFILE SECTION
+   ============================================ */
+
+.profile-wrapper {
+  @apply flex flex-col md:flex-row lg:flex-col items-center md:justify-center md:gap-20 lg:gap-4;
+}
+
+.profile-photo-wrapper {
+  @apply flex flex-col items-center gap-3 flex-shrink-0;
+}
+
+.profile-photo {
+  @apply w-[110px] h-[110px] sm:w-[130px] sm:h-[130px] lg:w-[140px] lg:h-[140px] rounded-lg bg-gray-600 overflow-hidden;
+}
+
+.profile-name-mobile {
+  @apply text-base sm:text-lg font-bold text-white text-center lg:hidden;
+}
+
+.profile-name-desktop {
+  @apply text-xl font-bold text-white text-center hidden lg:block mb-4;
+}
+
+.profile-details-wrapper {
+  @apply flex flex-col items-center md:items-start lg:items-center w-full md:w-auto mt-4 md:mt-0 lg:mt-0;
+}
+
+.profile-info-list {
+  @apply flex flex-col gap-4 w-fit mx-auto md:mx-0;
+}
+
+.profile-info-row {
+  @apply flex items-center gap-3;
+}
+
+.profile-info-icon {
+  @apply flex-shrink-0;
+}
+
+.profile-info-icon svg {
+  @apply w-5 h-5 text-gray-400;
+}
+
+.profile-info-label {
+  @apply text-sm sm:text-base text-white font-medium w-[100px] text-left;
+}
+
+.profile-info-value {
+  @apply text-sm sm:text-base text-white text-left;
+}
+
+/* ============================================
+   PATIENTS PAGE - TABLE SECTION
+   ============================================ */
+
+.patients-table-title {
+  @apply text-white font-semibold text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-5;
+}
+
+.patients-table-wrapper {
+  @apply overflow-x-auto border border-white/30 rounded-lg;
+}
+
+.table-head-row {
+  @apply border-b border-white/20;
+}
+
+.table-cell-head {
+  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg font-medium text-center whitespace-nowrap;
+}
+
+.table-row {
+  @apply border-b border-white/20;
+}
+
+.table-cell {
+  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg text-center whitespace-nowrap;
+}
+
+.table-link {
+  @apply hover:text-blue-300 cursor-pointer transition-colors duration-200;
+}
+
+/* ============================================
+   LOGOUT BUTTON (NAV)
+   ============================================ */
+
+.logout-btn-link {
+  @apply flex items-center gap-3 justify-center bottom-4 h-10 p-2 ml-16 text-gray-300 rounded-lg transition-all hover:bg-gray-900 hover:font-semibold hover:text-red-700;
+}
+
+/* ============================================
+   PROGRESS BAR
+   ============================================ */
+
+.progressbar-container {
+  @apply w-full;
+}
+
+.progressbar-track {
+  @apply w-full bg-gray-700/50 rounded-full h-2 overflow-hidden border border-white/10;
+}
+
+.progressbar-fill {
+  @apply h-full transition-all duration-300 ease-out;
+  background: linear-gradient(to right, var(--color-blue-500), var(--color-cyan-400));
+}
+
+.progressbar-text {
+  @apply text-center mt-2 text-white/80 text-sm font-medium;
+}
+
+/* ============================================
+   REPORT COMPONENT
+   ============================================ */
+
+.report-base {
+  @apply w-full flex-1 text-white text-sm p-3 rounded-md border border-white/20;
+  background: var(--color-bg-primary);
+}
+
+.report-readonly {
+  @apply w-full flex-1 text-white text-sm p-3 rounded-md border border-white/20 overflow-auto whitespace-pre-wrap;
+  background: var(--color-bg-primary);
+}
+
+.report-editable {
+  @apply w-full flex-1 text-white text-sm p-3 rounded-md border border-white/20 resize-none focus:outline-none focus:border-white/60 hover:border-white/40;
+  background: var(--color-bg-primary);
+}
+
+/* ============================================
+   SHARED PAGE LAYOUT - CONTENT CARDS
+   ============================================ */
+
+.section-shrink {
+  @apply flex-shrink-0;
+}
+
+.content-card {
+  @apply mt-4 flex-1 min-h-0 rounded-lg p-4 border border-white/20;
+  background: var(--color-bg-secondary);
+}
+
+.content-card-viewer {
+  @apply mt-4 flex-1 min-h-0 rounded-lg p-4 border border-white/20 flex items-center justify-center relative;
+  background: var(--color-bg-secondary);
+}
+
+.content-card-report {
+  @apply mt-4 flex-1 min-h-0 rounded-lg p-4 border border-white/20 w-full flex gap-4 h-full;
+  background: var(--color-bg-secondary);
+}
+
+/* ============================================
+   SHARED INNER CARD (REPORT WRAPPER)
+   ============================================ */
+
+.report-inner-card {
+  @apply w-full h-full rounded-md p-4 flex flex-col border border-white/20;
+  background: var(--color-bg-primary);
+}
+
+/* ============================================
+   SHOW REPORT PAGE STYLES
+   ============================================ */
+
+.show-report-header {
+  @apply w-full flex justify-between items-center py-2 rounded-md flex-shrink-0;
+  background: var(--color-bg-primary);
+}
+
+.btn-download {
+  @apply text-white px-5 py-3 rounded-2xl cursor-pointer border border-white/30 
+         transition-all font-medium;
+  font-size: 16px;
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+}
+
+.btn-download:hover {
+  background: #1a3a52;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   WRITING REPORT PAGE STYLES
+   ============================================ */
+
+.writing-report-page {
+  @apply min-h-screen flex flex-col items-center justify-start p-4;
+  background: var(--color-bg-primary);
+}
+
+.writing-report-panel {
+  @apply flex-1 rounded-md border border-white/20;
+  background: var(--color-bg-primary);
+}
+
+.writing-report-panel-viewer {
+  @apply flex-1 rounded-md border border-white/20 flex items-center justify-center relative;
+  background: var(--color-bg-primary);
+}
+
+.writing-report-panel-report {
+  @apply flex-1 rounded-md border border-white/20 p-4 flex flex-col;
+  background: var(--color-bg-primary);
+}
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
 @media (max-width: 640px) {
   .login-card {
-    padding: 40px 32px;
-    max-width: 95%;
-    border-radius: 20px;
+    @apply w-[90%] max-w-full px-5 py-6 rounded-[20px] gap-3;
   }
 
-  .title {
-    font-size: 24px;
-    margin-bottom: 28px;
+  .title,
+  .title-login {
+    @apply text-xl;
   }
 
   .label {
-    font-size: 13px;
+    @apply text-[13px];
   }
 
   .input,
   .select,
   .btn {
-    height: 52px;
-    font-size: 15px;
+    @apply h-12 text-[15px];
   }
 
   .btn {
-    font-size: 16px;
+    @apply text-base;
   }
+
+  .form {
+    @apply gap-3;
+  }
+}
+
+@media (max-width: 400px) {
+  .login-card {
+    @apply w-[90%] px-4 py-5 gap-2;
+  }
+
+  .input,
+  .select,
+  .btn {
+    @apply h-11 text-sm;
+  }
+
+  .title,
+  .title-login {
+    @apply text-lg;
+  }
+
+  .form {
+    @apply gap-2;
+  }
+}
+
+/* ============================================
+   HEADER COMPONENT STYLES
+   ============================================ */
+
+.header-container {
+  @apply w-full flex justify-between items-center gap-2 md:gap-3;
+}
+
+.header-left-section {
+  @apply flex-1 flex justify-start;
+}
+
+.header-center-section {
+  @apply flex-1 flex justify-center;
+}
+
+.header-right-section {
+  @apply flex-1 flex justify-end gap-1.5 sm:gap-2 md:gap-3 items-center flex-wrap;
+}
+
+.header-back-button {
+  @apply text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30 p-2 sm:p-3 md:p-4 flex items-center justify-center transition-all hover:scale-110;
+  background: var(--color-bg-secondary);
+}
+
+.header-title {
+  @apply text-white font-semibold text-base sm:text-lg md:text-xl lg:text-2xl whitespace-nowrap;
+}
+
+.header-cancel-button {
+  @apply text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105 disabled:opacity-50;
+  background: var(--color-bg-secondary);
+}
+
+.header-save-button {
+  @apply text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105 disabled:opacity-50;
+  background: var(--color-bg-secondary);
+}
+
+.header-reset-button {
+  @apply text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl cursor-pointer border border-white/30 transition-all text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105;
+  background: var(--color-bg-secondary);
+}
+
+.header-reset-text-full {
+  @apply hidden sm:inline;
+}
+
+.header-reset-text-short {
+  @apply sm:hidden;
+}
+
+.header-report-link {
+  @apply text-white px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm md:text-base font-semibold hover:font-bold hover:scale-105;
+  background: var(--color-bg-secondary);
 }

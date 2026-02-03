@@ -1,14 +1,16 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 
 const TransferFunction = () => {
   let userRole = null;
-
+const pathname= usePathname();
   if (typeof window !== "undefined") {
     userRole = localStorage.getItem("userRole");
   }
 
-  if (userRole === "/radio_tech") {
+  if (userRole === "/radio_tech" || pathname === "/doctor/writingReport") {
     return null;
   }
 

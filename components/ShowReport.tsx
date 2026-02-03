@@ -107,10 +107,10 @@ const ShowReport = () => {
   };
 
   return (
-    <div className="h-screen bg-[#040A16] flex flex-col p-4">
-      <header className="w-full flex justify-between items-center py-2 bg-[#040A16] rounded-md flex-shrink-0">
+    <div className="page-container">
+      <header className="show-report-header">
         <button
-          className="text-white cursor-pointer hover:opacity-80 rounded-2xl border border-white/30 p-3 hover:bg-gray-800 bg-[#0D1A2D] flex items-center justify-center"
+          className="btn-back"
           onClick={() => router.back()}
         >
           <svg
@@ -126,20 +126,20 @@ const ShowReport = () => {
           </svg>
         </button>
         <button
-          className="bg-[#0D1A2D] text-white px-5 py-3 rounded-2xl cursor-pointer border border-white/30 hover:bg-[#1a3a52] hover:border-white/50 transition-all text-[16px] font-medium"
+          className="btn-download"
           onClick={downloadPDF}
         >
           Download
         </button>
       </header>
 
-      <div className="mt-4 flex-1 bg-[#0D1A2D] border border-white/20 rounded-lg p-4 min-h-0">
-        <div className="w-full h-full bg-[#040A16] rounded-md p-4 border border-white/20 flex flex-col">
+      <div className="content-card">
+        <div className="report-inner-card">
           <Report />
         </div>
       </div>
 
-      <div className="flex-shrink-0">
+      <div className="section-shrink">
         <Footer />
       </div>
     </div>

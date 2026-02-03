@@ -1,32 +1,27 @@
 "use client";
-import React from "react";
-import TransferFunction from "./TransferFunction";
-import { useSearchParams } from "next/navigation";
+import React from 'react';
+import TransferFunction from './TransferFunction';
+import { useSearchParams } from 'next/navigation';
 
 const Img = () => {
   const searchParams = useSearchParams();
-  const fileId = searchParams.get("fileId");
+  const fileId = searchParams.get('fileId');
 
-  const iframeSrc = fileId
+  const iframeSrc = fileId 
     ? `/volumeRendering/index.html?fileId=${fileId}`
-    : "/volumeRendering/index.html";
+    : '/volumeRendering/index.html';
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-900">
-        <iframe
+    <div className="viewer-container">
+      <div className="viewer-iframe-wrapper">
+        <iframe 
           src={iframeSrc}
-          className="w-full h-full border-none"
-          style={{
-            maxWidth: "100%",
-            maxHeight: "100%",
-            objectFit: "contain",
-          }}
+          className="viewer-iframe"
           title="3D Volume Rendering"
         />
       </div>
 
-      <TransferFunction />
+      <TransferFunction /> 
     </div>
   );
 };

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useState } from "react";
+import Link from "next/link";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -83,17 +84,12 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      <div className="glow glow-1"></div>
-      <div className="glow glow-2"></div>
+      <Link href={"/viewimg"} className="absolute top-0 left-0 m-2">
+      go to Image
+      </Link>
 
       <main className="login-card">
-        <div
-          className="brand"
-          style={{
-            marginTop: "-12px",
-            marginBottom: "0px",
-          }}
-        >
+        <div className="brand-login">
           <Image
             src="/logo.png"
             alt="VisMed3D"
@@ -104,28 +100,12 @@ const Login = () => {
           />
         </div>
 
-        <h1
-          className="title"
-          style={{
-            marginTop: "4px",
-            marginBottom: "20px",
-          }}
-        >
+        <h1 className="title-login">
           WELCOME BACK
         </h1>
 
         {generalError && (
-          <div
-            style={{
-              padding: "10px 16px",
-              backgroundColor: "#dc3545",
-              borderRadius: "6px",
-              marginBottom: "20px",
-              color: "#ffffff",
-              fontSize: "13px",
-              textAlign: "center",
-            }}
-          >
+          <div className="error-message">
             {generalError}
           </div>
         )}

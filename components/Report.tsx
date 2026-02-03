@@ -24,7 +24,7 @@ const Report = () => {
 
   if (isPatientView) {
     return (
-      <div className="w-full flex-1 bg-[#040A16] text-white text-sm p-3 rounded-md border border-white/20 overflow-auto whitespace-pre-wrap">
+      <div className="report-readonly">
         {reportText || "No report available"}
       </div>
     );
@@ -32,7 +32,7 @@ const Report = () => {
 
   return (
     <textarea
-      className="w-full flex-1 bg-[#040A16] text-white text-sm p-3 rounded-md border border-white/20 resize-none focus:outline-none focus:border-white/60 hover:border-white/40"
+      className="report-editable"
       placeholder="Write the report here..."
       value={reportText}
       onChange={(e) => setReportText(e.target.value)}

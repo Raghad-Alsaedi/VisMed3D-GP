@@ -1,6 +1,6 @@
 import SideBarDoctor from "@/components/SideBarDoctor";
 
-export default function RootLayout({
+export default function DoctorLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
