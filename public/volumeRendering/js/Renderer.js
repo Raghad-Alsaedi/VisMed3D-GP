@@ -1,3 +1,5 @@
+import { Camera } from './Common/Camera.js';
+
 // ================= VOLUME LOADER =================
 async function loadVolume(url, width, height, depth) {
 
@@ -115,14 +117,6 @@ async function initShaders(gl, vertexUrl, fragmentUrl) {
 /** Main function to draw a triangle */
 async function main() {
 
-//========================adding by Shaima Ham ===========================================================
-    let rotationX = 0;
-    let rotationY = 0;
-    let isDragging = false;
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-//===================================================================================
-
   const canvas = document.getElementById('demo-canvas');
   if (!canvas) {
     throw new Error('Could not find HTML canvas element');
@@ -130,6 +124,7 @@ async function main() {
   }
 
   const gl = canvas.getContext('webgl2');
+  const camera = new Camera(canvas);
   if (!gl) {
     throw new Error('WebGL2 not supported');
     return;
@@ -143,27 +138,6 @@ async function main() {
   //2K resolution is 2048×1080
   canvas.width = 1280;
   canvas.height = 720;
-
-//========================adding by Shaima Ham ===========================================================
-  canvas.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-  });
-
-  window.addEventListener('mouseup', () => { isDragging = false; });
-
-  window.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      rotationY += (e.clientX - lastMouseX) * 0.5; 
-      rotationX += (e.clientY - lastMouseY) * 0.5; 
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      render(); 
-    }
-  });
-  //===================================================================================
-
   //=========================================
  // =========================================
 // Volume bounding box (cube)
@@ -335,37 +309,25 @@ gl.framebufferTexture2D(
   gl.vertexAttribPointer(vertexPositionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
    //=========================================
   //=========================================
-  // Setup perspective camera
-  // Camera
-  const eye = vec3(0.5, 0.5, -1.0);
-  const at  = vec3(0.5, 0.5,  0.5);
-  const up  = vec3(0.0, 1.0,  0.0);
-  const fov = 70.0;
-
-  let  viewMatrix = lookAt(eye, at, up);
-  let  projectionMatrix = perspective(fov, canvas.width / canvas.height, 0.1, 100.0);
-//============================================
 let modelMatrix = mat4();
 //let angle= 20;
 //  modelMatrix = mult(modelMatrix, rotate(angle, vec3(0, 1, 0)));
 
 //===================================
 let mvpMatrix = mat4();
-mvpMatrix=mult(viewMatrix, modelMatrix);   // V * M
-mvpMatrix=mult(projectionMatrix, mvpMatrix);    // P * (V * M)
+
 
 let mvpInverseMatrix = mat4();
 mvpInverseMatrix = inverse4(mvpMatrix);
 
-//========================adding by Shaima Ham ==================================
 function render() {
-    modelMatrix = mat4();
-    modelMatrix = mult(modelMatrix, translate(0.5, 0.5, 0.5));
-    modelMatrix = mult(modelMatrix, rotate(rotationX, vec3(1, 0, 0)));
-    modelMatrix = mult(modelMatrix, rotate(rotationY, vec3(0, 1, 0)));
-    modelMatrix = mult(modelMatrix, translate(-0.5, -0.5, -0.5));
+    const modelMatrix = camera.getModelMatrix();
+    const viewMatrix = camera.getViewMatrix();
+    const projectionMatrix = camera.getProjectionMatrix();
+
     let mvpMatrix = mult(projectionMatrix, mult(viewMatrix, modelMatrix));
-    mvpInverseMatrix = inverse4(mvpMatrix);
+    let mvpInverseMatrix = inverse4(mvpMatrix);
+
   //==============================================
 // First Pass: Render Front Faces into frontFaceTexture
 {
@@ -462,11 +424,13 @@ function render() {
     gl.uniform1i(gl.getUniformLocation(final_program, "uVolumeTexture"), 2);
 
     // fullscreen triangle
+   
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+    requestAnimationFrame(render);
 }
 }
-    render(); //==========adding by Shaima Ham ==========
+    render(); 
 
 // Save front-face texture
 //saveTextureAsImage(gl, frontFaceTexture, canvas.width, canvas.height, 'front_face.png');
