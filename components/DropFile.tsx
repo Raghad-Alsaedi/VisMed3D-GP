@@ -27,7 +27,7 @@ const DropFile = () => {
     }
     
     if (file.size === 0) {
-      setErrorMessage('File is empty, please select a valid file');
+      setErrorMessage('File is empty, please select a valid file x');
       return false;
     }
     
