@@ -22,7 +22,10 @@ const Img = () => {
       </div>
 
       <TransferFunction /> 
+      
+     
     </div>
+    
   );
 };
 

@@ -1,9 +1,9 @@
-import HomeDoctor from "@/components/HomeDoctor";
+import HomeProfile from "@/components/HomeProfile";
 
 export default function Home() {
   return (
     <>
-      <HomeDoctor />
+      <HomeProfile />
     </>
   );
 }

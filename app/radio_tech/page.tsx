@@ -1,9 +1,9 @@
-import HomeTech from "@/components/HomeTech";
+import HomeProfile from "@/components/HomeProfile";
 
 export default function Home() {
   return (
     <>
-      <HomeTech />
+      <HomeProfile />
     </>
   );
 }

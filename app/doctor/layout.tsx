@@ -1,4 +1,5 @@
-import SideBarDoctor from "@/components/SideBarDoctor";
+import SideBar from "@/components/SideBar";
+import SideBarDoctor from "@/components/SideBar";
 
 export default function DoctorLayout({
   children,
@@ -7,7 +8,7 @@ export default function DoctorLayout({
 }>) {
   return (
    <div className="flex min-h-screen">
-      <SideBarDoctor />
+      <SideBar />
       <main className="flex-1">
         {children}
       </main>

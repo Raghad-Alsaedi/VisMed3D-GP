@@ -1,5 +1,5 @@
 "use client";
-import { NAV_LINKS_TECH } from "@/constant";
+import { NAV_LINKS_DOCTOR, NAV_LINKS_TECH } from "@/constant";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,10 +8,17 @@ import { useState, useEffect } from "react";
 import { Menu } from "@/components/icons";
 import { MdClose } from "react-icons/md";
 
-const SideBarTech = () => {
+const SideBar = () => {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const isDoctor = pathname.startsWith("/doctor");
+  const navLinks = isDoctor ? NAV_LINKS_DOCTOR : NAV_LINKS_TECH;
+  
+  const hiddenPages = isDoctor
+    ? ["/logout", "/doctor/writingReport", "/doctor/viewimg"]
+    : ["/logout", "/radio_tech/dropfile", "/radio_tech/uploadPage"];
 
   // Detect mobile screen size
   useEffect(() => {
@@ -54,11 +61,7 @@ const SideBarTech = () => {
   };
 
   // Check if we should hide sidebar on certain pages - AFTER all hooks
-  if (
-    pathname === "/logout" ||
-    pathname === "/radio_tech/dropfile" ||
-    pathname === "/radio_tech/uploadPage"
-  ) {
+  if (hiddenPages.includes(pathname)) {
     return null;
   }
 
@@ -67,22 +70,22 @@ const SideBarTech = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={toggleSidebar}
-        className="menu-toggle-btn fixed top-4 left-4 z-50 md:hidden bg-[#040A16] text-white p-2 rounded-lg shadow-lg hover:bg-slate-700 transition-colors"
+        className="menu-toggle-btn sidebar-menu-toggle-btn"
       >
-        <Menu className="w-6 h-6" />
+        <Menu className="sidebar-menu-icon" />
       </button>
 
       {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="sidebar-overlay"
           onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`sidebar-container w-[250px] h-screen bg-[#040A16] flex flex-col fixed top-0 left-0 z-50 transition-transform duration-300 ${
+        className={`sidebar-container sidebar-container-base ${
           isMobile
             ? isSidebarOpen
               ? "translate-x-0"
@@ -91,29 +94,29 @@ const SideBarTech = () => {
         }`}
       >
         {/* Logo and Close Button */}
-        <div className="flex items-center justify-between mx-4 mt-4 mb-10">
-          <div className="w-40 overflow-hidden">
+        <div className="sidebar-logo-wrapper">
+          <div className="sidebar-logo-image-wrapper">
             <Image
               src="/logo.png"
               alt="Logo"
               width={160}
               height={160}
-              className="w-auto h-auto object-contain"
+              className="sidebar-logo-image"
             />
           </div>
 
           {/* Close button for mobile */}
           <button
             onClick={closeSidebar}
-            className="md:hidden text-white hover:text-gray-300"
+            className="sidebar-close-btn"
           >
-            <MdClose className="w-6 h-6" />
+            <MdClose className="sidebar-close-icon" />
           </button>
         </div>
 
         {/* Navigation Links */}
         <div>
-          {NAV_LINKS_TECH.map((link) => {
+          {navLinks.map((link) => {
             const isActive = pathname === link.href;
             const IconComponent = link.icon;
 
@@ -126,13 +129,13 @@ const SideBarTech = () => {
                     closeSidebar();
                   }
                 }}
-                className={`my-2 h-12 rounded-l-full ml-2 py-2.5 flex items-center justify-center gap-2 ${
+                className={`sidebar-nav-link-base ${
                   isActive
-                    ? "bg-[#0D1A2D] text-white font-semibold"
-                    : "text-gray-300 hover:text-white hover:bg-gray-900"
+                    ? "sidebar-nav-link-active"
+                    : "sidebar-nav-link-inactive"
                 }`}
               >
-                <IconComponent className="w-6 h-6" />
+                <IconComponent className="sidebar-nav-icon" />
                 {link.label}
               </Link>
             );
@@ -140,7 +143,7 @@ const SideBarTech = () => {
         </div>
 
         {/* Logout Button */}
-        <div className="mt-auto mb-4">
+        <div className="sidebar-logout-wrapper">
           <LogOutButton />
         </div>
       </div>
@@ -148,4 +151,4 @@ const SideBarTech = () => {
   );
 };
 
-export default SideBarTech;
+export default SideBar;

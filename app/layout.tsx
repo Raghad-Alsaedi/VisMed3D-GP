@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SideBarDoctor from "@/components/SideBarDoctor";
+import SideBarDoctor from "@/components/SideBar";
 import { LOG_IN } from "@/constant";
 import Login from "@/components/Login";
 

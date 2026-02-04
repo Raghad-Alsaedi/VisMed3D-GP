@@ -9,7 +9,7 @@ const WritingReport = () => {
     <div className="writing-report-page">
       <Header />
 
-      <div className="content-card-report">
+      <div className="writing-report-container">
         <div className="writing-report-panel-viewer">
           <Img />
         </div>

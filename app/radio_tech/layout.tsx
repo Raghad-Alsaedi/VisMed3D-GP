@@ -1,4 +1,4 @@
-import SideBarTech from "@/components/SideBarTech";
+import SideBar from "@/components/SideBar";
 
 export default function RadioTechLayout({
   children,
@@ -8,7 +8,7 @@ export default function RadioTechLayout({
   return (
    
         <main className="relative overflow-hidden">
-          <SideBarTech />
+          <SideBar />
           {children}
         </main>
      

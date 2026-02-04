@@ -5,16 +5,17 @@ import Header from "./Header";
 
 const ViewImg = () => {
   return (
-    <div className="page-container">
-      <div className="section-shrink">
+    <div className="viewimg-page-container">
+      <div className="viewimg-header-section">
         <Header />
       </div>
 
-      <div className="content-card-viewer">
+      <div className="viewimg-content-card">
         <Img />
+        <h2 className="viewimg-fps-overlay"> 30 FPS</h2>
       </div>
 
-      <div className="section-shrink">
+      <div className="viewimg-footer-section">
         <Footer />
       </div>
     </div>
