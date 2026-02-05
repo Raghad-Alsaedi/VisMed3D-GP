@@ -13,40 +13,20 @@ const loginSchema = z.object({
   role: z.string().min(1, "Please select a role"),
 });
 
-const USERS_DATABASE = [
-  { username: "doctor", password: "doctor123", role: "/doctor" },
-  { username: "dr.ahmed", password: "ahmed@123", role: "/doctor" },
-
-  { username: "patient", password: "patient123", role: "/patients" },
-  { username: "mohammed", password: "mohammed@123", role: "/patients" },
-
-  {
-    username: "radiology technician",
-    password: "tech123",
-    role: "/radio_tech",
-  },
-  { username: "Sarah", password: "recept@123", role: "/radio_tech" },
-];
-
 const Login = () => {
   const router = useRouter();
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const handelsumbite = (e: React.FormEvent<HTMLFormElement>) => {
+  const handelsumbite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     setGeneralError(null);
 
     const formData = new FormData(e.currentTarget);
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
-    const role = formData.get("role") as string;
+    const role = formData.get("role") as string; // هنا عندك المسار مثل /doctor
 
-    const result = loginSchema.safeParse({
-      username,
-      password,
-      role,
-    });
+    const result = loginSchema.safeParse({ username, password, role });
 
     if (!result.success) {
       const fieldErrors = result.error.flatten().fieldErrors;
@@ -66,30 +46,49 @@ const Login = () => {
       return;
     }
 
-    const user = USERS_DATABASE.find(
-      (u) =>
-        u.username === result.data.username &&
-        u.password === result.data.password &&
-        u.role === result.data.role,
-    );
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userName: result.data.username, // ✅ API يحتاج userName
+          password: result.data.password,
+          role: result.data.role, // ✅ نرسل المسار /doctor... والـ API بيحوّله
+        }),
+      });
 
-    if (!user) {
-      setGeneralError("Invalid username, password, or role type");
-      return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        setGeneralError(data?.message || "Login failed");
+        return;
+      }
+
+      // نخزن بيانات المستخدم (اختياري لكن مفيد)
+      localStorage.setItem("vismed_user", JSON.stringify(data.user));
+      localStorage.setItem("userRole", result.data.role);
+
+      // توجيه حسب الدور المختار
+      router.push(result.data.role);
+    } catch (err) {
+      setGeneralError("Server error");
     }
-    localStorage.setItem("userRole", user.role);
-
-    router.push(user.role);
   };
 
   return (
     <div className="login-page">
       <Link href={"/viewimg"} className="absolute top-0 left-0 m-2">
-      go to Image
+        go to Image
       </Link>
 
       <main className="login-card">
-        <div className="brand-login">
+        <div
+          className="brand"
+          style={{
+            marginTop: "-12px",
+            marginBottom: "0px",
+          }}
+        >
           <Image
             src="/logo.png"
             alt="VisMed3D"
@@ -100,12 +99,28 @@ const Login = () => {
           />
         </div>
 
-        <h1 className="title-login">
+        <h1
+          className="title"
+          style={{
+            marginTop: "4px",
+            marginBottom: "20px",
+          }}
+        >
           WELCOME BACK
         </h1>
 
         {generalError && (
-          <div className="error-message">
+          <div
+            style={{
+              padding: "10px 16px",
+              backgroundColor: "#dc3545",
+              borderRadius: "6px",
+              marginBottom: "20px",
+              color: "#ffffff",
+              fontSize: "13px",
+              textAlign: "center",
+            }}
+          >
             {generalError}
           </div>
         )}
@@ -129,6 +144,7 @@ const Login = () => {
                 <option value="" disabled>
                   Select Role
                 </option>
+
                 {LOG_IN.map((link) => (
                   <option key={link.key} value={link.href}>
                     {link.label}

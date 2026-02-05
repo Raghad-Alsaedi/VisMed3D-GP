@@ -3,7 +3,7 @@
 **VisMed3D** is an interactive platform for **3D visualization of medical imaging data** built using **WebGL**.  
 The project enables intuitive exploration of complex medical datasets—such as CT scan—directly in the browser, supporting enhanced clinical insight.
 
-![VisMed3D Preview](data/img/VisMed3D.jpeg)
+![VisMed3D Preview](public/volumeRendering/data/img/VisMed3D.jpeg)
 
 ## Getting Started
 
