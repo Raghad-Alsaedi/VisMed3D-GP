@@ -224,7 +224,7 @@
 }
 
 .profile-name-desktop {
-  @apply text-lg font-bold text-white mb-1;
+  @apply text-lg font-bold text-white mb-4;
 }
 
 .profile-role-subtitle {
@@ -299,12 +299,12 @@
 
 /* ============================================
    DATA TABLES
-   Used in: DoctorPatients.jsx, HomeDoctor.jsx, HomeTech.jsx
+   Used in: HomeProfile.tsx
    ============================================ */
 
 /* Table card wrapper */
 .data-table-card {
-  @apply py-4 md:py-5 px-4 md:px-6 rounded-[20px] border border-[#FFFFFF]/30 bg-[#040A16] shadow-sm mb-6 md:mb-8;
+  @apply py-4 md:py-5 px-4 md:px-6 rounded-[20px] border border-[#FFFFFF]/30 bg-[#040A16] mb-6 md:mb-8;
 }
 
 .data-table-title {
@@ -957,7 +957,7 @@
 }
 
 .patients-card-table {
-  @apply border border-white/30 rounded-2xl sm:rounded-[20px] py-6 px-5 sm:py-7 sm:px-6 lg:flex-[7] lg:order-1;
+  @apply border border-white/30 rounded-2xl sm:rounded-[20px] py-6 px-5 sm:py-7 sm:px-6 lg:flex-[7] lg:order-1 ;
   background: var(--color-bg-primary);
 }
 
@@ -998,7 +998,7 @@
 }
 
 .patients-table-wrapper {
-  @apply overflow-x-auto border border-white/30 rounded-lg;
+  @apply overflow-x-auto border border-white/30 rounded-lg ; 
 }
 
 .table-head-row {
@@ -1006,15 +1006,15 @@
 }
 
 .table-cell-head {
-  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg font-medium text-center whitespace-nowrap;
+  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg font-medium text-center whitespace-nowrap ;
 }
 
 .table-row {
-  @apply border-b border-white/20;
+  @apply border-b border-white/20 hover:bg-[#0D1A2D];
 }
 
 .table-cell {
-  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg text-center whitespace-nowrap;
+  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg text-center whitespace-nowrap ;
 }
 
 .table-link {

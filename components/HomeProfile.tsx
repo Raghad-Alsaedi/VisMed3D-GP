@@ -13,7 +13,6 @@ import {
 const HomeProfile = () => {
   const pathname = usePathname();
   
-  // 👇 نفس منطق SideBar
   const isDoctor = pathname.startsWith("/doctor");
 
   return (

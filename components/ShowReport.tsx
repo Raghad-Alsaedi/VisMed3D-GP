@@ -1,5 +1,6 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import Report from "./Report";
 import Footer from "./Footer";
 import {
@@ -96,14 +97,45 @@ const MedicalReportDocument = ({ reportText }: { reportText: string }) => {
 
 const ShowReport = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // ✅ جديد: نجيب study_id من URL
+  const studyId = searchParams.get("study_id");
+  
+  // ✅ جديد: state للتقرير
+  const [reportText, setReportText] = useState("");
 
+  // ✅ جديد: نجيب التقرير من Database
+  useEffect(() => {
+    const fetchReport = async () => {
+      if (!studyId) return;
+      
+      try {
+        const response = await fetch(`/api/reports?study_id=${studyId}`);
+        const data = await response.json();
+        
+        if (data.status === "ok" && data.report) {
+          setReportText(data.report.reportText || "");
+        }
+      } catch (error) {
+        console.error("Error fetching report:", error);
+      }
+    };
+    
+    fetchReport();
+  }, [studyId]);
+
+  // ✅ تعديل: بدل localStorage، نستخدم reportText من state
   const downloadPDF = async () => {
-    const reportText = localStorage.getItem("report") || "";
+    if (!reportText) {
+      alert("No report available to download");
+      return;
+    }
 
     const blob = await pdf(
       <MedicalReportDocument reportText={reportText} />,
     ).toBlob();
-    saveAs(blob, "medical-report.pdf");
+    saveAs(blob, `medical-report-study-${studyId}.pdf`);
   };
 
   return (
