@@ -1,4 +1,5 @@
 import { Camera } from './Common/Camera.js';
+import { loadCTheadVolume } from './loadCThead.js';
 
 // ================= VOLUME LOADER =================
 async function loadVolume(url, width, height, depth) {
@@ -176,10 +177,16 @@ gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
 gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
 //=================================================
 ///===================================
-const volume = await loadVolume(
-  "/volumeRendering/data/volume/head256x256x109",   // غيري الاسم حسب ملفك
-  256, 256, 109                        // غيري الأبعاد حسب الفوليوم
-);
+
+const DATASET = "CTHEAD"; // غيريها لـ "CURRENT" وقت تبين الحالي
+
+let volume;
+console.log("MAIN REACHED - ABOUT TO LOAD CTHEAD");
+if (DATASET === "CTHEAD") {
+  volume = await loadCTheadVolume();
+} else {
+  volume = await loadVolume("/volumeRendering/data/volume/head256x256x109", 256, 256, 109);
+}
 
 //const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك
  // 183, 255, 125);
