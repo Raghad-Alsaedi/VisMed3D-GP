@@ -7,10 +7,10 @@ const Report = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
-  // ✅ جديد: نجيب study_id من URL
-  const studyId = searchParams.get("study_id");
+  // ✅ تغيير: من study_id إلى accession_id
+  const accessionId = searchParams.get("accession_id");
   
-  // ✅ جديد: متغيرات للـ auto-save
+  // ✅ متغيرات للـ auto-save
   const [lastSavedText, setLastSavedText] = useState("");
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
@@ -18,13 +18,13 @@ const Report = () => {
   const isPatientView = pathname === "/patients/reportPatients";
   const isDoctorView = pathname === "/doctor/writingReport";
 
-  // ✅ تعديل: بدل localStorage، نجيب من API
+  // ✅ جلب التقرير من API
   useEffect(() => {
     const fetchReport = async () => {
-      if (!studyId) return;
+      if (!accessionId) return;
       
       try {
-        const response = await fetch(`/api/reports?study_id=${studyId}`);
+        const response = await fetch(`/api/reports?accession_id=${accessionId}`);
         const data = await response.json();
         
         if (data.status === "ok" && data.report) {
@@ -42,12 +42,12 @@ const Report = () => {
     };
     
     fetchReport();
-  }, [studyId]);
+  }, [accessionId]);
 
-  // ✅ جديد: دالة الحفظ للـ API
+  // ✅ دالة الحفظ للـ API
   const saveToDatabase = async () => {
     if (isSavingRef.current) return;
-    if (!studyId) return;
+    if (!accessionId) return;
     if (reportText === lastSavedText) return;
     
     try {
@@ -57,8 +57,8 @@ const Report = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          study_id: studyId,
-          report_text: reportText,
+          accession_id: accessionId,
+          report_content: reportText,
         }),
       });
       
@@ -75,7 +75,7 @@ const Report = () => {
     }
   };
 
-  // ✅ تعديل: بدل localStorage، نحفظ في Database بعد 10 ثواني
+  // ✅ Auto-save بعد 10 ثواني
   useEffect(() => {
     if (isDoctorView) {
       // Clear previous timer
@@ -96,7 +96,7 @@ const Report = () => {
     }
   }, [reportText, isDoctorView]);
 
-  // ✅ جديد: حفظ عند الخروج من textarea (onBlur)
+  // ✅ حفظ عند الخروج من textarea (onBlur)
   const handleBlur = () => {
     if (isDoctorView && reportText !== lastSavedText) {
       saveToDatabase();

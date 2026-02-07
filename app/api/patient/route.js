@@ -12,25 +12,25 @@ export async function GET(req) {
       );
     }
 
-    console.log("🔍 Fetching patient data for user_id:", userId);
+    console.log("Fetching patient data for user_id:", userId);
 
+    // ✅ استعلام معدّل بناءً على الجداول الجديدة
     const [rows] = await db.query(
       `
       SELECT 
-        u.id,
-        u.firstName,
-        u.middleName,
-        u.lastName,
-        u.gender,
-        u.phone,
-        u.profile_picture,
-        p.patient_code,
-        p.dob,
-        TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) AS age
+        u.user_id,
+        p.first_name,
+        p.middle_name,
+        p.last_name,
+        p.gender,
+        p.phone,
+        p.profile_picture,
+        p.national_id,
+        p.date_of_birth,
+        TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) AS age
       FROM users u
-      JOIN patient_accounts pa ON pa.user_id = u.id
-      JOIN patients p ON p.id = pa.patient_id
-      WHERE u.id = ?
+      JOIN patients p ON p.patient_id = u.patient_id
+      WHERE u.user_id = ? AND u.role = 'patient'
       LIMIT 1
       `,
       [userId]
@@ -45,36 +45,37 @@ export async function GET(req) {
 
     const patient = rows[0];
 
+    // ✅ جلب الفحوصات (studies)
     const [studies] = await db.query(
       `
       SELECT 
-        s.id,
-        s.created_at,
-        s.body_part,
-        CONCAT(doctor.firstName, ' ', doctor.lastName) AS doctor_name
-      FROM studies s
-      JOIN patient_accounts pa ON pa.patient_id = s.patient_id
-      JOIN reports r ON r.study_id = s.id
-      JOIN users doctor ON doctor.id = r.doctor_id
-      WHERE pa.user_id = ?
-      ORDER BY s.created_at DESC
+        a.accession_id AS id,
+        a.exam_date AS created_at,
+        a.body_part,
+        CONCAT(d.first_name, ' ', d.last_name) AS doctor_name
+      FROM accession a
+      JOIN reports r ON r.accession_id = a.accession_id
+      JOIN doctors d ON d.doctor_id = r.doctor_id
+      JOIN users u ON u.patient_id = a.patient_id
+      WHERE u.user_id = ?
+      ORDER BY a.exam_date DESC
       `,
       [userId]
     );
 
-    console.log("✅ Patient data found:", patient);
-    console.log("✅ Studies found:", studies.length);
+    console.log("Patient data found:", patient);
+    console.log("Studies found:", studies.length);
 
     return NextResponse.json({
       status: "ok",
       patient: {
-        id: patient.id,
-        fullName: `${patient.firstName} ${patient.middleName || ""} ${patient.lastName}`.trim(),
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        nationalId: patient.patient_code,
+        id: patient.user_id,
+        fullName: `${patient.first_name} ${patient.middle_name || ""} ${patient.last_name}`.trim(),
+        firstName: patient.first_name,
+        lastName: patient.last_name,
+        nationalId: patient.national_id,
         age: patient.age,
-        gender: patient.gender === "M" ? "Male" : "Female",
+        gender: patient.gender === "male" ? "Male" : "Female",
         phone: patient.phone,
         profilePicture: patient.profile_picture,
       },

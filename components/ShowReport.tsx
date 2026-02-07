@@ -99,43 +99,76 @@ const ShowReport = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // ✅ جديد: نجيب study_id من URL
-  const studyId = searchParams.get("study_id");
+  // ✅ تغيير: من study_id إلى accession_id
+  const accessionId = searchParams.get("accession_id");
   
-  // ✅ جديد: state للتقرير
+  // ✅ state للتقرير
   const [reportText, setReportText] = useState("");
 
-  // ✅ جديد: نجيب التقرير من Database
+  // 🔍 DEBUG: Log when component renders
+  console.log("🔄 DEBUG: ShowReport component rendered");
+  console.log("🆔 DEBUG: Current accession_id:", accessionId || "NOT FOUND");
+  console.log("📄 DEBUG: Current reportText length:", reportText.length);
+
+  // ✅ جلب التقرير من Database
   useEffect(() => {
     const fetchReport = async () => {
-      if (!studyId) return;
+      // 🔍 DEBUG: Check if accession_id exists
+      if (!accessionId) {
+        console.log("❌ DEBUG: No accession_id found in URL");
+        return;
+      }
+      
+      console.log("🔍 DEBUG: Fetching report for accession_id:", accessionId);
       
       try {
-        const response = await fetch(`/api/reports?study_id=${studyId}`);
+        const response = await fetch(`/api/reports?accession_id=${accessionId}`);
+        
+        console.log("📡 DEBUG: Response status:", response.status);
+        
         const data = await response.json();
         
+        console.log("📦 DEBUG: API Response data:", data);
+        
         if (data.status === "ok" && data.report) {
+          console.log("✅ DEBUG: Report found!");
+          console.log("📝 DEBUG: Report text length:", data.report.reportText?.length || 0);
+          console.log("👨‍⚕️ DEBUG: Doctor name:", data.report.doctorName);
+          console.log("👤 DEBUG: Patient name:", data.report.patientName);
+          console.log("📅 DEBUG: Exam date:", data.report.examDate);
+          
           setReportText(data.report.reportText || "");
+        } else {
+          console.log("⚠️ DEBUG: No report found in response");
+          console.log("💭 DEBUG: Possible reasons:");
+          console.log("   - Report not created yet");
+          console.log("   - Wrong accession_id");
+          console.log("   - Database issue");
         }
       } catch (error) {
-        console.error("Error fetching report:", error);
+        console.error("💥 DEBUG: Error fetching report:", error);
       }
     };
     
     fetchReport();
-  }, [studyId]);
+  }, [accessionId]);
 
-  // ✅ تعديل: بدل localStorage، نستخدم reportText من state
+  // ✅ تحميل PDF
   const downloadPDF = async () => {
     if (!reportText) {
+      console.log("⚠️ DEBUG: Cannot download - no report text available");
       alert("No report available to download");
       return;
     }
 
+    console.log("📥 DEBUG: Starting PDF download for accession:", accessionId);
+    
     const blob = await pdf(
       <MedicalReportDocument reportText={reportText} />,
     ).toBlob();
-    saveAs(blob, `medical-report-study-${studyId}.pdf`);
+    saveAs(blob, `medical-report-accession-${accessionId}.pdf`);
+    
+    console.log("✅ DEBUG: PDF download initiated");
   };
 
   return (

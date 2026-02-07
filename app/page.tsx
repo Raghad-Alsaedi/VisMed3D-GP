@@ -1,4 +1,3 @@
-import HomeDoctor from "@/components/HomeDoctor";
 import Login from "@/components/Login";
 import Patients from "@/components/Patients";
 

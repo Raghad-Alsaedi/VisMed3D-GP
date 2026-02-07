@@ -4,10 +4,10 @@ import { db } from "@/database/db.js";
 // POST - Auto-save report (UPSERT logic)
 export async function POST(req) {
   try {
-    // Get doctor_id from cookies (authenticated user)
-    const doctorId = req.cookies.get("user_id")?.value;
+    // Get user_id from cookies (authenticated user)
+    const userId = req.cookies.get("user_id")?.value;
 
-    if (!doctorId) {
+    if (!userId) {
       return NextResponse.json(
         { status: "error", message: "Not authenticated" },
         { status: 401 }
@@ -15,22 +15,48 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { study_id, report_text } = body;
+    const { accession_id, report_content } = body;
 
     // Validation
-    if (!study_id || report_text === undefined) {
+    if (!accession_id || report_content === undefined) {
       return NextResponse.json(
-        { status: "error", message: "study_id and report_text are required" },
+        { status: "error", message: "accession_id and report_content are required" },
         { status: 400 }
       );
     }
 
-    console.log("💾 Auto-saving report for study_id:", study_id);
+    console.log("💾 Auto-saving report for accession_id:", accession_id);
 
-    // Check if report already exists
+    // 1️⃣ Get doctor info from users + doctors
+    const [doctorRows] = await db.query(
+      `
+      SELECT 
+        u.user_id,
+        u.first_name,
+        u.last_name,
+        d.doctor_id
+      FROM users u
+      JOIN doctors d ON d.doctor_id = u.doctor_id
+      WHERE u.user_id = ? AND u.role = 'doctor'
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    if (!doctorRows || doctorRows.length === 0) {
+      return NextResponse.json(
+        { status: "error", message: "Doctor not found" },
+        { status: 404 }
+      );
+    }
+
+    const doctor = doctorRows[0];
+    const doctorName = `${doctor.first_name} ${doctor.last_name}`;
+
+    // 2️⃣ Check if report already exists
     const [existing] = await db.query(
-      `SELECT id FROM reports WHERE study_id = ? LIMIT 1`,
-      [study_id]
+      `SELECT report_id FROM reports WHERE accession_id = ? AND doctor_id = ? LIMIT 1`,
+      [accession_id, doctor.doctor_id]
     );
 
     if (existing.length > 0) {
@@ -38,13 +64,13 @@ export async function POST(req) {
       await db.query(
         `
         UPDATE reports 
-        SET report_text = ?, updated_at = NOW()
-        WHERE study_id = ?
+        SET report_content = ?, updated_at = NOW()
+        WHERE accession_id = ? AND doctor_id = ?
         `,
-        [report_text, study_id]
+        [report_content, accession_id, doctor.doctor_id]
       );
 
-      console.log("✅ Report UPDATED for study_id:", study_id);
+      console.log("✅ Report UPDATED for accession_id:", accession_id);
 
       return NextResponse.json({
         status: "ok",
@@ -55,13 +81,13 @@ export async function POST(req) {
       // INSERT new report
       const [result] = await db.query(
         `
-        INSERT INTO reports (study_id, doctor_id, report_text, created_at)
-        VALUES (?, ?, ?, NOW())
+        INSERT INTO reports (accession_id, doctor_id, doctor_name, report_content, created_at)
+        VALUES (?, ?, ?, ?, NOW())
         `,
-        [study_id, doctorId, report_text]
+        [accession_id, doctor.doctor_id, doctorName, report_content]
       );
 
-      console.log("✅ New report CREATED for study_id:", study_id);
+      console.log("✅ New report CREATED for accession_id:", accession_id);
 
       return NextResponse.json({
         status: "ok",

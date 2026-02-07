@@ -24,18 +24,20 @@ export async function POST(req) {
 
     console.log("🔍 Querying database for:", userName);
 
+    // ✅ استعلام من جدول users الموحد
     const [rows] = await db.query(
       `
       SELECT
-        u.id,
-        u.userName,
-        u.password_hash,
-        u.is_active,
-        r.name AS role_name
-      FROM users u
-      JOIN user_roles ur ON ur.user_id = u.id
-      JOIN roles r ON r.id = ur.role_id
-      WHERE u.userName = ?
+        user_id,
+        username,
+        password_hash,
+        role,
+        is_active,
+        doctor_id,
+        patient_id,
+        technician_id
+      FROM users
+      WHERE username = ?
       LIMIT 1
       `,
       [userName]
@@ -43,7 +45,7 @@ export async function POST(req) {
 
     console.log("📊 Rows found:", rows.length);
     if (rows.length > 0) {
-      console.log("👤 User role from DB:", rows[0].role_name);
+      console.log("👤 User role from DB:", rows[0].role);
     }
 
     if (!rows.length) {
@@ -55,27 +57,28 @@ export async function POST(req) {
 
     const user = rows[0];
 
+    // ✅ التحقق من تفعيل الحساب
     if (!user.is_active) {
       return NextResponse.json(
-        { status: "error", message: "User is not active" },
+        { status: "error", message: "User account is disabled" },
         { status: 403 }
       );
     }
 
+    // ✅ مطابقة الدور
     const roleMap = {
       "/doctor": "doctor",
       "/patients": "patient",
       "/radio_tech": "technician",
-      "/admin": "admin",
     };
 
     if (role) {
       const expected = roleMap[role] || role;
-      console.log("🔐 Role check - Expected:", expected, "| Got:", user.role_name);
+      console.log("🔐 Role check - Expected:", expected, "| Got:", user.role);
       
-      if (expected !== user.role_name) {
+      if (expected !== user.role) {
         return NextResponse.json(
-          { status: "error", message: "Role mismatch" },
+          { status: "error", message: "Role mismatch - Please select the correct role" },
           { status: 403 }
         );
       }
@@ -96,27 +99,27 @@ export async function POST(req) {
 
     console.log("✅ Login successful");
 
-    // ✨✨✨ الإضافة الوحيدة: تغيير NextResponse.json إلى response ✨✨✨
     const response = NextResponse.json({
       status: "ok",
       user: {
-        id: user.id,
-        userName: user.userName,
-        role: user.role_name,
+        id: user.user_id,
+        userName: user.username,
+        role: user.role,
+        doctor_id: user.doctor_id,
+        patient_id: user.patient_id,
+        technician_id: user.technician_id,
       },
     });
 
-    // ✨✨✨ إضافة: حفظ user_id في Cookie ✨✨✨
-    response.cookies.set("user_id", user.id.toString(), {
+    response.cookies.set("user_id", user.user_id.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // أسبوع
+      maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
 
-    // ✨✨✨ إضافة: حفظ role في Cookie ✨✨✨
-    response.cookies.set("user_role", user.role_name, {
+    response.cookies.set("user_role", user.role, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
