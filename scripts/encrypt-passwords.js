@@ -26,13 +26,16 @@ const users = [
   for (const user of users) {
     const hash = await bcrypt.hash(user.password, SALT_ROUNDS);
     
-    // ✅ تحديث جدول users مع التأكد من username و role
-    await db.query(
+    const [result] = await db.query(
       "UPDATE users SET password_hash = ? WHERE username = ? AND role = ?",
       [hash, user.userName, user.role]
     );
     
-    console.log(`✅ ${user.userName} (${user.role}) → ${user.password}`);
+    if (result.affectedRows > 0) {
+      console.log(`✅ ${user.userName} (${user.role}) → ${user.password}`);
+    } else {
+      console.log(`❌ ${user.userName} NOT FOUND in database!`);
+    }
   }
 
   console.log("\n🎉 Done successfully!");

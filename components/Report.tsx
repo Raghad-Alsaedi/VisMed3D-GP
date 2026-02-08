@@ -7,10 +7,8 @@ const Report = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
-  // ✅ تغيير: من study_id إلى accession_id
   const accessionId = searchParams.get("accession_id");
   
-  // ✅ متغيرات للـ auto-save
   const [lastSavedText, setLastSavedText] = useState("");
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
@@ -18,7 +16,7 @@ const Report = () => {
   const isPatientView = pathname === "/patients/reportPatients";
   const isDoctorView = pathname === "/doctor/writingReport";
 
-  // ✅ جلب التقرير من API
+  // ✅ جلب النص فقط عند التحميل
   useEffect(() => {
     const fetchReport = async () => {
       if (!accessionId) return;
@@ -31,24 +29,24 @@ const Report = () => {
           const text = data.report.reportText || "";
           setReportText(text);
           setLastSavedText(text);
-        } else {
-          setReportText("");
-          setLastSavedText("");
         }
       } catch (error) {
         console.error("Error fetching report:", error);
-        setReportText("");
       }
     };
     
     fetchReport();
   }, [accessionId]);
 
-  // ✅ دالة الحفظ للـ API
-  const saveToDatabase = async () => {
-    if (isSavingRef.current) return;
-    if (!accessionId) return;
-    if (reportText === lastSavedText) return;
+  // ✅ حفظ النص في قاعدة البيانات
+  const saveToDatabase = async (text?: string) => {
+    if (isSavingRef.current || !accessionId) return;
+    
+    const textToSave = text !== undefined ? text : reportText;
+    
+    if (textToSave === lastSavedText) {
+      return;
+    }
     
     try {
       isSavingRef.current = true;
@@ -58,35 +56,33 @@ const Report = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accession_id: accessionId,
-          report_content: reportText,
+          report_content: textToSave,
         }),
       });
       
       const data = await response.json();
       
       if (data.status === "ok") {
-        setLastSavedText(reportText);
-        console.log("✅ Report saved");
+        setLastSavedText(textToSave);
+        console.log("Text report saved successfully");
       }
     } catch (error) {
-      console.error("💥 Save error:", error);
+      console.error("Save error:", error);
     } finally {
       isSavingRef.current = false;
     }
   };
 
-  // ✅ Auto-save بعد 10 ثواني
+  // ✅ Auto-save للنص كل 10 ثواني
   useEffect(() => {
     if (isDoctorView) {
-      // Clear previous timer
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       
-      // Set new timer for 10 seconds
       saveTimeoutRef.current = setTimeout(() => {
         saveToDatabase();
-      }, 10000); // 10 seconds
+      }, 10000);
       
       return () => {
         if (saveTimeoutRef.current) {
@@ -96,7 +92,6 @@ const Report = () => {
     }
   }, [reportText, isDoctorView]);
 
-  // ✅ حفظ عند الخروج من textarea (onBlur)
   const handleBlur = () => {
     if (isDoctorView && reportText !== lastSavedText) {
       saveToDatabase();

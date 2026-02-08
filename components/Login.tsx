@@ -24,7 +24,7 @@ const Login = () => {
     const formData = new FormData(e.currentTarget);
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
-    const role = formData.get("role") as string;
+    const role = formData.get("role") as string; // هنا عندك المسار مثل /doctor
 
     const result = loginSchema.safeParse({ username, password, role });
 
@@ -51,9 +51,9 @@ const Login = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userName: result.data.username,
+          userName: result.data.username, // ✅ API يحتاج userName
           password: result.data.password,
-          role: result.data.role,
+          role: result.data.role, // ✅ نرسل المسار /doctor... والـ API بيحوّله
         }),
       });
 
@@ -64,9 +64,9 @@ const Login = () => {
         return;
       }
 
-      // نخزن بيانات المستخدم
+      // نخزن بيانات المستخدم (اختياري لكن مفيد)
       localStorage.setItem("vismed_user", JSON.stringify(data.user));
-      localStorage.setItem("userRole", data.user.role);
+      localStorage.setItem("userRole", result.data.role);
 
       // توجيه حسب الدور المختار
       router.push(result.data.role);

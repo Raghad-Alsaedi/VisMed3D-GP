@@ -30,10 +30,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#1e40af",
   },
-  line: {
-    borderBottom: "0.5pt solid #000",
-    marginVertical: 10,
-  },
   date: {
     fontSize: 10,
     color: "#475569",
@@ -63,7 +59,11 @@ const styles = StyleSheet.create({
   },
 });
 
-const MedicalReportDocument = ({ reportText }: { reportText: string }) => {
+const MedicalReportDocument = ({ 
+  reportText 
+}: { 
+  reportText: string;
+}) => {
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -80,8 +80,7 @@ const MedicalReportDocument = ({ reportText }: { reportText: string }) => {
         <Text style={styles.date}>Date: {today}</Text>
 
         <Text style={styles.sectionTitle}>Report Details:</Text>
-
-        <Text style={styles.content}>{reportText}</Text>
+        <Text style={styles.content}>{reportText || 'No report content'}</Text>
 
         <Text
           style={styles.footer}
@@ -99,108 +98,82 @@ const ShowReport = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // ✅ تغيير: من study_id إلى accession_id
   const accessionId = searchParams.get("accession_id");
   
-  // ✅ state للتقرير
   const [reportText, setReportText] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // 🔍 DEBUG: Log when component renders
-  console.log("🔄 DEBUG: ShowReport component rendered");
-  console.log("🆔 DEBUG: Current accession_id:", accessionId || "NOT FOUND");
-  console.log("📄 DEBUG: Current reportText length:", reportText.length);
-
-  // ✅ جلب التقرير من Database
+  // ✅ جلب التقرير النصي فقط من قاعدة البيانات
   useEffect(() => {
     const fetchReport = async () => {
-      // 🔍 DEBUG: Check if accession_id exists
       if (!accessionId) {
-        console.log("❌ DEBUG: No accession_id found in URL");
+        setLoading(false);
         return;
       }
       
-      console.log("🔍 DEBUG: Fetching report for accession_id:", accessionId);
-      
       try {
+        setLoading(true);
         const response = await fetch(`/api/reports?accession_id=${accessionId}`);
-        
-        console.log("📡 DEBUG: Response status:", response.status);
-        
         const data = await response.json();
         
-        console.log("📦 DEBUG: API Response data:", data);
-        
         if (data.status === "ok" && data.report) {
-          console.log("✅ DEBUG: Report found!");
-          console.log("📝 DEBUG: Report text length:", data.report.reportText?.length || 0);
-          console.log("👨‍⚕️ DEBUG: Doctor name:", data.report.doctorName);
-          console.log("👤 DEBUG: Patient name:", data.report.patientName);
-          console.log("📅 DEBUG: Exam date:", data.report.examDate);
-          
           setReportText(data.report.reportText || "");
-        } else {
-          console.log("⚠️ DEBUG: No report found in response");
-          console.log("💭 DEBUG: Possible reasons:");
-          console.log("   - Report not created yet");
-          console.log("   - Wrong accession_id");
-          console.log("   - Database issue");
         }
-      } catch (error) {
-        console.error("💥 DEBUG: Error fetching report:", error);
+      } catch (err) {
+        console.error("Error fetching report:", err);
+      } finally {
+        setLoading(false);
       }
     };
     
     fetchReport();
   }, [accessionId]);
 
-  // ✅ تحميل PDF
   const downloadPDF = async () => {
     if (!reportText) {
-      console.log("⚠️ DEBUG: Cannot download - no report text available");
-      alert("No report available to download");
+      alert("No report available");
       return;
     }
 
-    console.log("📥 DEBUG: Starting PDF download for accession:", accessionId);
-    
-    const blob = await pdf(
-      <MedicalReportDocument reportText={reportText} />,
-    ).toBlob();
-    saveAs(blob, `medical-report-accession-${accessionId}.pdf`);
-    
-    console.log("✅ DEBUG: PDF download initiated");
+    try {
+      const blob = await pdf(
+        <MedicalReportDocument 
+          reportText={reportText}
+        />
+      ).toBlob();
+      
+      saveAs(blob, `medical-report-${accessionId}.pdf`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("PDF Error:", err);
+      alert("Error generating PDF: " + msg);
+    }
   };
 
   return (
     <div className="page-container">
       <header className="show-report-header">
-        <button
-          className="btn-back"
-          onClick={() => router.back()}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fill="currentColor"
-              d="m7.825 13l4.9 4.9q.3.3.288.7t-.313.7q-.3.275-.7.288t-.7-.288l-6.6-6.6q-.15-.15-.213-.325T4.426 12t.063-.375t.212-.325l6.6-6.6q-.275-.275.688-.275t.712.275q.3.3.3.713t-.3.712L7.825 11H19q.425 0 .713.288T20 12t-.288.713T19 13z"
-            />
+        <button className="btn-back" onClick={() => router.back()}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor" d="m7.825 13l4.9 4.9q.3.3.288.7t-.313.7q-.3.275-.7.288t-.7-.288l-6.6-6.6q-.15-.15-.213-.325T4.426 12t.063-.375t.212-.325l6.6-6.6q-.275-.275.688-.275t.712.275q.3.3.3.713t-.3.712L7.825 11H19q.425 0 .713.288T20 12t-.288.713T19 13z"/>
           </svg>
         </button>
         <button
           className="btn-download"
           onClick={downloadPDF}
+          disabled={loading || !reportText}
         >
-          Download
+          {loading ? "Loading..." : "Download PDF"}
         </button>
       </header>
 
       <div className="content-card">
         <div className="report-inner-card">
-          <Report />
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>
+          ) : (
+            <Report />
+          )}
         </div>
       </div>
 

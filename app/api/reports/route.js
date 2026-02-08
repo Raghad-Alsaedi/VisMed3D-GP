@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
 
-// GET - Fetch report by accession_id
+// GET - Fetch report by accession_id (Text data only)
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,9 +14,7 @@ export async function GET(req) {
       );
     }
 
-    console.log("🔍 Fetching report for accession_id:", accessionId);
-
-    // Fetch report with doctor, patient, and accession info
+    // ✅ تم حذف حقل screenshot من الاستعلام لضمان خلو التقرير من الصور حالياً
     const [rows] = await db.query(
       `
       SELECT 
@@ -46,17 +44,14 @@ export async function GET(req) {
     );
 
     if (!rows.length) {
-      // No report found - return empty
       return NextResponse.json({
         status: "ok",
         report: null,
-        message: "No report found for this accession"
+        message: "No report found"
       });
     }
 
     const report = rows[0];
-
-    console.log("✅ Report found:", report);
 
     return NextResponse.json({
       status: "ok",
@@ -71,12 +66,13 @@ export async function GET(req) {
         modality: report.modality,
         bodyPart: report.body_part,
         reportText: report.report_content,
+        // تم إزالة حقل screenshot من هنا أيضاً
         createdAt: report.created_at,
         updatedAt: report.updated_at,
       },
     });
   } catch (err) {
-    console.error("💥 GET REPORT ERROR:", err);
+    console.error("GET REPORT ERROR:", err);
     return NextResponse.json(
       { status: "error", message: "Server error" },
       { status: 500 }

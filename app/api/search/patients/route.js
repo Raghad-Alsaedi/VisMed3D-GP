@@ -20,9 +20,8 @@ export async function GET(req) {
       );
     }
 
-    console.log("🔍 Searching for patients with query:", query);
+    console.log("Searching for patients with query:", query);
 
-    // 1️⃣ تحديد نوع المستخدم (دكتور أو فني)
     const [userRows] = await db.query(
       `SELECT role, doctor_id, technician_id FROM users WHERE user_id = ?`,
       [userId]
@@ -38,10 +37,8 @@ export async function GET(req) {
     const user = userRows[0];
     let patients = [];
 
-    // 2️⃣ تحديد نوع البحث (رقم أو حرف)
     const isNumeric = /^\d/.test(query);
 
-    // 3️⃣ البحث حسب نوع المستخدم
     if (user.role === "doctor" && user.doctor_id) {
       if (isNumeric) {
         [patients] = await db.query(
@@ -125,7 +122,7 @@ export async function GET(req) {
     });
 
   } catch (err) {
-    console.error("💥 SEARCH ERROR:", err);
+    console.error("SEARCH ERROR:", err);
     return NextResponse.json(
       { status: "error", message: "Server error" },
       { status: 500 }

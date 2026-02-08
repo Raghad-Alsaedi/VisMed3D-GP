@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
 
-// POST - Auto-save report (UPSERT logic)
+// POST - Auto-save report (Text Only)
 export async function POST(req) {
   try {
-    // Get user_id from cookies (authenticated user)
     const userId = req.cookies.get("user_id")?.value;
 
     if (!userId) {
@@ -17,7 +16,6 @@ export async function POST(req) {
     const body = await req.json();
     const { accession_id, report_content } = body;
 
-    // Validation
     if (!accession_id || report_content === undefined) {
       return NextResponse.json(
         { status: "error", message: "accession_id and report_content are required" },
@@ -25,9 +23,7 @@ export async function POST(req) {
       );
     }
 
-    console.log("💾 Auto-saving report for accession_id:", accession_id);
-
-    // 1️⃣ Get doctor info from users + doctors
+    // ✅ جلب معلومات الدكتور (لربط التقرير بالهوية الصحيحة)
     const [doctorRows] = await db.query(
       `
       SELECT 
@@ -53,32 +49,31 @@ export async function POST(req) {
     const doctor = doctorRows[0];
     const doctorName = `${doctor.first_name} ${doctor.last_name}`;
 
-    // 2️⃣ Check if report already exists
+    // ✅ التحقق من وجود تقرير مسبق لنفس الفحص والطبيب
     const [existing] = await db.query(
       `SELECT report_id FROM reports WHERE accession_id = ? AND doctor_id = ? LIMIT 1`,
       [accession_id, doctor.doctor_id]
     );
 
     if (existing.length > 0) {
-      // UPDATE existing report
+      // ✅ تحديث المحتوى النصي فقط (تم استبعاد حقل screenshot تماماً)
       await db.query(
         `
         UPDATE reports 
-        SET report_content = ?, updated_at = NOW()
+        SET report_content = ?, 
+            updated_at = NOW()
         WHERE accession_id = ? AND doctor_id = ?
         `,
         [report_content, accession_id, doctor.doctor_id]
       );
 
-      console.log("✅ Report UPDATED for accession_id:", accession_id);
-
       return NextResponse.json({
         status: "ok",
-        message: "Report updated successfully",
+        message: "Report text updated successfully",
         action: "update",
       });
     } else {
-      // INSERT new report
+      // ✅ إنشاء تقرير نصي جديد
       const [result] = await db.query(
         `
         INSERT INTO reports (accession_id, doctor_id, doctor_name, report_content, created_at)
@@ -87,17 +82,15 @@ export async function POST(req) {
         [accession_id, doctor.doctor_id, doctorName, report_content]
       );
 
-      console.log("✅ New report CREATED for accession_id:", accession_id);
-
       return NextResponse.json({
         status: "ok",
-        message: "Report created successfully",
+        message: "Report text created successfully",
         action: "insert",
         reportId: result.insertId,
       });
     }
   } catch (err) {
-    console.error("💥 AUTOSAVE ERROR:", err);
+    console.error("AUTOSAVE ERROR:", err);
     return NextResponse.json(
       { status: "error", message: "Server error" },
       { status: 500 }

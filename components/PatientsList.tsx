@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Search, Upload_Action, Img } from "@/components/icons";
 import { BsChevronRight } from "react-icons/bs";
@@ -42,14 +42,31 @@ const PatientList = () => {
   const isDoctor = pathname.startsWith("/doctor");
   const isTech = pathname.startsWith("/radio_tech");
 
-  // 🔍 البحث عن المرضى
+  useEffect(() => {
+    const savedSearchQuery = sessionStorage.getItem("patientList_searchQuery");
+    const savedPatients = sessionStorage.getItem("patientList_patients");
+    const savedSelectedPatient = sessionStorage.getItem("patientList_selectedPatient");
+    const savedAccessions = sessionStorage.getItem("patientList_accessions");
+    const savedShowDetails = sessionStorage.getItem("patientList_showDetails");
+
+    if (savedSearchQuery) setSearchQuery(savedSearchQuery);
+    if (savedPatients) setPatients(JSON.parse(savedPatients));
+    if (savedSelectedPatient) setSelectedPatient(JSON.parse(savedSelectedPatient));
+    if (savedAccessions) setAccessions(JSON.parse(savedAccessions));
+    if (savedShowDetails) setShowDetails(savedShowDetails === "true");
+  }, []);
+
+  //  البحث عن المرضى
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase().trim();
     setSearchQuery(query);
+    sessionStorage.setItem("patientList_searchQuery", query);
 
     if (!query) {
       setPatients([]);
       setShowDetails(false);
+      sessionStorage.setItem("patientList_patients", JSON.stringify([]));
+      sessionStorage.setItem("patientList_showDetails", "false");
       return;
     }
 
@@ -59,13 +76,14 @@ const PatientList = () => {
       
       if (data.status === "ok") {
         setPatients(data.patients);
+        sessionStorage.setItem("patientList_patients", JSON.stringify(data.patients));
       }
     } catch (err) {
       console.error("Search error:", err);
     }
   };
 
-  // 👆 لما يضغط على بطاقة مريض
+  // after clic on pat card
   const handlePatientClick = async (patientId: number) => {
     try {
      const res = await fetch(`/api/patientsList/${patientId}`);
@@ -75,6 +93,11 @@ const PatientList = () => {
         setSelectedPatient(data.patient);
         setAccessions(data.accessions);
         setShowDetails(true);
+        
+        
+        sessionStorage.setItem("patientList_selectedPatient", JSON.stringify(data.patient));
+        sessionStorage.setItem("patientList_accessions", JSON.stringify(data.accessions));
+        sessionStorage.setItem("patientList_showDetails", "true");
       }
     } catch (err) {
       console.error("Fetch patient error:", err);
@@ -119,14 +142,13 @@ const PatientList = () => {
                 >
                   <div className="patient-list-avatar">
                     <img
-                      src={
-                        patient.profile_picture
-                          ? `/uploads/profiles/${patient.profile_picture}`
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.full_name)}&background=4A90E2&color=fff&size=50`
-                      }
-                      alt={patient.full_name}
-                      className="patient-list-avatar-img"
-                    />
+  src={
+    patient.profile_picture ||
+    "/uploads/profiles/default-avatar.png"
+  }
+  alt={patient.full_name}
+  className="patient-list-avatar-img"
+/>
                   </div>
                   <div className="patient-list-info-wrapper">
                     <div className="patient-name patient-list-name">

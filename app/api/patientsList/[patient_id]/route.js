@@ -3,7 +3,6 @@ import { db } from "@/database/db.js";
 
 export async function GET(req, { params }) {
   try {
-    // ✅ الحل: await params قبل ما تقرأه
     const resolvedParams = await params;
     const patient_id = resolvedParams.patient_id;
 
@@ -19,7 +18,6 @@ export async function GET(req, { params }) {
 
     console.log("🔍 Fetching patient data for patient_id:", patient_id);
 
-    // 1️⃣ جلب معلومات المريض
     const [patientRows] = await db.query(
       `
       SELECT 
@@ -27,7 +25,7 @@ export async function GET(req, { params }) {
         CONCAT(u.first_name, ' ', u.last_name) AS full_name,
         p.medical_record_number,
         p.national_id,
-        p.gender,
+        u.gender,
         u.phone,
         TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) AS age
       FROM patients p
@@ -50,7 +48,6 @@ export async function GET(req, { params }) {
 
     const patient = patientRows[0];
 
-    // 2️⃣ جلب فحوصات المريض
     const [accessions] = await db.query(
       `
       SELECT 

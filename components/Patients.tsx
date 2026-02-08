@@ -7,6 +7,11 @@ import { redirect } from "next/navigation";
 import { db } from "@/database/db";
 import { RowDataPacket } from "mysql2";
 
+//"وصف" شكل البيانات القادمة من قاعدة البيانات لكي يفهمها محرر الكود
+// 1. نحن ننشئ "قالب" اسمه PatientRow.
+// 2. كلمة extends RowDataPacket تعني: "يا TypeScript، هذا القالب هو سطر قادم من قاعدة بيانات MySQL"،
+// لكي يتعرف الكود على الخصائص الافتراضية للجداول.
+// "المترجم" بين قاعدة البيانات ولغة البرمجةRowDataPacket
 interface PatientRow extends RowDataPacket {
   user_id: number;
   first_name: string;
@@ -52,7 +57,6 @@ async function getPatientData(userId: string): Promise<{
   studies: Study[];
 } | null> {
   try {
-    // ✅ استعلام محدّث - البيانات الشخصية من users والبيانات الطبية من patients
     const [rows] = await db.query<PatientRow[]>(
       `
       SELECT 
@@ -62,7 +66,7 @@ async function getPatientData(userId: string): Promise<{
         u.last_name,
         u.phone,
         u.profile_picture,
-        p.gender,
+        u.gender,
         p.national_id,
         p.date_of_birth,
         TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) AS age
@@ -71,14 +75,13 @@ async function getPatientData(userId: string): Promise<{
       WHERE u.user_id = ? AND u.role = 'patient'
       LIMIT 1
       `,
-      [userId]
+      [userId],
     );
 
     if (!rows.length) return null;
 
     const patient = rows[0];
 
-    // ✅ استعلام الفحوصات محدّث - اسم الدكتور من users
     const [studies] = await db.query<StudyRow[]>(
       `
       SELECT 
@@ -94,13 +97,14 @@ async function getPatientData(userId: string): Promise<{
       WHERE u.user_id = ?
       ORDER BY a.exam_date DESC
       `,
-      [userId]
+      [userId],
     );
 
     return {
       patient: {
         id: patient.user_id,
-        fullName: `${patient.first_name} ${patient.middle_name || ""} ${patient.last_name}`.trim(),
+        fullName:
+          `${patient.first_name} ${patient.middle_name || ""} ${patient.last_name}`.trim(),
         firstName: patient.first_name,
         lastName: patient.last_name,
         nationalId: patient.national_id,
@@ -122,7 +126,7 @@ async function getPatientData(userId: string): Promise<{
       })),
     };
   } catch (err) {
-    console.error("💥 GET PATIENT DATA ERROR:", err);
+    console.error("GET PATIENT DATA ERROR:", err);
     return null;
   }
 }
@@ -135,7 +139,7 @@ export default async function PatientsPage() {
     redirect("/");
   }
 
-  console.log("🔍 Fetching patient data for user_id:", userId);
+  console.log("Fetching patient data for user_id:", userId);
 
   const data = await getPatientData(userId);
 
@@ -186,38 +190,35 @@ export default async function PatientsPage() {
 
       <main className="patients-main">
         <div className="patients-grid">
-
           <div className="patients-card-profile">
             <div className="profile-wrapper">
               <div className="profile-photo-wrapper">
                 <div className="profile-photo">
                   <Image
-  src={
-    patient.profilePicture
-      ? `/uploads/profiles/${patient.profilePicture}` 
-      : "/profiles/default-avatar.png"
-  }
-  alt={patient.fullName}
-  width={200}
-  height={200}
-  className="w-full h-full object-cover"
-/>
+                    src={
+                      patient.profilePicture ||
+                      "/uploads/profiles/default-avatar.png"
+                    }
+                    alt={patient.fullName}
+                    width={200}
+                    height={200}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
               <div className="profile-details-wrapper">
-                <h1 className="profile-name-desktop ">
-                  {patient.fullName}
-                </h1>
+                <h1 className="profile-name-desktop ">{patient.fullName}</h1>
 
                 <div className="profile-info-list">
-
                   <div className="profile-info-row">
                     <span className="profile-info-icon">
                       <ID />
                     </span>
                     <span className="profile-info-label">National ID</span>
-                    <span className="profile-info-value">{patient.nationalId}</span>
+                    <span className="profile-info-value">
+                      {patient.nationalId}
+                    </span>
                   </div>
 
                   <div className="profile-info-row">
@@ -243,16 +244,13 @@ export default async function PatientsPage() {
                     <span className="profile-info-label">Phone</span>
                     <span className="profile-info-value">{patient.phone}</span>
                   </div>
-
                 </div>
               </div>
             </div>
           </div>
 
           <div className="patients-card-table">
-            <h4 className="patients-table-title">
-              My File
-            </h4>
+            <h4 className="patients-table-title">My File</h4>
             <div className="patients-table-wrapper">
               <table className="w-full text-white">
                 <thead className="table-head-row">
@@ -293,7 +291,6 @@ export default async function PatientsPage() {
               </table>
             </div>
           </div>
-
         </div>
       </main>
     </section>
