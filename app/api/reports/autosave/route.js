@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
 
-// POST - Auto-save report (Text Only)
 export async function POST(req) {
   try {
     const userId = req.cookies.get("user_id")?.value;
@@ -23,7 +22,6 @@ export async function POST(req) {
       );
     }
 
-    // ✅ جلب معلومات الدكتور (لربط التقرير بالهوية الصحيحة)
     const [doctorRows] = await db.query(
       `
       SELECT 
@@ -49,22 +47,23 @@ export async function POST(req) {
     const doctor = doctorRows[0];
     const doctorName = `${doctor.first_name} ${doctor.last_name}`;
 
-    // ✅ التحقق من وجود تقرير مسبق لنفس الفحص والطبيب
+    const newStatus = report_content && report_content.trim().length > 0 ? 'completed' : 'draft';
+
     const [existing] = await db.query(
       `SELECT report_id FROM reports WHERE accession_id = ? AND doctor_id = ? LIMIT 1`,
       [accession_id, doctor.doctor_id]
     );
 
     if (existing.length > 0) {
-      // ✅ تحديث المحتوى النصي فقط (تم استبعاد حقل screenshot تماماً)
       await db.query(
         `
         UPDATE reports 
         SET report_content = ?, 
+            report_status = ?,
             updated_at = NOW()
         WHERE accession_id = ? AND doctor_id = ?
         `,
-        [report_content, accession_id, doctor.doctor_id]
+        [report_content, newStatus, accession_id, doctor.doctor_id]
       );
 
       return NextResponse.json({
@@ -73,13 +72,12 @@ export async function POST(req) {
         action: "update",
       });
     } else {
-      // ✅ إنشاء تقرير نصي جديد
       const [result] = await db.query(
         `
-        INSERT INTO reports (accession_id, doctor_id, doctor_name, report_content, created_at)
-        VALUES (?, ?, ?, ?, NOW())
+        INSERT INTO reports (accession_id, doctor_id, doctor_name, report_content, report_status, created_at)
+        VALUES (?, ?, ?, ?, ?, NOW())
         `,
-        [accession_id, doctor.doctor_id, doctorName, report_content]
+        [accession_id, doctor.doctor_id, doctorName, report_content, newStatus]
       );
 
       return NextResponse.json({

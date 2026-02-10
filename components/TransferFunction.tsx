@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-
 
 const TransferFunction = () => {
   let userRole = null;
-const pathname= usePathname();
+  const pathname = usePathname();
   if (typeof window !== "undefined") {
     userRole = localStorage.getItem("userRole");
   }
@@ -28,10 +28,12 @@ const pathname= usePathname();
         />
         Auto
       </label>
-      <label className="flex items-center gap-2 text-white cursor-pointer">
-        <input type="radio" name="TFMode" className="accent-white" />
-        Manual
-      </label>
+      <Link href="/manualTF">
+        <label className="flex items-center gap-2 text-white cursor-pointer">
+          <input type="radio" name="TFMode" className="accent-white" />
+          Manual
+        </label>
+      </Link>
     </div>
   );
 };

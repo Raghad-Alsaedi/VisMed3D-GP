@@ -21,23 +21,23 @@ const users = [
     database: process.env.DB_NAME,
   });
 
-  console.log("🔄 Encrypting passwords...\n");
+  console.log("Encrypting passwords...\n");
 
   for (const user of users) {
     const hash = await bcrypt.hash(user.password, SALT_ROUNDS);
-    
+
     const [result] = await db.query(
       "UPDATE users SET password_hash = ? WHERE username = ? AND role = ?",
-      [hash, user.userName, user.role]
+      [hash, user.userName, user.role],
     );
-    
+
     if (result.affectedRows > 0) {
-      console.log(`✅ ${user.userName} (${user.role}) → ${user.password}`);
+      console.log(`${user.userName} (${user.role}) → ${user.password}`);
     } else {
-      console.log(`❌ ${user.userName} NOT FOUND in database!`);
+      console.log(`${user.userName} NOT FOUND in database!`);
     }
   }
 
-  console.log("\n🎉 Done successfully!");
+  console.log("\nDone successfully!");
   await db.end();
 })();

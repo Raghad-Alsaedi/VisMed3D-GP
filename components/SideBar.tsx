@@ -60,7 +60,6 @@ const SideBar = () => {
     setIsSidebarOpen(false);
   };
 
-  // Check if we should hide sidebar on certain pages - AFTER all hooks
   if (hiddenPages.includes(pathname)) {
     return null;
   }

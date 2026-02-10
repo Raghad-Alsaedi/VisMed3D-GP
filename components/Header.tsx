@@ -9,11 +9,11 @@ const Header = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const [isSaving, setIsSaving] = useState(false);
 
   const isReport = pathname === "/doctor/writingReport";
-  const fromUpload = searchParams.get('fromUpload') === 'true';
+  const fromUpload = searchParams.get("fromUpload") === "true";
 
   let userRole = null;
 
@@ -27,26 +27,26 @@ const Header = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const tempFileId = localStorage.getItem('tempFileId');
-      
+      const tempFileId = localStorage.getItem("tempFileId");
+
       if (!tempFileId) {
-        alert('No file to save');
+        alert("No file to save");
         return;
       }
 
-      const response = await axios.post('/api/save-file', {
-        fileId: tempFileId
+      const response = await axios.post("/api/save-file", {
+        fileId: tempFileId,
       });
 
       if (response.data.success) {
-        localStorage.removeItem('tempFileId');
-        localStorage.setItem('currentScanId', tempFileId);
-        alert('File saved successfully');
-        router.push('/radio_tech/uploadFile');
+        localStorage.removeItem("tempFileId");
+        localStorage.setItem("currentScanId", tempFileId);
+        alert("File saved successfully");
+        router.push("/radio_tech/uploadFile");
       }
     } catch (error) {
-      console.error('Save error:', error);
-      alert('Failed to save file');
+      console.error("Save error:", error);
+      alert("Failed to save file");
     } finally {
       setIsSaving(false);
     }
@@ -54,24 +54,24 @@ const Header = () => {
 
   const handleCancel = async () => {
     try {
-      const tempFileId = localStorage.getItem('tempFileId');
-      
+      const tempFileId = localStorage.getItem("tempFileId");
+
       if (tempFileId) {
-        await axios.post('/api/delete-temp-file', {
-          fileId: tempFileId
+        await axios.post("/api/delete-temp-file", {
+          fileId: tempFileId,
         });
-        localStorage.removeItem('tempFileId');
+        localStorage.removeItem("tempFileId");
       }
-      
-      router.push('/radio_tech/dropfile');
+
+      router.push("/radio_tech/dropfile");
     } catch (error) {
-      console.error('Cancel error:', error);
-      router.push('/radio_tech/dropfile');
+      console.error("Cancel error:", error);
+      router.push("/radio_tech/dropfile");
     }
   };
 
   const handleBackToHome = () => {
-    router.push('/radio_tech/uploadfile');
+    router.push("/radio_tech/uploadfile");
   };
 
   return (
@@ -79,10 +79,7 @@ const Header = () => {
       {/* Left Section */}
       <div className="header-left-section">
         {!(isTech && fromUpload) && (
-          <button
-            className="header-back-button"
-            onClick={() => router.back()}
-          >
+          <button className="header-back-button" onClick={() => router.back()}>
             <ArrowL />
           </button>
         )}
@@ -90,16 +87,14 @@ const Header = () => {
 
       {/* Center Section - Name */}
       <div className="header-center-section">
-        <h1 className="header-title">
-          Nasser Saeed
-        </h1>
+        <h1 className="header-title">Nasser Saeed</h1>
       </div>
 
       {/* Right Section */}
       <div className="header-right-section">
         {isTech && fromUpload && (
           <>
-            <button 
+            <button
               onClick={handleCancel}
               disabled={isSaving}
               className="header-cancel-button"
@@ -107,12 +102,12 @@ const Header = () => {
               Cancel
             </button>
 
-            <button 
+            <button
               onClick={handleSave}
               disabled={isSaving}
               className="header-save-button"
             >
-              {isSaving ? 'Saving...' : 'Save'}
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </>
         )}
@@ -123,10 +118,7 @@ const Header = () => {
         </button>
 
         {!isTech && !isReport && (
-          <Link
-            href="/doctor/writingReport"
-            className="header-report-link"
-          >
+          <Link href="/doctor/writingReport" className="header-report-link">
             <span>Report</span>
           </Link>
         )}

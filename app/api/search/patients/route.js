@@ -109,7 +109,7 @@ export async function GET(req) {
       }
     }
 
-    console.log(`✅ Found ${patients.length} patients`);
+    console.log(`Found ${patients.length} patients`);
 
     return NextResponse.json({
       status: "ok",

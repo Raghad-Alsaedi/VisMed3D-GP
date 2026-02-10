@@ -6,11 +6,9 @@ export default function RadioTechLayout({
   children: React.ReactNode;
 }>) {
   return (
-   
-        <main className="relative overflow-hidden">
-          <SideBar />
-          {children}
-        </main>
-     
+    <main className="relative overflow-hidden">
+      <SideBar />
+      {children}
+    </main>
   );
 }

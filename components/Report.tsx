@@ -6,9 +6,9 @@ const Report = () => {
   const [reportText, setReportText] = useState("");
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const accessionId = searchParams.get("accession_id");
-  
+
   const [lastSavedText, setLastSavedText] = useState("");
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
@@ -16,15 +16,16 @@ const Report = () => {
   const isPatientView = pathname === "/patients/reportPatients";
   const isDoctorView = pathname === "/doctor/writingReport";
 
-  // ✅ جلب النص فقط عند التحميل
   useEffect(() => {
     const fetchReport = async () => {
       if (!accessionId) return;
-      
+
       try {
-        const response = await fetch(`/api/reports?accession_id=${accessionId}`);
+        const response = await fetch(
+          `/api/reports?accession_id=${accessionId}`,
+        );
         const data = await response.json();
-        
+
         if (data.status === "ok" && data.report) {
           const text = data.report.reportText || "";
           setReportText(text);
@@ -34,23 +35,22 @@ const Report = () => {
         console.error("Error fetching report:", error);
       }
     };
-    
+
     fetchReport();
   }, [accessionId]);
 
-  // ✅ حفظ النص في قاعدة البيانات
   const saveToDatabase = async (text?: string) => {
     if (isSavingRef.current || !accessionId) return;
-    
+
     const textToSave = text !== undefined ? text : reportText;
-    
+
     if (textToSave === lastSavedText) {
       return;
     }
-    
+
     try {
       isSavingRef.current = true;
-      
+
       const response = await fetch("/api/reports/autosave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -59,9 +59,9 @@ const Report = () => {
           report_content: textToSave,
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.status === "ok") {
         setLastSavedText(textToSave);
         console.log("Text report saved successfully");
@@ -73,17 +73,16 @@ const Report = () => {
     }
   };
 
-  // ✅ Auto-save للنص كل 10 ثواني
   useEffect(() => {
     if (isDoctorView) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       saveTimeoutRef.current = setTimeout(() => {
         saveToDatabase();
       }, 10000);
-      
+
       return () => {
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { db } from "../../../../database/db.js";
+import { db } from "@/database/db.js";
 
 export async function GET() {
   return NextResponse.json({ status: "ok", message: "Use POST to login" });

@@ -103,7 +103,6 @@ const ShowReport = () => {
   const [reportText, setReportText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ جلب التقرير النصي فقط من قاعدة البيانات
   useEffect(() => {
     const fetchReport = async () => {
       if (!accessionId) {

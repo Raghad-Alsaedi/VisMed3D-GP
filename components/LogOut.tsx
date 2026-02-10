@@ -6,27 +6,17 @@ const LogOut = () => {
   const router = useRouter();
   return (
     <div className="logout-page">
-      <h1 className="logout-title">
-        Log out
-      </h1>
+      <h1 className="logout-title">Log out</h1>
 
       <div className="logout-content-wrapper">
         <div className="logout-card">
-          <h2 className="logout-message">
-            Are you sure you want to log out?
-          </h2>
+          <h2 className="logout-message">Are you sure you want to log out?</h2>
           <div className="logout-buttons-wrapper">
-            <button
-              className="btn-large-primary"
-              onClick={() => router.back()}
-            >
+            <button className="btn-large-primary" onClick={() => router.back()}>
               Cancel
             </button>
 
-            <Link
-              href="/login"
-              className="btn-large-danger inline-block"
-            >
+            <Link href="/login" className="btn-large-danger inline-block">
               Log out
             </Link>
           </div>

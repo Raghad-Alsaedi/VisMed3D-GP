@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
 
-// GET - Fetch report by accession_id (Text data only)
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,7 +13,6 @@ export async function GET(req) {
       );
     }
 
-    // ✅ تم حذف حقل screenshot من الاستعلام لضمان خلو التقرير من الصور حالياً
     const [rows] = await db.query(
       `
       SELECT 
@@ -66,7 +64,6 @@ export async function GET(req) {
         modality: report.modality,
         bodyPart: report.body_part,
         reportText: report.report_content,
-        // تم إزالة حقل screenshot من هنا أيضاً
         createdAt: report.created_at,
         updatedAt: report.updated_at,
       },

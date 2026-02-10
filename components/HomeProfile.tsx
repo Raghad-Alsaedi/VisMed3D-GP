@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,7 +11,7 @@ import {
 
 const HomeProfile = () => {
   const pathname = usePathname();
-  
+
   const isDoctor = pathname.startsWith("/doctor");
 
   return (
@@ -88,9 +87,7 @@ const HomeProfile = () => {
                 <span className="profile-info-icon-wrapper">
                   <Gender className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-mobile">
-                  Gender
-                </span>
+                <span className="profile-info-label-mobile">Gender</span>
                 <span className="profile-info-value-mobile">
                   {isDoctor ? "Male" : "Female"}
                 </span>
@@ -101,9 +98,7 @@ const HomeProfile = () => {
                 <span className="profile-info-icon-wrapper">
                   <Phone className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-mobile">
-                  Phone
-                </span>
+                <span className="profile-info-label-mobile">Phone</span>
                 <span className="profile-info-value-mobile">
                   {isDoctor ? "+966 55 123 4567" : "+966 5 1234 5678"}
                 </span>
@@ -179,9 +174,7 @@ const HomeProfile = () => {
                 <span className="profile-info-icon-wrapper">
                   <Gender className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-desktop">
-                  Gender
-                </span>
+                <span className="profile-info-label-desktop">Gender</span>
                 <span className="profile-info-value-desktop">
                   {isDoctor ? "Male" : "Female"}
                 </span>
@@ -192,9 +185,7 @@ const HomeProfile = () => {
                 <span className="profile-info-icon-wrapper">
                   <Phone className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-desktop">
-                  Phone
-                </span>
+                <span className="profile-info-label-desktop">Phone</span>
                 <span className="profile-info-value-desktop">
                   {isDoctor ? "+966 55 123 4567" : "+966 5 1234 5678"}
                 </span>

@@ -7,11 +7,6 @@ import { redirect } from "next/navigation";
 import { db } from "@/database/db";
 import { RowDataPacket } from "mysql2";
 
-//"وصف" شكل البيانات القادمة من قاعدة البيانات لكي يفهمها محرر الكود
-// 1. نحن ننشئ "قالب" اسمه PatientRow.
-// 2. كلمة extends RowDataPacket تعني: "يا TypeScript، هذا القالب هو سطر قادم من قاعدة بيانات MySQL"،
-// لكي يتعرف الكود على الخصائص الافتراضية للجداول.
-// "المترجم" بين قاعدة البيانات ولغة البرمجةRowDataPacket
 interface PatientRow extends RowDataPacket {
   user_id: number;
   first_name: string;

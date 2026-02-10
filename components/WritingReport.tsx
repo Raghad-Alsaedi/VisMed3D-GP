@@ -5,8 +5,6 @@ import Header from "./Header";
 import Report from "./Report";
 
 const WritingReport = () => {
-  // تم تنظيف الكود وإزالة منطق التقاط الصور تماماً
-
   return (
     <div className="writing-report-page">
       <Header />

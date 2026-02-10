@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SideBarDoctor from "@/components/SideBar";
-import { LOG_IN } from "@/constant";
-import Login from "@/components/Login";
-
-
 
 export const metadata: Metadata = {
   title: "VisMed3D",
@@ -18,12 +13,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      
-      <body >
-        <main >
-           {children}
-        </main>
-        
+      <body>
+        <main>{children}</main>
       </body>
     </html>
   );

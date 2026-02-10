@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const patientName = formData.get('patientName') as string;
     const accountNumber = formData.get('accountNumber') as string;
-    const temporary = formData.get('temporary') as string; // جديد
+    const temporary = formData.get('temporary') as string; 
 
     if (!file) {
       return NextResponse.json(

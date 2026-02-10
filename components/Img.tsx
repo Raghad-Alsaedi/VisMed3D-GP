@@ -1,31 +1,27 @@
 "use client";
-import React from 'react';
-import TransferFunction from './TransferFunction';
-import { useSearchParams } from 'next/navigation';
+import TransferFunction from "./TransferFunction";
+import { useSearchParams } from "next/navigation";
 
 const Img = () => {
   const searchParams = useSearchParams();
-  const fileId = searchParams.get('fileId');
+  const fileId = searchParams.get("fileId");
 
-  const iframeSrc = fileId 
+  const iframeSrc = fileId
     ? `/volumeRendering/index.html?fileId=${fileId}`
-    : '/volumeRendering/index.html';
+    : "/volumeRendering/index.html";
 
   return (
     <div className="viewer-container">
       <div className="viewer-iframe-wrapper">
-        <iframe 
+        <iframe
           src={iframeSrc}
           className="viewer-iframe"
           title="3D Volume Rendering"
         />
       </div>
 
-      <TransferFunction /> 
-      
-     
+      <TransferFunction />
     </div>
-    
   );
 };
 

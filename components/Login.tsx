@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useState } from "react";
 import Link from "next/link";
+import { Eye, EyeOff, Arrowlist } from "@/components/icons";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -16,6 +17,8 @@ const loginSchema = z.object({
 const Login = () => {
   const router = useRouter();
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
 
   const handelsumbite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -133,7 +136,39 @@ const Login = () => {
 
           <label className="field">
             <span className="label">Password</span>
-            <input className="input" type="password" name="password" />
+            <div style={{ position: "relative" }}>
+              <input 
+                className="input" 
+                type={showPassword ? "text" : "password"} 
+                name="password"
+                value={passwordValue}
+                onChange={(e) => setPasswordValue(e.target.value)}
+              />
+              {passwordValue && (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color="#303A46" strokeWidth={2.5} />
+                  ) : (
+                    <Eye size={20} color="#303A46" strokeWidth={2.5} />
+                  )}
+                </button>
+              )}
+            </div>
           </label>
 
           <label className="field">
@@ -152,7 +187,7 @@ const Login = () => {
                 ))}
               </select>
 
-              <span className="chev">▾</span>
+              <Arrowlist className="chev" />
             </div>
           </label>
 

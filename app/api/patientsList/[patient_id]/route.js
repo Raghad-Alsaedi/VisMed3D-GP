@@ -6,17 +6,17 @@ export async function GET(req, { params }) {
     const resolvedParams = await params;
     const patient_id = resolvedParams.patient_id;
 
-    console.log("🔍 Received patient_id:", patient_id);
+    console.log("Received patient_id:", patient_id);
 
     if (!patient_id) {
-      console.error("❌ No patient_id provided");
+      console.error("No patient_id provided");
       return NextResponse.json(
         { status: "error", message: "patient_id is required" },
         { status: 400 }
       );
     }
 
-    console.log("🔍 Fetching patient data for patient_id:", patient_id);
+    console.log("Fetching patient data for patient_id:", patient_id);
 
     const [patientRows] = await db.query(
       `
@@ -36,10 +36,10 @@ export async function GET(req, { params }) {
       [patient_id]
     );
 
-    console.log("📊 Query result:", patientRows);
+    console.log("Query result:", patientRows);
 
     if (!patientRows.length) {
-      console.error("❌ Patient not found for ID:", patient_id);
+      console.error("Patient not found for ID:", patient_id);
       return NextResponse.json(
         { status: "error", message: "Patient not found" },
         { status: 404 }
@@ -55,15 +55,18 @@ export async function GET(req, { params }) {
         a.accession_number,
         a.exam_date,
         a.modality,
-        a.body_part
+        a.body_part,
+        r.report_content,
+        r.report_status
       FROM accession a
+      LEFT JOIN reports r ON r.accession_id = a.accession_id
       WHERE a.patient_id = ?
       ORDER BY a.exam_date DESC
       `,
       [patient_id]
     );
 
-    console.log("✅ Patient found with", accessions.length, "accessions");
+    console.log("Patient found with", accessions.length, "accessions");
 
     return NextResponse.json({
       status: "ok",
@@ -85,12 +88,14 @@ export async function GET(req, { params }) {
           year: "numeric"
         }),
         modality: acc.modality,
-        body_part: acc.body_part || "N/A"
+        body_part: acc.body_part || "N/A",
+        report_content: acc.report_content || "",
+        report_status: acc.report_status || "draft"
       }))
     });
 
   } catch (err) {
-    console.error("💥 GET PATIENT ERROR:", err);
+    console.error("GET PATIENT ERROR:", err);
     return NextResponse.json(
       { status: "error", message: "Server error" },
       { status: 500 }

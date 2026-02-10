@@ -1,34 +1,26 @@
 export {
-  FaArrowLeft as ArrowL,
-  FaRegHourglass as Years_of_Experience,
-  FaTransgender as Gender,
-  FaArrowRight as ArrowR,
-  FaRegCalendar as Age,
-  FaFileMedical as MRN,
-  FaCheckCircle as Success,
-} from "react-icons/fa";
-
-export {
-  IoCloudUploadOutline as Upload,
-  IoPersonOutline as Patients,
-  IoSearchOutline as Search,
-   IoMenu as Menu
-} from "react-icons/io5";
-
-export { AiOutlineIdcard as ID } from "react-icons/ai";
-
-export { PiCertificateLight as License_Number } from "react-icons/pi";
-
-export {
-  LuPhone as Phone,
-  LuLogOut as Logout,
-  LuUpload as Upload_Action,
-  LuCircleAlert as Error,
-} from "react-icons/lu";
-
-export { GoHome as Home } from "react-icons/go";
-
-export {
-  MdOutlineUploadFile as Upload_File,
-  MdImage as Img,
-} from "react-icons/md";
+  Phone as Phone,
+  LogOut as Logout,
+  Upload as Upload_Action,
+  CircleAlert as Error,
+  FileText as Report,
+  House as Home,
+  ArrowLeft as ArrowL,
+  ArrowRight as ArrowR,
+  CloudUpload as Upload,
+  Search as Search,
+  Menu as Menu,
+  UserRound as Patients,
+  Hourglass as Years_of_Experience,
+  VenusAndMars as Gender,
+  Calendar1 as Age,
+  CircleCheckBig as Success,
+  IdCard as ID,
+  FileBadge as License_Number,
+  FileUp as Upload_File,
+  Image as Img,
+  ChevronRight,
+  ChevronDown as Arrowlist,
+  Eye,
+  EyeOff,
+} from "lucide-react";

@@ -2,9 +2,8 @@
 <html>
   <head>
     <title>Hello, Triangle!</title>
-    <link rel="stylesheet" href="/volumeRendering/css/styles.css">
+    <link rel="stylesheet" href="/volumeRendering/css/styles.css" />
     <style>
-      
       .controls {
         position: absolute;
         top: 20px;
@@ -12,7 +11,7 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
-        z-index: 10; 
+        z-index: 10;
       }
       .controls button {
         width: 40px;
@@ -29,21 +28,23 @@
     </style>
   </head>
   <body>
+    <div class="app">
+      <div class="controls">
+        <button id="zoomIn">+</button>
+        <button id="zoomOut">-</button>
+      </div>
 
-  <div class="app">
-    <div class="controls">
-      <button id="zoomIn">+</button>
-      <button id="zoomOut">-</button>
+      <canvas id="demo-canvas"></canvas>
     </div>
-    
-    <canvas id="demo-canvas"></canvas>
-  </div>
-  
-  <script type="text/javascript" src="/volumeRendering/js/Common/initShaders.js"></script>
-  <script type="text/javascript" src="/volumeRendering/js/Common/MVnew.js"></script>
-  <script type="module" src="/volumeRendering/js/Renderer.js"></script>
 
-  
-
+    <script
+      type="text/javascript"
+      src="/volumeRendering/js/Common/initShaders.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="/volumeRendering/js/Common/MVnew.js"
+    ></script>
+    <script type="module" src="/volumeRendering/js/Renderer.js"></script>
   </body>
 </html>

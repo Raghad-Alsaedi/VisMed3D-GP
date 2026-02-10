@@ -1,5 +1,4 @@
 import SideBar from "@/components/SideBar";
-import SideBarDoctor from "@/components/SideBar";
 
 export default function DoctorLayout({
   children,
