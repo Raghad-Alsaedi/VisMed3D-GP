@@ -1,8 +1,20 @@
+// app/api/patientsList/[patient_id]/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions"; // ✅ Add this line
 
 export async function GET(req, { params }) {
   try {
+    // ✅ Add authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { status: "error", message: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
     const resolvedParams = await params;
     const patient_id = resolvedParams.patient_id;
 
@@ -90,7 +102,7 @@ export async function GET(req, { params }) {
         modality: acc.modality,
         body_part: acc.body_part || "N/A",
         report_content: acc.report_content || "",
-        report_status: acc.report_status || "draft"
+        report_status: acc.report_status || "pending"
       }))
     });
 

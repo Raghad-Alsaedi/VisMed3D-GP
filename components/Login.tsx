@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { Eye, EyeOff, Arrowlist } from "@/components/icons";
 
 const loginSchema = z.object({
@@ -17,17 +18,19 @@ const loginSchema = z.object({
 const Login = () => {
   const router = useRouter();
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordValue, setPasswordValue] = useState("");
 
   const handelsumbite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setGeneralError(null);
+    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const username = formData.get("username") as string;
-    const password = formData.get("password") as string;
-    const role = formData.get("role") as string; // هنا عندك المسار مثل /doctor
+    const username = (formData.get("username") as string) || "";
+    const password = (formData.get("password") as string) || "";
+    const role = (formData.get("role") as string) || "";
 
     const result = loginSchema.safeParse({ username, password, role });
 
@@ -36,46 +39,34 @@ const Login = () => {
 
       if (fieldErrors.username) {
         setGeneralError("Please fill in the username field");
-        return;
-      }
-      if (fieldErrors.password) {
+      } else if (fieldErrors.password) {
         setGeneralError("Please fill in the password field");
-        return;
-      }
-      if (fieldErrors.role) {
+      } else if (fieldErrors.role) {
         setGeneralError("Please select a role");
-        return;
+      } else {
+        setGeneralError("Invalid input");
       }
+
+      setLoading(false);
       return;
     }
 
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userName: result.data.username, // ✅ API يحتاج userName
-          password: result.data.password,
-          role: result.data.role, // ✅ نرسل المسار /doctor... والـ API بيحوّله
-        }),
-      });
+    // ✅ NextAuth Credentials Login (يصنع Session)
+    const res = await signIn("credentials", {
+      username: result.data.username,
+      password: result.data.password,
+      redirect: false,
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setGeneralError(data?.message || "Login failed");
-        return;
-      }
-
-      // نخزن بيانات المستخدم (اختياري لكن مفيد)
-      localStorage.setItem("vismed_user", JSON.stringify(data.user));
-      localStorage.setItem("userRole", result.data.role);
-
-      // توجيه حسب الدور المختار
-      router.push(result.data.role);
-    } catch (err) {
-      setGeneralError("Server error");
+    if (res?.error) {
+      setGeneralError("Login failed (wrong username/password)");
+      setLoading(false);
+      return;
     }
+
+    // ✅ توجيه حسب الدور المختار (نفس كودك)
+    router.push(result.data.role);
+    setLoading(false);
   };
 
   return (
@@ -85,13 +76,7 @@ const Login = () => {
       </Link>
 
       <main className="login-card">
-        <div
-          className="brand"
-          style={{
-            marginTop: "-12px",
-            marginBottom: "0px",
-          }}
-        >
+        <div className="brand" style={{ marginTop: "-12px", marginBottom: "0px" }}>
           <Image
             src="/logo.png"
             alt="VisMed3D"
@@ -102,13 +87,7 @@ const Login = () => {
           />
         </div>
 
-        <h1
-          className="title"
-          style={{
-            marginTop: "4px",
-            marginBottom: "20px",
-          }}
-        >
+        <h1 className="title" style={{ marginTop: "4px", marginBottom: "20px" }}>
           WELCOME BACK
         </h1>
 
@@ -191,8 +170,8 @@ const Login = () => {
             </div>
           </label>
 
-          <button className="btn" type="submit">
-            Login
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Login"}
           </button>
         </form>
       </main>

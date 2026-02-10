@@ -1,11 +1,17 @@
+// app/api/search/patients/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions"; // Add this line
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("query");
-    const userId = req.cookies.get("user_id")?.value;
+    
+    // Pass authOptions here
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return NextResponse.json(
@@ -23,7 +29,7 @@ export async function GET(req) {
     console.log("Searching for patients with query:", query);
 
     const [userRows] = await db.query(
-      `SELECT role, doctor_id, technician_id FROM users WHERE user_id = ?`,
+      `SELECT role, doctor_id, technician_id FROM users WHERE id = ?`,
       [userId]
     );
 

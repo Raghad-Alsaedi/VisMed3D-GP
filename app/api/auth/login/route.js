@@ -18,19 +18,15 @@ export async function POST(req) {
       );
     }
 
+    // نجيب المستخدم + دوره
     const [rows] = await db.query(
       `
       SELECT
-        u.user_id,
+        u.id,
         u.username,
         u.password_hash,
-        u.role,
         u.is_active,
-        u.first_name,
-        u.last_name,
-        u.doctor_id,
-        u.patient_id,
-        u.technician_id
+        u.role
       FROM users u
       WHERE u.username = ?
       LIMIT 1
@@ -54,6 +50,7 @@ export async function POST(req) {
       );
     }
 
+    //  تحويل المسار إلى role_name الحقيقي في DB
     const roleMap = {
       "/doctor": "doctor",
       "/patients": "patient",
@@ -70,6 +67,7 @@ export async function POST(req) {
       }
     }
 
+    // bcrypt compare
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
       return NextResponse.json(
@@ -78,27 +76,14 @@ export async function POST(req) {
       );
     }
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       status: "ok",
       user: {
-        id: user.user_id,
-        userName: user.username,
+        id: user.id,
+        username: user.username,
         role: user.role,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        doctorId: user.doctor_id,
-        patientId: user.patient_id,
-        technicianId: user.technician_id,
       },
     });
-
-    response.cookies.set("user_id", user.user_id.toString(), {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
-
-    return response;
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return NextResponse.json(

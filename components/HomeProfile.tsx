@@ -1,18 +1,127 @@
 "use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ID,
-  License_Number,
-  Years_of_Experience,
-  Gender,
-  Phone,
-} from "@/components/icons";
+import { useSession } from "next-auth/react";
+import { ID, License_Number, Years_of_Experience, Gender, Phone } from "@/components/icons";
 
 const HomeProfile = () => {
   const pathname = usePathname();
-
   const isDoctor = pathname.startsWith("/doctor");
+
+  // ✅ NextAuth session
+  const { data: session, status } = useSession();
+
+  const [doctor, setDoctor] = useState<any>(null);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isDoctor) return;
+
+    // 1) ننتظر السشن تخلص تحميل
+    if (status === "loading") return;
+
+    // 2) لو ما فيه تسجيل دخول
+    const doctorId = (session as any)?.user?.id;
+    if (!doctorId) {
+      setDoctor(null);
+      setPatients([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    fetch(`/api/doctor/dashboard?doctorId=${doctorId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setDoctor(data.doctor || null);
+        setPatients(data.patients || []);
+      })
+      .catch(() => {
+        setDoctor(null);
+        setPatients([]);
+      })
+      .finally(() => setLoading(false));
+  }, [isDoctor, session, status]);
+
+  // ===== حالات العرض =====
+  if (!isDoctor) {
+    // لو صفحة فني/غير دكتور، نخليها زي ما تبغين أو تعرض placeholder
+    // (نفس سلوكك السابق)
+  }
+
+  if (isDoctor && status === "loading") {
+    return (
+      <section className="main-section-container">
+        <div className="content-wrapper">
+          <div className="text-white p-6">Loading session...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isDoctor && status !== "loading" && !(session as any)?.user?.id) {
+    return (
+      <section className="main-section-container">
+        <div className="content-wrapper">
+          <div className="text-white p-6">Not signed in</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isDoctor && loading) {
+    return (
+      <section className="main-section-container">
+        <div className="content-wrapper">
+          <div className="text-white p-6">Loading dashboard...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isDoctor && !loading && !doctor) {
+    return (
+      <section className="main-section-container">
+        <div className="content-wrapper">
+          <div className="text-white p-6">No doctor found</div>
+        </div>
+      </section>
+    );
+  }
+
+  // ===== قيم العرض =====
+  const fullName =
+    isDoctor && doctor
+      ? [doctor.first_name, doctor.middle_name, doctor.last_name].filter(Boolean).join(" ")
+      : "Sara Ahmed";
+
+  const roleTitle = isDoctor && doctor ? doctor.specialty || "-" : "Radiology Technician";
+
+  const profileImg =
+    isDoctor && doctor
+      ? doctor.profile_image_url || (doctor.gender === "female" ? "/doctor_female.png" : "/doctor.png")
+      : "doctor-photo.jpg";
+
+  const idLabel = isDoctor ? "Doctor ID" : "Technician ID";
+  const idValue = isDoctor ? doctor?.doctor_code || "-" : "T001";
+
+  const licenseValue = isDoctor ? doctor?.license_number || "-" : "SCFHS-987654";
+  const yearsValue = isDoctor ? doctor?.years_experience ?? "-" : "10";
+
+  const genderValue =
+    isDoctor
+      ? doctor?.gender === "male"
+        ? "Male"
+        : doctor?.gender === "female"
+        ? "Female"
+        : "-"
+      : "Female";
+
+  const phoneValue = isDoctor ? doctor?.phone || "-" : "+966 5 1234 5678";
 
   return (
     <section className="main-section-container">
@@ -21,174 +130,120 @@ const HomeProfile = () => {
         <div className="profile-card-container">
           {/* Mobile Layout */}
           <div className="profile-layout-mobile">
-            {/* Photo and Name */}
             <div className="profile-photo-section">
               <div className="profile-photo-mobile">
                 <img
-                  src="doctor-photo.jpg"
-                  alt={isDoctor ? "Dr. Ahmed Al-Ahmadi" : "Sara Ahmed"}
+                  src={profileImg}
+                  alt={isDoctor ? `Dr. ${fullName} `: fullName}
                   className="profile-photo-img"
                 />
               </div>
 
               <div className="text-center">
-                <h1 className="profile-name-mobile">
-                  {isDoctor ? "Dr. Ahmed Al-Ahmadi" : "Sara Ahmed"}
-                </h1>
-                <p className="profile-role-subtitle">
-                  {isDoctor ? "Orthopedist" : "Radiology Technician"}
-                </p>
+                <h1 className="profile-name-mobile">{isDoctor ? `Dr. ${fullName} `: fullName}</h1>
+                <p className="profile-role-subtitle">{roleTitle}</p>
               </div>
             </div>
 
-            {/* Information - Mobile */}
             <div className="profile-info-wrapper-mobile">
-              {/* ID */}
               <div className="profile-info-item-mobile">
                 <span className="profile-info-icon-wrapper">
                   <ID className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-mobile">
-                  {isDoctor ? "Doctor ID" : "Technician ID"}
-                </span>
-                <span className="profile-info-value-mobile">
-                  {isDoctor ? "DOC-0015" : "T001"}
-                </span>
+                <span className="profile-info-label-mobile">{idLabel}</span>
+                <span className="profile-info-value-mobile">{idValue}</span>
               </div>
 
-              {/* License Number */}
               <div className="profile-info-item-mobile">
                 <span className="profile-info-icon-wrapper">
                   <License_Number className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-mobile">
-                  License Number
-                </span>
-                <span className="profile-info-value-mobile">
-                  {isDoctor ? "SCFHS-123456" : "SCFHS-987654"}
-                </span>
+                <span className="profile-info-label-mobile">License Number</span>
+                <span className="profile-info-value-mobile">{licenseValue}</span>
               </div>
 
-              {/* Years of Experience */}
               <div className="profile-info-item-mobile">
                 <span className="profile-info-icon-wrapper">
                   <Years_of_Experience className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-mobile">
-                  Years of Experience
-                </span>
-                <span className="profile-info-value-mobile">
-                  {isDoctor ? "9" : "10"}
-                </span>
+                <span className="profile-info-label-mobile">Years of Experience</span>
+                <span className="profile-info-value-mobile">{yearsValue}</span>
               </div>
 
-              {/* Gender */}
               <div className="profile-info-item-mobile">
                 <span className="profile-info-icon-wrapper">
                   <Gender className="w-5 h-5 text-gray-400" />
                 </span>
                 <span className="profile-info-label-mobile">Gender</span>
-                <span className="profile-info-value-mobile">
-                  {isDoctor ? "Male" : "Female"}
-                </span>
+                <span className="profile-info-value-mobile">{genderValue}</span>
               </div>
 
-              {/* Phone */}
               <div className="profile-info-item-mobile">
                 <span className="profile-info-icon-wrapper">
                   <Phone className="w-5 h-5 text-gray-400" />
                 </span>
                 <span className="profile-info-label-mobile">Phone</span>
-                <span className="profile-info-value-mobile">
-                  {isDoctor ? "+966 55 123 4567" : "+966 5 1234 5678"}
-                </span>
+                <span className="profile-info-value-mobile">{phoneValue}</span>
               </div>
             </div>
           </div>
 
           {/* Desktop Layout */}
           <div className="profile-layout-desktop">
-            {/* Left Column - Photo and Name */}
             <div className="profile-photo-section">
               <div className="profile-photo-desktop">
                 <img
-                  src="doctor-photo.jpg"
-                  alt={isDoctor ? "Dr. Ahmed Al-Ahmadi" : "Sara Ahmed"}
+                  src={profileImg}
+                  alt={isDoctor ? `Dr. ${fullName}` : fullName}
                   className="profile-photo-img"
                 />
               </div>
 
               <div className="text-center">
-                <h1 className="profile-name-desktop">
-                  {isDoctor ? "Dr. Ahmed Al-Ahmadi" : "Sara Ahmed"}
-                </h1>
-                <p className="profile-role-subtitle-desktop">
-                  {isDoctor ? "Orthopedist" : "Radiology Technician"}
-                </p>
+                <h1 className="profile-name-desktop">{isDoctor ? `Dr. ${fullName} `: fullName}</h1>
+                <p className="profile-role-subtitle-desktop">{roleTitle}</p>
               </div>
             </div>
 
-            {/* Right Column - Information */}
             <div className="profile-info-grid-desktop">
-              {/* ID */}
               <div className="profile-info-item-desktop">
                 <span className="profile-info-icon-wrapper">
                   <ID className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-desktop">
-                  {isDoctor ? "Doctor ID" : "Technician ID"}
-                </span>
-                <span className="profile-info-value-desktop">
-                  {isDoctor ? "DOC-0015" : "T001"}
-                </span>
+                <span className="profile-info-label-desktop">{idLabel}</span>
+                <span className="profile-info-value-desktop">{idValue}</span>
               </div>
 
-              {/* License Number */}
               <div className="profile-info-item-desktop">
                 <span className="profile-info-icon-wrapper">
                   <License_Number className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-desktop">
-                  License Number
-                </span>
-                <span className="profile-info-value-desktop">
-                  {isDoctor ? "SCFHS-123456" : "SCFHS-987654"}
-                </span>
+                <span className="profile-info-label-desktop">License Number</span>
+                <span className="profile-info-value-desktop">{licenseValue}</span>
               </div>
 
-              {/* Years of Experience */}
               <div className="profile-info-item-desktop">
                 <span className="profile-info-icon-wrapper">
                   <Years_of_Experience className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-desktop">
-                  Years of Experience
-                </span>
-                <span className="profile-info-value-desktop">
-                  {isDoctor ? "9" : "10"}
-                </span>
+                <span className="profile-info-label-desktop">Years of Experience</span>
+                <span className="profile-info-value-desktop">{yearsValue}</span>
               </div>
 
-              {/* Gender */}
               <div className="profile-info-item-desktop">
                 <span className="profile-info-icon-wrapper">
                   <Gender className="w-5 h-5 text-gray-400" />
                 </span>
                 <span className="profile-info-label-desktop">Gender</span>
-                <span className="profile-info-value-desktop">
-                  {isDoctor ? "Male" : "Female"}
-                </span>
+                <span className="profile-info-value-desktop">{genderValue}</span>
               </div>
 
-              {/* Phone */}
               <div className="profile-info-item-desktop">
                 <span className="profile-info-icon-wrapper">
                   <Phone className="w-5 h-5 text-gray-400" />
                 </span>
                 <span className="profile-info-label-desktop">Phone</span>
-                <span className="profile-info-value-desktop">
-                  {isDoctor ? "+966 55 123 4567" : "+966 5 1234 5678"}
-                </span>
+                <span className="profile-info-value-desktop">{phoneValue}</span>
               </div>
             </div>
           </div>
@@ -196,9 +251,7 @@ const HomeProfile = () => {
 
         {/* Table Card */}
         <div className="data-table-card">
-          <h3 className="data-table-title">
-            {isDoctor ? "My Patients" : "Recent Upload File"}
-          </h3>
+          <h3 className="data-table-title">{isDoctor ? "My Patients" : "Recent Upload File"}</h3>
 
           <div className="data-table-wrapper">
             <table className="data-table-base">
@@ -208,28 +261,42 @@ const HomeProfile = () => {
                   <th className="data-table-header-cell">Patient_Name</th>
                   <th className="data-table-header-cell">Accession</th>
                   <th className="data-table-header-cell">MRN</th>
-                  <th className="data-table-header-cell">
-                    {isDoctor ? "Image and Report" : "Modality"}
-                  </th>
+                  <th className="data-table-header-cell">{isDoctor ? "Image and Report" : "Modality"}</th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr className="data-table-row">
-                  <td className="data-table-cell">1</td>
-                  <td className="data-table-cell">Nasser Saeed</td>
-                  <td className="data-table-cell">ACC-321</td>
-                  <td className="data-table-cell">004523</td>
-                  <td className="data-table-cell">
-                    {isDoctor ? (
-                      <Link href="/viewimg" className="data-table-link">
-                        view
-                      </Link>
-                    ) : (
-                      "CT"
-                    )}
-                  </td>
-                </tr>
+                {isDoctor ? (
+                  patients.length ? (
+                    patients.map((p, index) => (
+                      <tr key={p.study_id} className="data-table-row">
+                        <td className="data-table-cell">{index + 1}</td>
+                        <td className="data-table-cell">{p.patient_name}</td>
+                        <td className="data-table-cell">{p.accession}</td>
+                        <td className="data-table-cell">{p.mrn}</td>
+                        <td className="data-table-cell">
+                          <Link href={`/viewimg?studyId=${p.study_id}`} className="data-table-link">
+                            view
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="data-table-row">
+                      <td className="data-table-cell" colSpan={5}>
+                        No patients
+                      </td>
+                    </tr>
+                  )
+                ) : (
+                  <tr className="data-table-row">
+                    <td className="data-table-cell">1</td>
+                    <td className="data-table-cell">—</td>
+                    <td className="data-table-cell">—</td>
+                    <td className="data-table-cell">—</td>
+                    <td className="data-table-cell">CT</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

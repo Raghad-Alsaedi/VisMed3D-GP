@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
 
 export async function POST(req) {
   try {
-    const userId = req.cookies.get("user_id")?.value;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return NextResponse.json(
@@ -25,13 +28,13 @@ export async function POST(req) {
     const [doctorRows] = await db.query(
       `
       SELECT 
-        u.user_id,
+        u.id,
         u.first_name,
         u.last_name,
         d.doctor_id
       FROM users u
       JOIN doctors d ON d.doctor_id = u.doctor_id
-      WHERE u.user_id = ? AND u.role = 'doctor'
+      WHERE u.id = ? AND u.role = 'doctor'
       LIMIT 1
       `,
       [userId]
@@ -47,7 +50,7 @@ export async function POST(req) {
     const doctor = doctorRows[0];
     const doctorName = `${doctor.first_name} ${doctor.last_name}`;
 
-    const newStatus = report_content && report_content.trim().length > 0 ? 'completed' : 'draft';
+const newStatus = report_content && report_content.trim().length > 0 ? 'completed' : 'pending';
 
     const [existing] = await db.query(
       `SELECT report_id FROM reports WHERE accession_id = ? AND doctor_id = ? LIMIT 1`,

@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 
 const LogOut = () => {
   const router = useRouter();
+
+  const handleLogout = () => {
+    sessionStorage.clear(); 
+  };
+
   return (
     <div className="logout-page">
       <h1 className="logout-title">Log out</h1>
@@ -16,7 +21,11 @@ const LogOut = () => {
               Cancel
             </button>
 
-            <Link href="/login" className="btn-large-danger inline-block">
+            <Link
+              href="/login"
+              className="btn-large-danger inline-block"
+              onClick={handleLogout} // ✅
+            >
               Log out
             </Link>
           </div>

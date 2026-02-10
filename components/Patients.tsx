@@ -2,13 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import LogOutButton from "@/components/LogOutButton";
 import { ID, Age, Gender, Phone } from "@/components/icons";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/database/db";
 import { RowDataPacket } from "mysql2";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
 
 interface PatientRow extends RowDataPacket {
-  user_id: number;
+  id: number;
   first_name: string;
   middle_name: string | null;
   last_name: string;
@@ -55,7 +56,7 @@ async function getPatientData(userId: string): Promise<{
     const [rows] = await db.query<PatientRow[]>(
       `
       SELECT 
-        u.user_id,
+        u.id,
         u.first_name,
         u.middle_name,
         u.last_name,
@@ -67,7 +68,7 @@ async function getPatientData(userId: string): Promise<{
         TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) AS age
       FROM users u
       JOIN patients p ON p.patient_id = u.patient_id
-      WHERE u.user_id = ? AND u.role = 'patient'
+      WHERE u.id = ? AND u.role = 'patient'
       LIMIT 1
       `,
       [userId],
@@ -89,7 +90,7 @@ async function getPatientData(userId: string): Promise<{
       JOIN doctors d ON d.doctor_id = r.doctor_id
       JOIN users du ON du.doctor_id = d.doctor_id
       JOIN users u ON u.patient_id = a.patient_id
-      WHERE u.user_id = ?
+      WHERE u.id = ?
       ORDER BY a.exam_date DESC
       `,
       [userId],
@@ -97,7 +98,7 @@ async function getPatientData(userId: string): Promise<{
 
     return {
       patient: {
-        id: patient.user_id,
+        id: patient.id,
         fullName:
           `${patient.first_name} ${patient.middle_name || ""} ${patient.last_name}`.trim(),
         firstName: patient.first_name,
@@ -127,8 +128,9 @@ async function getPatientData(userId: string): Promise<{
 }
 
 export default async function PatientsPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("user_id")?.value;
+  // ✅ Replace cookies with NextAuth session
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
 
   if (!userId) {
     redirect("/");

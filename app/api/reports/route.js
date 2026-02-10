@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
 
 export async function GET(req) {
   try {
+    // ✅ Add authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { status: "error", message: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const accessionId = searchParams.get("accession_id");
 

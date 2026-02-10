@@ -5,12 +5,12 @@ require("dotenv").config({ path: ".env.local" });
 const SALT_ROUNDS = 10;
 
 const users = [
-  { userName: "ahmed.ahmadi", password: "Doctor@123", role: "doctor" },
-  { userName: "fatimah.sultan", password: "Doctor@123", role: "doctor" },
-  { userName: "sara.tech", password: "Tech@123", role: "technician" },
-  { userName: "nasser.saeed", password: "Patient@123", role: "patient" },
-  { userName: "khalid.mohammed", password: "Patient@123", role: "patient" },
-  { userName: "layla.abdullah", password: "Patient@123", role: "patient" },
+  { userName: "doc1001", password: "Doctor@123", role: "doctor" },
+  { userName: "doc1002", password: "Doctor@123", role: "doctor" },
+  { userName: "rt2001", password: "Tech@123", role: "technician" },
+  { userName: "pat3001", password: "Patient@123", role: "patient" },
+  { userName: "pat3002", password: "Patient@123", role: "patient" },
+  { userName: "pat3003", password: "Patient@123", role: "patient" },
 ];
 
 (async () => {
@@ -32,9 +32,9 @@ const users = [
     );
 
     if (result.affectedRows > 0) {
-      console.log(`${user.userName} (${user.role}) → ${user.password}`);
+      console.log(`✓ ${user.userName} (${user.role}) → ${user.password}`);
     } else {
-      console.log(`${user.userName} NOT FOUND in database!`);
+      console.log(`✗ ${user.userName} NOT FOUND in database!`);
     }
   }
 

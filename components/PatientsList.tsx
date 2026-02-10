@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Search, Upload_Action, Img, Report, ChevronRight } from "@/components/icons";
 
@@ -41,6 +41,9 @@ const PatientList = () => {
   );
   const [accessions, setAccessions] = useState<Accession[]>([]);
   const [showDetails, setShowDetails] = useState(false);
+  
+  // ✅ Add ref to track if user is on the page
+  const isPageVisible = useRef(true);
 
   const isDoctor = pathname.startsWith("/doctor");
   const isTech = pathname.startsWith("/radio_tech");
@@ -62,28 +65,56 @@ const PatientList = () => {
     if (savedShowDetails) setShowDetails(savedShowDetails === "true");
   }, []);
 
+  // ✅ Track page visibility
   useEffect(() => {
-    if (!showDetails || !selectedPatient) return;
+    const handleVisibilityChange = () => {
+      isPageVisible.current = !document.hidden;
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  // ✅ Smart refresh - only updates report status when content changes
+  useEffect(() => {
+    if (!showDetails || !selectedPatient || !isDoctor) return;
 
     const interval = setInterval(async () => {
+      // Only refresh if page is visible
+      if (!isPageVisible.current) return;
+
       try {
         const res = await fetch(`/api/patientsList/${selectedPatient.id}`);
         const data = await res.json();
 
         if (data.status === "ok") {
-          setAccessions(data.accessions);
-          sessionStorage.setItem(
-            "patientList_accessions",
-            JSON.stringify(data.accessions),
-          );
+          // ✅ Only update if report status actually changed
+          const hasChanges = data.accessions.some((newAcc: Accession, index: number) => {
+            const oldAcc = accessions[index];
+            return oldAcc && (
+              newAcc.report_status !== oldAcc.report_status ||
+              newAcc.report_content !== oldAcc.report_content
+            );
+          });
+
+          if (hasChanges) {
+            setAccessions(data.accessions);
+            sessionStorage.setItem(
+              "patientList_accessions",
+              JSON.stringify(data.accessions),
+            );
+          }
         }
       } catch (err) {
         console.error("Auto-refresh error:", err);
       }
-    }, 200);
+    }, 200); // ✅ Check every 2 seconds (fast enough for real-time feel)
 
     return () => clearInterval(interval);
-  }, [showDetails, selectedPatient]);
+  }, [showDetails, selectedPatient, accessions, isDoctor]);
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase().trim();
@@ -139,10 +170,15 @@ const PatientList = () => {
     }
   };
 
-  const getReportStatusLabel = (reportContent: string | undefined) => {
+  const getReportStatusLabel = (reportStatus: string | undefined, reportContent: string | undefined) => {
+    if (reportStatus === 'completed') {
+      return { label: "Completed", bgColor: "bg-green-500" };
+    }
+    
     if (reportContent && reportContent.trim().length > 0) {
       return { label: "Completed", bgColor: "bg-green-500" };
     }
+    
     return { label: "Draft", bgColor: "bg-gray-500" };
   };
 
@@ -291,7 +327,7 @@ const PatientList = () => {
                     <tbody>
                       {accessions.length > 0 ? (
                         accessions.map((acc) => {
-                          const reportStatus = isDoctor ? getReportStatusLabel(acc.report_content) : null;
+                          const reportStatus = isDoctor ? getReportStatusLabel(acc.report_status, acc.report_content) : null;
                           
                           return (
                             <tr
