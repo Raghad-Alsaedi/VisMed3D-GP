@@ -1,6 +1,7 @@
 #version 300 es
 precision highp float;
 precision highp sampler3D;
+precision highp sampler2D;
 
 in vec2 vPosition2D;
 out vec4 outColor;
@@ -8,14 +9,21 @@ out vec4 outColor;
 uniform sampler2D uFrontFaceTexture;
 uniform sampler2D uBackFaceTexture;
 uniform sampler3D uVolumeTexture;
+uniform sampler3D uMinMaxOctree;
 
-
-uniform vec3 uVolumeDimensions;
-
+uniform float uBlockSize;
+uniform int uEnableEmptySpaceSkipping;
+//=============================================================
+// Constants
+//=============================================================
 const float EPSILON = 0.001;
 const int   MAX_STEPS = 5000;
 const float EARLY_TERMINATION = 0.95;
-const float STEP_SIZE = 0.0001;
+
+const float STEP_SIZE = 0.0005;
+const float LARGE_STEP_SIZE = 0.004;
+
+const float TF_THRESHOLD_MIN = 0.4;
 
 //=============================================================
 // Scalar Field
@@ -26,18 +34,34 @@ float get_scalar_value(vec3 sample_pos)
 }
 
 //=============================================================
+// Empty Space Detection
+//=============================================================
+
+bool is_empty_space(vec3 sample_pos)
+{
+    if (uEnableEmptySpaceSkipping == 0)
+        return false;
+
+    vec2 minmax = texture(uMinMaxOctree, sample_pos).rg;
+    float maxVal = minmax.g;
+
+    return maxVal < 0.005;
+}
+
+
+//=============================================================
 // Transfer Function
 //=============================================================
 vec4 get_color_TF(float scalar)
 {
-    if (scalar >= 0.4)
+    if (scalar >= TF_THRESHOLD_MIN)
         return vec4(1.0, 1.0, 1.0, 0.5);
     else
         return vec4(0.0);
 }
 
 //=============================================================
-// Compute Normal 
+// Compute Normal
 //=============================================================
 vec3 compute_normal(vec3 p)
 {
@@ -56,7 +80,7 @@ vec3 compute_normal(vec3 p)
 }
 
 //=============================================================
-// Shading Function 
+// Shading Function
 //=============================================================
 vec3 shading(vec3 normal, vec3 view_dir, vec3 light_dir)
 {
@@ -64,7 +88,7 @@ vec3 shading(vec3 normal, vec3 view_dir, vec3 light_dir)
     float k_s = 0.1;
     float n = 32.0;
 
-    float ambient=  0.3;  // ambient= k_a*I_a;
+    float ambient = 0.3;
     float diffuse = max(dot(normal, light_dir), 0.0);
 
     vec3 half_dir = normalize(light_dir + view_dir);
@@ -73,11 +97,11 @@ vec3 shading(vec3 normal, vec3 view_dir, vec3 light_dir)
     float lighting = ambient + k_d * diffuse + k_s * spec;
     lighting = clamp(lighting, 0.0, 1.0);
 
-    return  vec3(lighting);
+    return vec3(lighting);
 }
 
 //=============================================================
-// Raycasting
+// Raycasting with Empty Space Skipping
 //=============================================================
 vec4 raycasting()
 {
@@ -99,20 +123,27 @@ vec4 raycasting()
     float traveled = 0.0;
     int steps = 0;
 
-    //while (traveled < ray_length && steps < MAX_STEPS)
-    while (traveled < ray_length)
+    while (traveled < ray_length && steps < MAX_STEPS)
     {
         steps++;
 
+        // Empty Space Skipping
+        if (uEnableEmptySpaceSkipping==1 && is_empty_space(current_pos))
+        {
+           current_pos += ray_dir * LARGE_STEP_SIZE;
+           traveled += LARGE_STEP_SIZE;
+           continue;
+        }
+
+        // Normal Sampling
         float scalar = get_scalar_value(current_pos);
         vec4 sample_color = get_color_TF(scalar);
 
         if (sample_color.a > 0.0)
         {
-            //  Normal لكل voxel
             vec3 normal = compute_normal(current_pos);
 
-            vec3 light_dir = normalize(vec3(1.0, 1.0, 1.0)-current_pos);
+            vec3 light_dir = normalize(vec3(1.0, 1.0, 1.0) - current_pos);
             vec3 view_dir  = normalize(-ray_dir);
 
             vec3 shade = shading(normal, view_dir, light_dir);
@@ -125,7 +156,8 @@ vec4 raycasting()
 
         current_pos += ray_dir * STEP_SIZE;
         traveled += STEP_SIZE;
-
+        
+        // Early Ray Termination
         if (accumulated_alpha > EARLY_TERMINATION)
             break;
     }
@@ -140,7 +172,7 @@ void main()
 {
     vec4 color = raycasting();
 
-    if (color.a < 0.0) //background
+    if (color.a < 0.0)
         outColor = vec4(0.05, 0.05, 0.05, 1.0);
     else
         outColor = vec4(color.rgb, 1.0);

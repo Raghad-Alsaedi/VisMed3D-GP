@@ -2,49 +2,18 @@
 <html>
   <head>
     <title>Hello, Triangle!</title>
-    <link rel="stylesheet" href="/volumeRendering/css/styles.css" />
-    <style>
-      .controls {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 10;
-      }
-      .controls button {
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-        cursor: pointer;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid #ccc;
-        border-radius: 5px;
-      }
-      .controls button:hover {
-        background: white;
-      }
-    </style>
+    <link rel="stylesheet" href="/volumeRendering/css/styles.css">
   </head>
-  <body>
-    <div class="app">
-      <div class="controls">
-        <button id="zoomIn">+</button>
-        <button id="zoomOut">-</button>
-      </div>
 
+  <body>
+
+    <div class="app">
       <canvas id="demo-canvas"></canvas>
     </div>
-
-    <script
-      type="text/javascript"
-      src="/volumeRendering/js/Common/initShaders.js"
-    ></script>
-    <script
-      type="text/javascript"
-      src="/volumeRendering/js/Common/MVnew.js"
-    ></script>
+    
+    <script type="text/javascript" src="/volumeRendering/js/Common/initShaders.js"></script>
+    <script type="text/javascript" src="/volumeRendering/js/Common/MVnew.js"></script>
     <script type="module" src="/volumeRendering/js/Renderer.js"></script>
+
   </body>
 </html>

@@ -28,10 +28,9 @@ export async function loadCTheadVolume() {
       );
     }
 
-    // قراءة 16-bit
-   // قراءة 16-bit مع احتمال أن الملف Big-Endian (نحتاج Swap)
+  
 const bytes = new Uint8Array(buffer);
-const slice16 = new Uint16Array(voxelsPerSlice);  // جديد وصح
+const slice16 = new Uint16Array(voxelsPerSlice);  
 
 for (let p = 0; p < voxelsPerSlice; p++) {
   slice16[p] = (bytes[2*p] << 8) | bytes[2*p + 1];  // Big-endian swap

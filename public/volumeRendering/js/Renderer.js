@@ -1,5 +1,7 @@
 import { Camera } from './Common/Camera.js';
 import { loadCTheadVolume } from './loadCThead.js';
+import { buildMinMaxOctree, uploadMinMaxOctreeToGPU } from './buildMinMaxOctree.js';
+
 
 // ================= VOLUME LOADER =================
 async function loadVolume(url, width, height, depth) {
@@ -117,7 +119,21 @@ async function initShaders(gl, vertexUrl, fragmentUrl) {
 //===================================================================================
 /** Main function to draw a triangle */
 async function main() {
+    let enableEmptySpaceSkipping = 0;
 
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "e"||e.key.toLowerCase() === "E") {
+        if(enableEmptySpaceSkipping==0){
+            enableEmptySpaceSkipping=1;
+            console.log("Empty Space Skipping ENABLED..");
+        }
+        else
+        {
+            enableEmptySpaceSkipping=0;
+            console.log("Empty Space Skipping DISABLED..");
+        }
+      }});
+  //================================
   const canvas = document.getElementById('demo-canvas');
   if (!canvas) {
     throw new Error('Could not find HTML canvas element');
@@ -191,6 +207,13 @@ if (DATASET === "CTHEAD") {
 //const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك
  // 183, 255, 125);
  
+  // =========================================
+  // Build Min/Max Octree
+  console.log("Building Min/Max Octree for empty space skipping...");
+  const octree = buildMinMaxOctree(volume.data, volume.width, volume.height, volume.depth, 8);
+  
+  // =========================================
+  // Upload Volume Texture
 const volumeTexture = gl.createTexture();
 //gl.activeTexture(gl.TEXTURE2);   // نستخدم TEXTURE2
 gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
@@ -222,6 +245,12 @@ gl.texSubImage3D(
 );
 
 console.log(" Volume uploaded to GPU");
+
+  // =========================================
+  // Upload Min/Max Octree Texture
+  const minMaxOctreeTexture = uploadMinMaxOctreeToGPU(gl, octree);
+
+  // =========================================
 //===================================
 // create to render to
 const frontFaceTexture = gl.createTexture();
@@ -286,7 +315,12 @@ gl.bindFramebuffer(gl.FRAMEBUFFER, backFace_framebuffer);
 //const attachmentPoint = gl.COLOR_ATTACHMENT0;
 gl.framebufferTexture2D(
     gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, backFaceTexture, level);
+// Debug: Framebuffer sizes
+  console.log("=== FRAMEBUFFER INFO ===");
+  console.log("Front face texture:", canvas.width, "x", canvas.height);
+  console.log("Back face texture:", canvas.width, "x", canvas.height);
 
+ 
 //=====================================================
   // Load shaders from files and create program
   let program;
@@ -328,6 +362,7 @@ let mvpInverseMatrix = mat4();
 mvpInverseMatrix = inverse4(mvpMatrix);
 
 function render() {
+  
     const modelMatrix = camera.getModelMatrix();
     const viewMatrix = camera.getViewMatrix();
     const projectionMatrix = camera.getProjectionMatrix();
@@ -429,6 +464,16 @@ function render() {
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
     gl.uniform1i(gl.getUniformLocation(final_program, "uVolumeTexture"), 2);
+
+      // Bind Min/Max Octree texture
+      gl.activeTexture(gl.TEXTURE3);
+      gl.bindTexture(gl.TEXTURE_3D, minMaxOctreeTexture);
+      gl.uniform1i(gl.getUniformLocation(final_program, "uMinMaxOctree"), 3);
+
+      // Send block size uniform
+      gl.uniform1f(gl.getUniformLocation(final_program, "uBlockSize"), octree.blockSize);
+      gl.uniform1i(gl.getUniformLocation(final_program, "uEnableEmptySpaceSkipping"), enableEmptySpaceSkipping);
+
 
     // fullscreen triangle
    
