@@ -58,7 +58,7 @@ const Login = () => {
     });
 
     if (res?.error) {
-      setGeneralError("Login failed (wrong username/password)");
+      setGeneralError("Login failed (wrong username or password)");
       setLoading(false);
       return;
     }
