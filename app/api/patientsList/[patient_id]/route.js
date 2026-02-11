@@ -1,12 +1,11 @@
-// app/api/patientsList/[patient_id]/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/database/db.js";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions"; // ✅ Add this line
+import { authOptions } from "@/lib/authOptions"; 
 
 export async function GET(req, { params }) {
   try {
-    // ✅ Add authentication check
+   
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(

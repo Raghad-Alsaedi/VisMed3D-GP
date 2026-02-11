@@ -51,7 +51,6 @@ const Login = () => {
       return;
     }
 
-    // ✅ NextAuth Credentials Login (يصنع Session)
     const res = await signIn("credentials", {
       username: result.data.username,
       password: result.data.password,
@@ -64,7 +63,6 @@ const Login = () => {
       return;
     }
 
-    // ✅ توجيه حسب الدور المختار (نفس كودك)
     router.push(result.data.role);
     setLoading(false);
   };

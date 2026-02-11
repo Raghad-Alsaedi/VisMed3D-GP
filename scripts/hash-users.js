@@ -3,13 +3,12 @@ const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 10;
 
 const users = [
-  { userName: "admin001", password: "Admin@12345" },
-  { userName: "doc1001", password: "Doctor1@12345" },
-  { userName: "doc1002", password: "Doctor2@12345" },
-  { userName: "rt2001", password: "Tech@12345" },
-  { userName: "pat3001", password: "Patient1@12345" },
-  { userName: "pat3002", password: "Patient2@12345" },
-  { userName: "pat3003", password: "Patient3@12345" },
+  { userName: "doc1001", password: "Doctor@123", role: "doctor" },
+  { userName: "doc1002", password: "Doctor@123", role: "doctor" },
+  { userName: "rt2001", password: "Tech@123", role: "technician" },
+  { userName: "pat3001", password: "Patient@123", role: "patient" },
+  { userName: "pat3002", password: "Patient@123", role: "patient" },
+  { userName: "pat3003", password: "Patient@123", role: "patient" },
 ];
 
 (async () => {

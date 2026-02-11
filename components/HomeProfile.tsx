@@ -10,7 +10,6 @@ const HomeProfile = () => {
   const pathname = usePathname();
   const isDoctor = pathname.startsWith("/doctor");
 
-  // ✅ NextAuth session
   const { data: session, status } = useSession();
 
   const [doctor, setDoctor] = useState<any>(null);
@@ -20,10 +19,8 @@ const HomeProfile = () => {
   useEffect(() => {
     if (!isDoctor) return;
 
-    // 1) ننتظر السشن تخلص تحميل
     if (status === "loading") return;
 
-    // 2) لو ما فيه تسجيل دخول
     const doctorId = (session as any)?.user?.id;
     if (!doctorId) {
       setDoctor(null);
@@ -47,10 +44,8 @@ const HomeProfile = () => {
       .finally(() => setLoading(false));
   }, [isDoctor, session, status]);
 
-  // ===== حالات العرض =====
   if (!isDoctor) {
-    // لو صفحة فني/غير دكتور، نخليها زي ما تبغين أو تعرض placeholder
-    // (نفس سلوكك السابق)
+    
   }
 
   if (isDoctor && status === "loading") {
@@ -93,7 +88,6 @@ const HomeProfile = () => {
     );
   }
 
-  // ===== قيم العرض =====
   const fullName =
     isDoctor && doctor
       ? [doctor.first_name, doctor.middle_name, doctor.last_name].filter(Boolean).join(" ")

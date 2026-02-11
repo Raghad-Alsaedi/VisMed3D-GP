@@ -22,6 +22,7 @@ const Header = () => {
   }
 
   const isTech = userRole === "/radio_tech";
+  
   const isDoctor = userRole === "/doctor";
 
   const handleSave = async () => {
@@ -111,12 +112,19 @@ const Header = () => {
             </button>
           </>
         )}
+{isReport &&(
+          <button className="header-reset-button">
+          <span className="header-reset-text-full">Capture Image</span>
+          <span className="header-reset-text-short">Capture</span>
+        </button>
+        )}
 
         <button className="header-reset-button">
           <span className="header-reset-text-full">Reset The View</span>
           <span className="header-reset-text-short">Reset</span>
         </button>
 
+        
         {!isTech && !isReport && (
           <Link href="/doctor/writingReport" className="header-report-link">
             <span>Report</span>

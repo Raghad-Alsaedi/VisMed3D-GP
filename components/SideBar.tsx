@@ -20,7 +20,6 @@ const SideBar = () => {
     ? ["/logout", "/doctor/writingReport", "/doctor/viewimg"]
     : ["/logout", "/radio_tech/dropfile", "/radio_tech/uploadPage"];
 
-  // Detect mobile screen size
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -32,7 +31,6 @@ const SideBar = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (

@@ -42,7 +42,6 @@ const PatientList = () => {
   const [accessions, setAccessions] = useState<Accession[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   
-  // ✅ Add ref to track if user is on the page
   const isPageVisible = useRef(true);
 
   const isDoctor = pathname.startsWith("/doctor");
@@ -65,7 +64,6 @@ const PatientList = () => {
     if (savedShowDetails) setShowDetails(savedShowDetails === "true");
   }, []);
 
-  // ✅ Track page visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
       isPageVisible.current = !document.hidden;
@@ -78,12 +76,10 @@ const PatientList = () => {
     };
   }, []);
 
-  // ✅ Smart refresh - only updates report status when content changes
   useEffect(() => {
     if (!showDetails || !selectedPatient || !isDoctor) return;
 
     const interval = setInterval(async () => {
-      // Only refresh if page is visible
       if (!isPageVisible.current) return;
 
       try {
@@ -91,7 +87,6 @@ const PatientList = () => {
         const data = await res.json();
 
         if (data.status === "ok") {
-          // ✅ Only update if report status actually changed
           const hasChanges = data.accessions.some((newAcc: Accession, index: number) => {
             const oldAcc = accessions[index];
             return oldAcc && (
@@ -111,7 +106,7 @@ const PatientList = () => {
       } catch (err) {
         console.error("Auto-refresh error:", err);
       }
-    }, 200); // ✅ Check every 2 seconds (fast enough for real-time feel)
+    }, 200); 
 
     return () => clearInterval(interval);
   }, [showDetails, selectedPatient, accessions, isDoctor]);

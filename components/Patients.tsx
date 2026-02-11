@@ -128,7 +128,6 @@ async function getPatientData(userId: string): Promise<{
 }
 
 export default async function PatientsPage() {
-  // ✅ Replace cookies with NextAuth session
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 

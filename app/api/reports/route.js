@@ -5,12 +5,11 @@ import { authOptions } from "@/lib/authOptions";
 
 export async function GET(req) {
   try {
-    // ✅ Add authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { status: "error", message: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -20,7 +19,7 @@ export async function GET(req) {
     if (!accessionId) {
       return NextResponse.json(
         { status: "error", message: "accession_id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,14 +48,14 @@ export async function GET(req) {
       WHERE r.accession_id = ?
       LIMIT 1
       `,
-      [accessionId]
+      [accessionId],
     );
 
     if (!rows.length) {
       return NextResponse.json({
         status: "ok",
         report: null,
-        message: "No report found"
+        message: "No report found",
       });
     }
 
@@ -83,7 +82,7 @@ export async function GET(req) {
     console.error("GET REPORT ERROR:", err);
     return NextResponse.json(
       { status: "error", message: "Server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

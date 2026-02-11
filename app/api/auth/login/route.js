@@ -18,7 +18,6 @@ export async function POST(req) {
       );
     }
 
-    // نجيب المستخدم + دوره
     const [rows] = await db.query(
       `
       SELECT
@@ -50,7 +49,6 @@ export async function POST(req) {
       );
     }
 
-    //  تحويل المسار إلى role_name الحقيقي في DB
     const roleMap = {
       "/doctor": "doctor",
       "/patients": "patient",

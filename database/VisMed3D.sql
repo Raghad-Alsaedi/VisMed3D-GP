@@ -1,497 +1,293 @@
--- MySQL dump 10.13  Distrib 8.0.44, for macos15 (arm64)
---
--- Host: 127.0.0.1    Database: volume_rendering
--- ------------------------------------------------------
--- Server version	9.5.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
-SET @@SESSION.SQL_LOG_BIN= 0;
-
---
--- GTID state at the beginning of the backup 
---
-
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '092d24ea-b135-11f0-a833-8232709cbfe9:1-121';
-
---
--- Table structure for table `annotations`
---
-
-DROP TABLE IF EXISTS `annotations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `annotations` (
-  `annotation_id` int NOT NULL AUTO_INCREMENT,
-  `volume_id` int NOT NULL,
-  `doctor_id` int NOT NULL,
-  `note` text NOT NULL,
-  `position` varchar(50) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`annotation_id`),
-  KEY `volume_id` (`volume_id`),
-  KEY `doctor_id` (`doctor_id`),
-  CONSTRAINT `annotations_ibfk_1` FOREIGN KEY (`volume_id`) REFERENCES `volume_files` (`id`),
-  CONSTRAINT `annotations_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`doctor_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `annotations`
---
-
-LOCK TABLES `annotations` WRITE;
-/*!40000 ALTER TABLE `annotations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `annotations` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doctors`
---
-
-DROP TABLE IF EXISTS `doctors`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `doctors` (
-  `doctor_id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `specialization` varchar(100) DEFAULT NULL,
-  `license_number` varchar(50) DEFAULT NULL,
-  `can_annotate_volume` tinyint(1) DEFAULT '1',
-  `can_upload_volume` tinyint(1) DEFAULT '0',
-  `password_hash` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`doctor_id`),
-  UNIQUE KEY `email` (`email`),
-  UNIQUE KEY `license_number` (`license_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `doctors`
---
-
-LOCK TABLES `doctors` WRITE;
-/*!40000 ALTER TABLE `doctors` DISABLE KEYS */;
-INSERT INTO `doctors` VALUES (1,'Dr.  Ahmed Ali','ahmed@hospital.com','Radiology','LIC123456',1,0,'pass1234','2025-10-25 02:25:23'),(2,'Dr. Fatimah Saleh','fatimah@hospital.com','Oncology','LIC789012',1,0,'pass5678','2025-10-25 02:25:23'),(3,'Dr. Sami AlSaud','sami@hospital.com','Cardiology','LIC345678',1,0,'pass9012','2025-10-25 02:25:23'),(4,'Dr. Noura AlHarbi','noura@hospital.com','Radiology','LIC987654',1,0,'pass3456','2025-10-25 02:25:23');
-/*!40000 ALTER TABLE `doctors` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `patient_accounts`
---
-
-DROP TABLE IF EXISTS `patient_accounts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `patient_accounts` (
-  `account_id` int NOT NULL AUTO_INCREMENT,
-  `patient_id` int NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `can_view_volume` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`account_id`),
-  UNIQUE KEY `email` (`email`),
-  KEY `patient_id` (`patient_id`),
-  CONSTRAINT `patient_accounts_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `patient_accounts`
---
-
-LOCK TABLES `patient_accounts` WRITE;
-/*!40000 ALTER TABLE `patient_accounts` DISABLE KEYS */;
-/*!40000 ALTER TABLE `patient_accounts` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `patients`
---
-
-DROP TABLE IF EXISTS `patients`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `patients` (
-  `patient_id` int NOT NULL AUTO_INCREMENT,
-  `full_name` varchar(100) NOT NULL,
-  `national_id` varchar(20) DEFAULT NULL,
-  `medical_record_number` varchar(50) DEFAULT NULL,
-  `date_of_birth` date DEFAULT NULL,
-  `gender` enum('male','female') DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`patient_id`),
-  UNIQUE KEY `national_id` (`national_id`),
-  UNIQUE KEY `medical_record_number` (`medical_record_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `patients`
---
-
-LOCK TABLES `patients` WRITE;
-/*!40000 ALTER TABLE `patients` DISABLE KEYS */;
-/*!40000 ALTER TABLE `patients` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `technicians`
---
-
-DROP TABLE IF EXISTS `technicians`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `technicians` (
-  `technician_id` int NOT NULL AUTO_INCREMENT,
-  `full_name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `department` varchar(50) DEFAULT NULL,
-  `can_upload_volume` tinyint(1) DEFAULT '1',
-  `password_hash` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`technician_id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `technicians`
---
-
-LOCK TABLES `technicians` WRITE;
-/*!40000 ALTER TABLE `technicians` DISABLE KEYS */;
-/*!40000 ALTER TABLE `technicians` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `volume_files`
---
-
-DROP TABLE IF EXISTS `volume_files`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `volume_files` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `file_name` varchar(100) NOT NULL,
-  `file_path` varchar(255) NOT NULL,
-  `dimensions` varchar(50) DEFAULT NULL,
-  `modality` varchar(20) DEFAULT NULL,
-  `upload_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `volume_files`
---
-
-LOCK TABLES `volume_files` WRITE;
-/*!40000 ALTER TABLE `volume_files` DISABLE KEYS */;
-/*!40000 ALTER TABLE `volume_files` ENABLE KEYS */;
-UNLOCK TABLES;
-SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-02-05  2:49:19
--- MySQL dump 10.13  Distrib 8.0.44, for macos15 (arm64)
---
--- Host: 127.0.0.1    Database: VisMed3D
--- ------------------------------------------------------
--- Server version	9.5.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
-SET @@SESSION.SQL_LOG_BIN= 0;
-
---
--- GTID state at the beginning of the backup 
---
-
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '092d24ea-b135-11f0-a833-8232709cbfe9:1-121';
-SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-02-05  2:49:19
--- MySQL dump 10.13  Distrib 8.0.44, for macos15 (arm64)
---
--- Host: 127.0.0.1    Database: volume_rendering_system
--- ------------------------------------------------------
--- Server version	9.5.0
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
-SET @@SESSION.SQL_LOG_BIN= 0;
-
---
--- GTID state at the beginning of the backup 
---
-
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '092d24ea-b135-11f0-a833-8232709cbfe9:1-121';
-
---
--- Table structure for table `annotations`
---
-
-DROP TABLE IF EXISTS `annotations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `annotations` (
-  `annotation_id` int NOT NULL AUTO_INCREMENT,
-  `volume_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `note` text NOT NULL,
-  `position` varchar(50) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`annotation_id`),
-  KEY `volume_id` (`volume_id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `annotations_ibfk_1` FOREIGN KEY (`volume_id`) REFERENCES `volume_files` (`id`),
-  CONSTRAINT `annotations_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `annotations`
---
-
-LOCK TABLES `annotations` WRITE;
-/*!40000 ALTER TABLE `annotations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `annotations` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `doctors`
---
-
-DROP TABLE IF EXISTS `doctors`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `doctors` (
-  `doctor_id` int NOT NULL AUTO_INCREMENT,
-  `first_name` varchar(50) NOT NULL,
-  `last_name` varchar(50) NOT NULL,
-  `specialization` varchar(100) DEFAULT NULL,
-  `email` varchar(100) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`doctor_id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `doctors`
---
-
-LOCK TABLES `doctors` WRITE;
-/*!40000 ALTER TABLE `doctors` DISABLE KEYS */;
-/*!40000 ALTER TABLE `doctors` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `patient_accounts`
---
-
-DROP TABLE IF EXISTS `patient_accounts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `patient_accounts` (
-  `account_id` int NOT NULL AUTO_INCREMENT,
-  `patient_id` int NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `can_view_volume` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`account_id`),
-  UNIQUE KEY `email` (`email`),
-  KEY `patient_id` (`patient_id`),
-  CONSTRAINT `patient_accounts_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `patient_accounts`
---
-
-LOCK TABLES `patient_accounts` WRITE;
-/*!40000 ALTER TABLE `patient_accounts` DISABLE KEYS */;
-/*!40000 ALTER TABLE `patient_accounts` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `patients`
---
-
-DROP TABLE IF EXISTS `patients`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `patients` (
-  `patient_id` int NOT NULL AUTO_INCREMENT,
-  `first_name` varchar(50) NOT NULL,
-  `last_name` varchar(50) NOT NULL,
-  `date_of_birth` date DEFAULT NULL,
-  `gender` enum('male','female') DEFAULT NULL,
-  `national_id` varchar(20) DEFAULT NULL,
-  `contact_number` varchar(20) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`patient_id`),
-  UNIQUE KEY `national_id` (`national_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `patients`
---
-
-LOCK TABLES `patients` WRITE;
-/*!40000 ALTER TABLE `patients` DISABLE KEYS */;
-/*!40000 ALTER TABLE `patients` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `technicians`
---
-
-DROP TABLE IF EXISTS `technicians`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `technicians` (
-  `technician_id` int NOT NULL AUTO_INCREMENT,
-  `full_name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `department` varchar(50) DEFAULT NULL,
-  `can_upload_volume` tinyint(1) DEFAULT '1',
-  `password_hash` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`technician_id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `technicians`
---
-
-LOCK TABLES `technicians` WRITE;
-/*!40000 ALTER TABLE `technicians` DISABLE KEYS */;
-/*!40000 ALTER TABLE `technicians` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `users`
---
-
-DROP TABLE IF EXISTS `users`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `users` (
-  `user_id` int NOT NULL AUTO_INCREMENT,
-  `username` varchar(50) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `role` enum('admin','technician') DEFAULT 'technician',
-  `password_hash` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `username` (`username`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users`
---
-
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `volume_files`
---
-
-DROP TABLE IF EXISTS `volume_files`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `volume_files` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `file_name` varchar(100) NOT NULL,
-  `file_path` varchar(255) NOT NULL,
-  `dimensions` varchar(50) DEFAULT NULL,
-  `modality` varchar(20) DEFAULT NULL,
-  `upload_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `volume_files`
---
-
-LOCK TABLES `volume_files` WRITE;
-/*!40000 ALTER TABLE `volume_files` DISABLE KEYS */;
-/*!40000 ALTER TABLE `volume_files` ENABLE KEYS */;
-UNLOCK TABLES;
-SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-02-05  2:49:19
+DROP DATABASE IF EXISTS VisMed3D;
+
+CREATE DATABASE VisMed3D;
+
+USE VisMed3D;
+
+-- ============================================================
+-- Doctors, Patients, Technicians
+-- ============================================================
+
+CREATE TABLE doctors (
+    doctor_id INT PRIMARY KEY AUTO_INCREMENT,
+    can_annotate_volume TINYINT(1) DEFAULT 1,
+    can_upload_volume TINYINT(1) DEFAULT 0
+);
+
+CREATE TABLE patients (
+    patient_id INT PRIMARY KEY AUTO_INCREMENT,
+    medical_record_number VARCHAR(50) NOT NULL UNIQUE,
+    national_id VARCHAR(20) NOT NULL UNIQUE,
+    date_of_birth DATE NOT NULL,
+    patient_code VARCHAR(50) UNIQUE NOT NULL
+);
+
+DELIMITER //
+CREATE TRIGGER before_insert_patient
+BEFORE INSERT ON patients
+FOR EACH ROW
+BEGIN
+    DECLARE next_mrn_number INT;
+    
+    IF NEW.medical_record_number IS NULL OR NEW.medical_record_number = '' THEN
+        SELECT COALESCE(MAX(CAST(SUBSTRING(medical_record_number, 4) AS UNSIGNED)), 0) + 1
+        INTO next_mrn_number
+        FROM patients
+        WHERE medical_record_number LIKE 'MRN%';
+        
+        SET NEW.medical_record_number = CONCAT('MRN', LPAD(next_mrn_number, 6, '0'));
+    END IF;
+END//
+DELIMITER ;
+
+CREATE TABLE technicians (
+    technician_id INT PRIMARY KEY AUTO_INCREMENT,
+    can_upload_volume TINYINT(1) DEFAULT 1
+);
+
+-- ============================================================
+-- Users
+-- ============================================================
+
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('doctor', 'patient', 'technician') NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    middle_name VARCHAR(50) NULL,
+    last_name VARCHAR(50) NOT NULL,
+    gender ENUM('male', 'female') NOT NULL,
+    email VARCHAR(100) NULL UNIQUE,
+    phone VARCHAR(20) NULL,
+    profile_picture VARCHAR(255) NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    doctor_id INT NULL UNIQUE,
+    patient_id INT NULL UNIQUE,
+    technician_id INT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- Doctor Profiles
+-- ============================================================
+
+CREATE TABLE doctor_profiles (
+    doctor_id INT PRIMARY KEY,
+    doctor_code VARCHAR(20) UNIQUE NULL,
+    license_number VARCHAR(50) NULL,
+    years_experience INT NULL,
+    specialty VARCHAR(100) NULL,
+    profile_image_url VARCHAR(255) NULL,
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE
+);
+
+-- ============================================================
+-- Technician Profiles
+-- ============================================================
+
+CREATE TABLE technician_profiles (
+    technician_id INT PRIMARY KEY,
+    technician_code VARCHAR(20) UNIQUE NULL,
+    license_number VARCHAR(50) NULL,
+    years_experience INT NULL,
+    specialty VARCHAR(100) NULL,
+    profile_image_url VARCHAR(255) NULL,
+    FOREIGN KEY (technician_id) REFERENCES technicians(technician_id) ON DELETE CASCADE
+);
+
+-- ============================================================
+-- Accession
+-- ============================================================
+
+CREATE TABLE accession (
+    accession_id INT PRIMARY KEY AUTO_INCREMENT,
+    accession_number VARCHAR(20) NOT NULL UNIQUE,
+    patient_id INT NOT NULL,
+    exam_date DATE NOT NULL,
+    modality VARCHAR(20) DEFAULT 'CT',
+    body_part VARCHAR(50) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+);
+
+DELIMITER //
+CREATE TRIGGER before_insert_accession
+BEFORE INSERT ON accession
+FOR EACH ROW
+BEGIN
+    DECLARE next_acc_number INT;
+    
+    IF NEW.accession_number IS NULL OR NEW.accession_number = '' THEN
+        SELECT COALESCE(MAX(CAST(SUBSTRING(accession_number, 4) AS UNSIGNED)), 0) + 1
+        INTO next_acc_number
+        FROM accession
+        WHERE accession_number LIKE 'ACC%';
+        
+        SET NEW.accession_number = CONCAT('ACC', LPAD(next_acc_number, 6, '0'));
+    END IF;
+END//
+DELIMITER ;
+
+-- ============================================================
+-- Volumes
+-- ============================================================
+
+CREATE TABLE volumes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  accession_id INT NOT NULL,
+  dataset_name VARCHAR(100) NOT NULL,
+  modality VARCHAR(20) DEFAULT 'CT',
+  file_format VARCHAR(10) NOT NULL,
+  width INT NOT NULL,
+  height INT NOT NULL,
+  depth INT NOT NULL,
+  storage_path VARCHAR(255) NOT NULL,
+  file_prefix VARCHAR(100) NOT NULL,
+  start_index INT DEFAULT 1,
+  end_index INT NOT NULL,
+  checksum_sha256 CHAR(64),
+  status ENUM('PROCESSING','READY','REJECTED') DEFAULT 'PROCESSING',
+  rejection_reason VARCHAR(255),
+  uploaded_by INT NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (accession_id) REFERENCES accession(accession_id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES technicians(technician_id)
+);
+
+-- ============================================================
+-- Reports
+-- ============================================================
+
+CREATE TABLE reports (
+    report_id INT PRIMARY KEY AUTO_INCREMENT,
+    accession_id INT NOT NULL,
+    volume_id INT NULL,
+    doctor_id INT NOT NULL,
+    doctor_name VARCHAR(150) NOT NULL,
+    report_content TEXT NOT NULL,
+    report_image VARCHAR(255) NULL,
+    report_status ENUM('Draft', 'completed') DEFAULT 'Draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (accession_id) REFERENCES accession(accession_id) ON DELETE CASCADE,
+    FOREIGN KEY (volume_id) REFERENCES volumes(id) ON DELETE SET NULL,
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE
+);
+
+-- ============================================================
+-- Doctor - Patient Assignments
+-- ============================================================
+
+CREATE TABLE doctor_patient_assignments (
+    assignment_id INT PRIMARY KEY AUTO_INCREMENT,
+    doctor_id INT NOT NULL,
+    patient_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_assignment (doctor_id, patient_id)
+);
+
+-- ============================================================
+-- Technician - Patient Assignments
+-- ============================================================
+
+CREATE TABLE technician_patient_assignments (
+    assignment_id INT PRIMARY KEY AUTO_INCREMENT,
+    technician_id INT NOT NULL,
+    patient_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (technician_id) REFERENCES technicians(technician_id) ON DELETE CASCADE,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_assignment (technician_id, patient_id)
+);
+
+-- ============================================================
+-- Foreign Keys: Users
+-- ============================================================
+
+ALTER TABLE users
+    ADD FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
+    ADD FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    ADD FOREIGN KEY (technician_id) REFERENCES technicians(technician_id) ON DELETE CASCADE;
+
+-- ============================================================
+-- Sample Data: Doctors
+-- ============================================================
+
+INSERT INTO doctors (can_annotate_volume, can_upload_volume) VALUES
+(1, 0),
+(1, 0);
+
+-- ============================================================
+-- Sample Data: Doctor Profiles
+-- ============================================================
+
+INSERT INTO doctor_profiles (doctor_id, doctor_code, license_number, years_experience, specialty, profile_image_url) VALUES
+(1, 'DOC-0015', 'SCFHS-123456', 9, 'Orthopedist',  '/profiles/1.png'),
+(2, 'DOC-0016', 'SCFHS-654321', 7, 'Radiologist',   '/profiles/2.png');
+
+-- ============================================================
+-- Sample Data: Patients
+-- ============================================================
+
+INSERT INTO patients (medical_record_number, national_id, date_of_birth, patient_code) VALUES
+(NULL, '1098765432', '1990-05-15', 'P-001'),
+(NULL, '1098765433', '1985-08-22', 'P-002'),
+(NULL, '1098765434', '1992-11-03', 'P-003');
+
+-- ============================================================
+-- Sample Data: Technicians
+-- ============================================================
+
+INSERT INTO technicians (can_upload_volume) VALUES
+(1);
+
+-- ============================================================
+-- Sample Data: Technician Profiles
+-- ============================================================
+
+INSERT INTO technician_profiles (technician_id, technician_code, license_number, years_experience, specialty, profile_image_url) VALUES
+(1, 'TECH-0001', 'TECH001567', NULL, 'Radiology Technician', '/profiles/3.png');
+
+-- ============================================================
+-- Sample Data: Users
+-- ============================================================
+
+INSERT INTO users (username, password_hash, role, first_name, last_name, gender, email, phone, profile_picture, is_active, doctor_id, patient_id, technician_id) VALUES
+('doc1001',  '$2b$10$OviHdfLTd6h4sW0op/bLCegQ3ot0EKl8jwGuOmfMDQOOeAAA2H22S', 'doctor',     'Doctor',  'One',      'male',   'doc1@vismed.com',  '+966501111111', '/profiles/1.png', 1, 1, NULL, NULL),
+('doc1002',  '$2b$10$Y7/AZQSUSXdcAUxza7Qpc.SBKCfrLWpo/lF3A8VSTcjgYLEofAMnO', 'doctor',     'Doctor',  'Two',      'female', 'doc2@vismed.com',  '+966502222222', '/profiles/2.png', 1, 2, NULL, NULL),
+('rt2001',   '$2b$10$UtdwuZdSh7s9AqrUtceZJuONhQNpgD24DFfOKS.O9zf07GrW.8fqm', 'technician', 'RT',      'Tech',     'male',   'rt@vismed.com',    '+966503333333', '/profiles/3.png', 1, NULL, NULL, 1),
+('pat3001',  '$2b$10$Di1ypEMeJ343tbaJDPQUFe6LnczWaed.iYace8ASokAbABXYt2K2.', 'patient',    'Noura',   'Alrashid', 'female', 'pat1@vismed.com',  '+966551234567', '/profiles/4.png', 1, NULL, 1, NULL),
+('pat3002',  '$2b$10$IMLc8FLGX1BdRnpK9zwC/OME6kG64WoMz5QnXipmLu/vMWnBVH1Z2', 'patient',   'Yousef',  'Alshehri', 'male',   'pat2@vismed.com',  '+966552345678', '/profiles/5.png', 1, NULL, 2, NULL),
+('pat3003',  '$2b$10$sD1nCnnaO1QW12XvIRRzh.BUDj9Q/L5bZrp5qxyuqvCf8ovon8Kba', 'patient',   'Hessa',   'Alotaibi', 'female', 'pat3@vismed.com',  '+966553456789', '/profiles/6.png', 1, NULL, 3, NULL);
+
+-- ============================================================
+-- Sample Data: Technician - Patient Assignments
+-- ============================================================
+
+INSERT INTO technician_patient_assignments (technician_id, patient_id) VALUES
+(1, 1),
+(1, 2),
+(1, 3);
+
+-- ============================================================
+-- Sample Data: Doctor - Patient Assignments
+-- ============================================================
+
+INSERT INTO doctor_patient_assignments (doctor_id, patient_id) VALUES
+(1, 1),
+(1, 2),
+(2, 3);
+
+-- ============================================================
+-- Sample Data: Accessions
+-- ============================================================
+
+INSERT INTO accession (accession_number, patient_id, exam_date, modality, body_part) VALUES
+(NULL, 1, '2023-03-12', 'CT', 'Skull'),
+(NULL, 2, '2023-03-12', 'CT', 'Foot'),
+(NULL, 3, '2023-03-12', 'CT', 'Head');

@@ -24,7 +24,7 @@ const LogOut = () => {
             <Link
               href="/login"
               className="btn-large-danger inline-block"
-              onClick={handleLogout} // ✅
+              onClick={handleLogout} 
             >
               Log out
             </Link>

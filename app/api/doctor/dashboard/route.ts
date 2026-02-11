@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/database/db";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions"; // Add this
+import { authOptions } from "@/lib/authOptions"; 
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const doctorId = searchParams.get("doctorId");
 
-    // Add authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -18,7 +17,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "doctorId is required" }, { status: 400 });
     }
 
-    // Rest of your code...
     const [docRows]: any = await db.query(
       `
       SELECT
