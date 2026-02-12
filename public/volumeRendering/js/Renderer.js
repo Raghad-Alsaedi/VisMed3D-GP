@@ -116,6 +116,74 @@ async function initShaders(gl, vertexUrl, fragmentUrl) {
 
   return program;
 }
+
+//===================================
+// Function to compute normals for entire volume (pre-processing)
+// هذه الـ function تحسب النورمالز لكل voxels في الـ volume مرة واحدة
+function computeNormalsFromVolume(volume) {
+  const width = volume.width;
+  const height = volume.height;
+  const depth = volume.depth;
+  
+  // نخزن النورمالز في array (3 قيم لكل voxel: x, y, z)
+  const normals = new Float32Array(width * height * depth * 3);
+  
+  console.log("Computing normals for volume...");
+  
+  // نمر على كل voxel في الـ volume
+  for (let z = 0; z < depth; z++) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        
+        // حساب الـ gradient (الفرق بين القيم المجاورة)
+        const step = 1;
+        
+        // dx: الفرق في اتجاه X
+        const x_plus = Math.min(x + step, width - 1);
+        const x_minus = Math.max(x - step, 0);
+        const dx = getVoxelValue(volume, x_plus, y, z) - getVoxelValue(volume, x_minus, y, z);
+        
+        // dy: الفرق في اتجاه Y
+        const y_plus = Math.min(y + step, height - 1);
+        const y_minus = Math.max(y - step, 0);
+        const dy = getVoxelValue(volume, x, y_plus, z) - getVoxelValue(volume, x, y_minus, z);
+        
+        // dz: الفرق في اتجاه Z
+        const z_plus = Math.min(z + step, depth - 1);
+        const z_minus = Math.max(z - step, 0);
+        const dz = getVoxelValue(volume, x, y, z_plus) - getVoxelValue(volume, x, y, z_minus);
+        
+        // تطبيع النورمال (normalize)
+        const length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        let nx = 0, ny = 0, nz = 0;
+        if (length > 0.0001) {
+          nx = dx / length;
+          ny = dy / length;
+          nz = dz / length;
+        }
+        
+        // تخزين النورمال في الـ array
+        // نحول من [-1, 1] إلى [0, 1] عشان نخزنه في texture
+        const index = (z * width * height + y * width + x) * 3;
+        normals[index + 0] = nx * 0.5 + 0.5;  // x component
+        normals[index + 1] = ny * 0.5 + 0.5;  // y component
+        normals[index + 2] = nz * 0.5 + 0.5;  // z component
+      }
+    }
+  }
+  
+  console.log("Normals computed!");
+  return normals;
+}
+
+// Helper function: قراءة قيمة voxel معين
+function getVoxelValue(volume, x, y, z) {
+  const index = z * volume.width * volume.height + y * volume.width + x;
+  return volume.data[index] / 255.0;  // نحول من [0, 255] إلى [0, 1]
+}
+//===================================
+
 //===================================================================================
 /** Main function to draw a triangle */
 async function main() {
@@ -206,6 +274,13 @@ if (DATASET === "CTHEAD") {
 
 //const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك
  // 183, 255, 125);
+
+  // =========================================
+  // Compute Normals (مباشرة بعد loading الـ volume!)
+  console.log("Computing normals from volume...");
+  const normalsData = computeNormalsFromVolume(volume);
+  console.log("Normals computed successfully!");
+  // =========================================
  
   // =========================================
   // Build Min/Max Octree
@@ -245,6 +320,50 @@ gl.texSubImage3D(
 );
 
 console.log(" Volume uploaded to GPU");
+
+  // =========================================
+  // Create Normal Texture 3D (استخدام النورمالز اللي حسبناها قبل)
+  console.log("Creating normal texture...");
+
+  // إنشاء Normal Texture
+  const normalTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_3D, normalTexture);
+  gl.texStorage3D(
+    gl.TEXTURE_3D,
+    1,
+    gl.RGB8,  // RGB لأن النورمال له 3 مكونات (x, y, z)
+    volume.width,
+    volume.height,
+    volume.depth
+  );
+
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+  // رفع النورمالز للـ GPU (استخدام normalsData اللي حسبناها بعد loading الـ volume)
+  // نحول Float32Array إلى Uint8Array
+  const normalsUint8 = new Uint8Array(normalsData.length);
+  for (let i = 0; i < normalsData.length; i++) {
+    normalsUint8[i] = Math.floor(normalsData[i] * 255);
+  }
+
+  gl.texSubImage3D(
+    gl.TEXTURE_3D,
+    0,
+    0, 0, 0,
+    volume.width,
+    volume.height,
+    volume.depth,
+    gl.RGB,
+    gl.UNSIGNED_BYTE,
+    normalsUint8
+  );
+
+  console.log("Normal texture uploaded to GPU");
+  // =========================================
 
   // =========================================
   // Upload Min/Max Octree Texture
@@ -465,15 +584,19 @@ function render() {
     gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
     gl.uniform1i(gl.getUniformLocation(final_program, "uVolumeTexture"), 2);
 
-      // Bind Min/Max Octree texture
-      gl.activeTexture(gl.TEXTURE3);
-      gl.bindTexture(gl.TEXTURE_3D, minMaxOctreeTexture);
-      gl.uniform1i(gl.getUniformLocation(final_program, "uMinMaxOctree"), 3);
+    // Bind Min/Max Octree texture
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_3D, minMaxOctreeTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uMinMaxOctree"), 3);
 
-      // Send block size uniform
-      gl.uniform1f(gl.getUniformLocation(final_program, "uBlockSize"), octree.blockSize);
-      gl.uniform1i(gl.getUniformLocation(final_program, "uEnableEmptySpaceSkipping"), enableEmptySpaceSkipping);
+    // Bind Normal Texture (التكستشر الجديد!)
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_3D, normalTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uNormalTexture"), 4);
 
+    // Send block size uniform
+    gl.uniform1f(gl.getUniformLocation(final_program, "uBlockSize"), octree.blockSize);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uEnableEmptySpaceSkipping"), enableEmptySpaceSkipping);
 
     // fullscreen triangle
    

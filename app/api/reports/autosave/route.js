@@ -16,13 +16,13 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { accession_id, report_content } = body;
+    const { accession_id, report_text } = body;
 
-    if (!accession_id || report_content === undefined) {
+    if (!accession_id || report_text === undefined) {
       return NextResponse.json(
         {
           status: "error",
-          message: "accession_id and report_content are required",
+          message: "accession_id and report_text are required",
         },
         { status: 400 },
       );
@@ -54,9 +54,9 @@ export async function POST(req) {
     const doctorName = `${doctor.first_name} ${doctor.last_name}`;
 
     const newStatus =
-      report_content && report_content.trim().length > 0
+      report_text && report_text.trim().length > 0
         ? "completed"
-        : "pending";
+        : "Draft";
 
     const [existing] = await db.query(
       `SELECT report_id FROM reports WHERE accession_id = ? AND doctor_id = ? LIMIT 1`,
@@ -67,12 +67,13 @@ export async function POST(req) {
       await db.query(
         `
         UPDATE reports 
-        SET report_content = ?, 
+        SET report_text = ?, 
             report_status = ?,
+            last_autosave = NOW(),
             updated_at = NOW()
         WHERE accession_id = ? AND doctor_id = ?
         `,
-        [report_content, newStatus, accession_id, doctor.doctor_id],
+        [report_text, newStatus, accession_id, doctor.doctor_id],
       );
 
       return NextResponse.json({
@@ -83,10 +84,10 @@ export async function POST(req) {
     } else {
       const [result] = await db.query(
         `
-        INSERT INTO reports (accession_id, doctor_id, doctor_name, report_content, report_status, created_at)
-        VALUES (?, ?, ?, ?, ?, NOW())
+        INSERT INTO reports (accession_id, doctor_id, doctor_name, report_text, report_status, last_autosave, created_at)
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
         `,
-        [accession_id, doctor.doctor_id, doctorName, report_content, newStatus],
+        [accession_id, doctor.doctor_id, doctorName, report_text, newStatus],
       );
 
       return NextResponse.json({

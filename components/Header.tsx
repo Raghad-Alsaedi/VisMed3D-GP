@@ -110,21 +110,21 @@ const Header = () => {
             >
               {isSaving ? "Saving..." : "Save"}
             </button>
+
+            <button className="header-reset-button">
+              <span className="header-reset-text-full">Reset The View</span>
+              <span className="header-reset-text-short">Reset</span>
+            </button>
           </>
         )}
-{isReport &&(
+
+        {!(isTech && fromUpload) && (
           <button className="header-reset-button">
-          <span className="header-reset-text-full">Capture Image</span>
-          <span className="header-reset-text-short">Capture</span>
-        </button>
+            <span className="header-reset-text-full">Reset The View</span>
+            <span className="header-reset-text-short">Reset</span>
+          </button>
         )}
 
-        <button className="header-reset-button">
-          <span className="header-reset-text-full">Reset The View</span>
-          <span className="header-reset-text-short">Reset</span>
-        </button>
-
-        
         {!isTech && !isReport && (
           <Link href="/doctor/writingReport" className="header-report-link">
             <span>Report</span>

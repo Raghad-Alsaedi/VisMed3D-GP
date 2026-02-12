@@ -67,6 +67,7 @@ const DropFile = () => {
         setSuccessMessage('File uploaded successfully');
         
         localStorage.setItem('tempFileId', response.data.fileId);
+        localStorage.setItem('userRole', '/radio_tech');
         
         setTimeout(() => {
           router.push(`/viewimg?fileId=${response.data.fileId}&fromUpload=true`);

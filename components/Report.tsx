@@ -56,7 +56,7 @@ const Report = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accession_id: accessionId,
-          report_content: textToSave,
+          report_text: textToSave,
         }),
       });
 

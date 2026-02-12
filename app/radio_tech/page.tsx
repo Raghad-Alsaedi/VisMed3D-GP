@@ -1,4 +1,4 @@
-import HomeProfile from "@/components/HomeProfile";
+import HomeProfile from "@/components/HomeTech";
 
 export default function Home() {
   return (

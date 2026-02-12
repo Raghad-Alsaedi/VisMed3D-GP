@@ -80,6 +80,7 @@ CREATE TABLE doctor_profiles (
     years_experience INT NULL,
     specialty VARCHAR(100) NULL,
     profile_image_url VARCHAR(255) NULL,
+    signature_path VARCHAR(500) NULL,
     FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE
 );
 
@@ -107,7 +108,6 @@ CREATE TABLE accession (
     patient_id INT NOT NULL,
     exam_date DATE NOT NULL,
     modality VARCHAR(20) DEFAULT 'CT',
-    body_part VARCHAR(50) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
@@ -167,14 +167,36 @@ CREATE TABLE reports (
     volume_id INT NULL,
     doctor_id INT NOT NULL,
     doctor_name VARCHAR(150) NOT NULL,
-    report_content TEXT NOT NULL,
-    report_image VARCHAR(255) NULL,
+    
+    -- معلومات الفحص
+    body_part VARCHAR(100) NULL,
+    
+    -- نص الحفظ التلقائي (للدكتور فقط)
+    autosave_text TEXT NULL,
+    
+    -- النص النهائي (يظهر للمريض)
+    report_text TEXT NULL,
+    
+    -- الصور (Screenshots من الـ Volume)
+    images JSON NULL,
+    
+    -- حالة التقرير
     report_status ENUM('Draft', 'completed') DEFAULT 'Draft',
+    
+    -- التوقيع
+    signed_by INT NULL,
+    signed_at TIMESTAMP NULL,
+    
+    -- الحفظ التلقائي
+    last_autosave TIMESTAMP NULL,
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    
     FOREIGN KEY (accession_id) REFERENCES accession(accession_id) ON DELETE CASCADE,
     FOREIGN KEY (volume_id) REFERENCES volumes(id) ON DELETE SET NULL,
-    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
+    FOREIGN KEY (signed_by) REFERENCES doctors(doctor_id) ON DELETE SET NULL
 );
 
 -- ============================================================
@@ -226,9 +248,9 @@ INSERT INTO doctors (can_annotate_volume, can_upload_volume) VALUES
 -- Sample Data: Doctor Profiles
 -- ============================================================
 
-INSERT INTO doctor_profiles (doctor_id, doctor_code, license_number, years_experience, specialty, profile_image_url) VALUES
-(1, 'DOC-0015', 'SCFHS-123456', 9, 'Orthopedist',  '/profiles/1.png'),
-(2, 'DOC-0016', 'SCFHS-654321', 7, 'Radiologist',   '/profiles/2.png');
+INSERT INTO doctor_profiles (doctor_id, doctor_code, license_number, years_experience, specialty, profile_image_url, signature_path) VALUES
+(1, 'DOC-0015', 'SCFHS-123456', 9, 'Orthopedist',  '/api/images/1', NULL),
+(2, 'DOC-0016', 'SCFHS-654321', 7, 'Radiologist',   '/api/images/2', NULL);
 
 -- ============================================================
 -- Sample Data: Patients
@@ -251,19 +273,19 @@ INSERT INTO technicians (can_upload_volume) VALUES
 -- ============================================================
 
 INSERT INTO technician_profiles (technician_id, technician_code, license_number, years_experience, specialty, profile_image_url) VALUES
-(1, 'TECH-0001', 'TECH001567', NULL, 'Radiology Technician', '/profiles/3.png');
+(1, 'TECH-0001', 'TECH001567', 5, 'Radiology Technician', '/api/images/3');
 
 -- ============================================================
 -- Sample Data: Users
 -- ============================================================
 
-INSERT INTO users (username, password_hash, role, first_name, last_name, gender, email, phone, profile_picture, is_active, doctor_id, patient_id, technician_id) VALUES
-('doc1001',  '$2b$10$OviHdfLTd6h4sW0op/bLCegQ3ot0EKl8jwGuOmfMDQOOeAAA2H22S', 'doctor',     'Doctor',  'One',      'male',   'doc1@vismed.com',  '+966501111111', '/profiles/1.png', 1, 1, NULL, NULL),
-('doc1002',  '$2b$10$Y7/AZQSUSXdcAUxza7Qpc.SBKCfrLWpo/lF3A8VSTcjgYLEofAMnO', 'doctor',     'Doctor',  'Two',      'female', 'doc2@vismed.com',  '+966502222222', '/profiles/2.png', 1, 2, NULL, NULL),
-('rt2001',   '$2b$10$UtdwuZdSh7s9AqrUtceZJuONhQNpgD24DFfOKS.O9zf07GrW.8fqm', 'technician', 'RT',      'Tech',     'male',   'rt@vismed.com',    '+966503333333', '/profiles/3.png', 1, NULL, NULL, 1),
-('pat3001',  '$2b$10$Di1ypEMeJ343tbaJDPQUFe6LnczWaed.iYace8ASokAbABXYt2K2.', 'patient',    'Noura',   'Alrashid', 'female', 'pat1@vismed.com',  '+966551234567', '/profiles/4.png', 1, NULL, 1, NULL),
-('pat3002',  '$2b$10$IMLc8FLGX1BdRnpK9zwC/OME6kG64WoMz5QnXipmLu/vMWnBVH1Z2', 'patient',   'Yousef',  'Alshehri', 'male',   'pat2@vismed.com',  '+966552345678', '/profiles/5.png', 1, NULL, 2, NULL),
-('pat3003',  '$2b$10$sD1nCnnaO1QW12XvIRRzh.BUDj9Q/L5bZrp5qxyuqvCf8ovon8Kba', 'patient',   'Hessa',   'Alotaibi', 'female', 'pat3@vismed.com',  '+966553456789', '/profiles/6.png', 1, NULL, 3, NULL);
+INSERT INTO users (username, password_hash, role, first_name, middle_name, last_name, gender, email, phone, profile_picture, is_active, doctor_id, patient_id, technician_id) VALUES
+('doc1001',  '$2b$10$OviHdfLTd6h4sW0op/bLCegQ3ot0EKl8jwGuOmfMDQOOeAAA2H22S', 'doctor',     'Ahmed',   'Mohammed', 'Alharbi',   'male',   'ahmed.alharbi@vismed.com',     '+966501111111', '/api/images/1', 1, 1, NULL, NULL),
+('doc1002',  '$2b$10$Y7/AZQSUSXdcAUxza7Qpc.SBKCfrLWpo/lF3A8VSTcjgYLEofAMnO', 'doctor',     'Sarah',   'Abdullah', 'Almutairi', 'female', 'sarah.almutairi@vismed.com',   '+966502222222', '/api/images/2', 1, 2, NULL, NULL),
+('rt2001',   '$2b$10$UtdwuZdSh7s9AqrUtceZJuONhQNpgD24DFfOKS.O9zf07GrW.8fqm', 'technician', 'Khalid',  'Omar',     'Alqahtani', 'male',   'khalid.alqahtani@vismed.com',  '+966503333333', '/api/images/3', 1, NULL, NULL, 1),
+('pat3001',  '$2b$10$Di1ypEMeJ343tbaJDPQUFe6LnczWaed.iYace8ASokAbABXYt2K2.', 'patient',    'Noura',   NULL,       'Alrashid',  'female', 'noura.alrashid@vismed.com',    '+966551234567', '/api/images/4', 1, NULL, 1, NULL),
+('pat3002',  '$2b$10$IMLc8FLGX1BdRnpK9zwC/OME6kG64WoMz5QnXipmLu/vMWnBVH1Z2', 'patient',    'Yousef',  NULL,       'Alshehri',  'male',   'yousef.alshehri@vismed.com',   '+966552345678', '/api/images/5', 1, NULL, 2, NULL),
+('pat3003',  '$2b$10$sD1nCnnaO1QW12XvIRRzh.BUDj9Q/L5bZrp5qxyuqvCf8ovon8Kba', 'patient',    'Hessa',   NULL,       'Alotaibi',  'female', 'hessa.alotaibi@vismed.com',    '+966553456789', '/api/images/6', 1, NULL, 3, NULL);
 
 -- ============================================================
 -- Sample Data: Technician - Patient Assignments
@@ -287,7 +309,14 @@ INSERT INTO doctor_patient_assignments (doctor_id, patient_id) VALUES
 -- Sample Data: Accessions
 -- ============================================================
 
-INSERT INTO accession (accession_number, patient_id, exam_date, modality, body_part) VALUES
-(NULL, 1, '2023-03-12', 'CT', 'Skull'),
-(NULL, 2, '2023-03-12', 'CT', 'Foot'),
-(NULL, 3, '2023-03-12', 'CT', 'Head');
+INSERT INTO accession (accession_number, patient_id, exam_date, modality) VALUES
+(NULL, 1, '2023-03-12', 'CT'),
+(NULL, 2, '2023-03-12', 'CT'),
+(NULL, 3, '2023-03-12', 'CT');
+
+UPDATE users SET password_hash='$2b$10$a2jhxMMDP4mYrMa7AabQZO58JrLuhHh57QDT/m6F65uA6AuQBr/bW' WHERE username='doc1001';
+UPDATE users SET password_hash='$2b$10$P/Pw0bx4SI3UDqNKZLYyOubOQke6NQHtkYWSFWj6tGFcFbHMuUd2y' WHERE username='doc1002';
+UPDATE users SET password_hash='$2b$10$rk1mkMFmC9rAnZ4ta4gFROr1LZyg35piOP0D5AOylP25FJdjciOS6' WHERE username='rt2001';
+UPDATE users SET password_hash='$2b$10$irpUdxCoUtsbPwu4jjDZt.3xvkVT6rtifEdN7HIo/dF0yfYAabZdm' WHERE username='pat3001';
+UPDATE users SET password_hash='$2b$10$220u8vryPF57UBW04CD1.e9/sHeWFp7jHUIEUhl6Pu01JfKoHlrnG' WHERE username='pat3002';
+UPDATE users SET password_hash='$2b$10$n9W9/K5ql..0f/MUAvyqeu0j7KG2Ix4oXsD9MHw5EFJUR5UPBg0cS' WHERE username='pat3003';

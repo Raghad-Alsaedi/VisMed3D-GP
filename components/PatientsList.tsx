@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Search, Upload_Action, Img, Report, ChevronRight } from "@/components/icons";
 
 interface Patient {
@@ -33,9 +34,11 @@ interface Accession {
 
 const PatientList = () => {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientDetails | null>(
     null,
   );
@@ -47,9 +50,29 @@ const PatientList = () => {
   const isDoctor = pathname.startsWith("/doctor");
   const isTech = pathname.startsWith("/radio_tech");
 
+  // ✅ جلب كل المرضى عند التحميل
+  useEffect(() => {
+    if (status === "loading") return;
+    
+    const fetchAllPatients = async () => {
+      try {
+        const res = await fetch(`/api/search/patients?query=`);
+        const data = await res.json();
+
+        if (data.status === "ok") {
+          setAllPatients(data.patients);
+          setFilteredPatients(data.patients);
+        }
+      } catch (err) {
+        console.error("Fetch all patients error:", err);
+      }
+    };
+
+    fetchAllPatients();
+  }, [status]);
+
   useEffect(() => {
     const savedSearchQuery = sessionStorage.getItem("patientList_searchQuery");
-    const savedPatients = sessionStorage.getItem("patientList_patients");
     const savedSelectedPatient = sessionStorage.getItem(
       "patientList_selectedPatient",
     );
@@ -57,7 +80,6 @@ const PatientList = () => {
     const savedShowDetails = sessionStorage.getItem("patientList_showDetails");
 
     if (savedSearchQuery) setSearchQuery(savedSearchQuery);
-    if (savedPatients) setPatients(JSON.parse(savedPatients));
     if (savedSelectedPatient)
       setSelectedPatient(JSON.parse(savedSelectedPatient));
     if (savedAccessions) setAccessions(JSON.parse(savedAccessions));
@@ -111,33 +133,23 @@ const PatientList = () => {
     return () => clearInterval(interval);
   }, [showDetails, selectedPatient, accessions, isDoctor]);
 
-  const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ✅ البحث/الفلتر المحلي
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase().trim();
     setSearchQuery(query);
     sessionStorage.setItem("patientList_searchQuery", query);
 
     if (!query) {
-      setPatients([]);
-      setShowDetails(false);
-      sessionStorage.setItem("patientList_patients", JSON.stringify([]));
-      sessionStorage.setItem("patientList_showDetails", "false");
+      setFilteredPatients(allPatients);
       return;
     }
 
-    try {
-      const res = await fetch(`/api/search/patients?query=${query}`);
-      const data = await res.json();
+    const filtered = allPatients.filter(patient => 
+      patient.full_name.toLowerCase().includes(query) ||
+      patient.medical_record_number.toLowerCase().includes(query)
+    );
 
-      if (data.status === "ok") {
-        setPatients(data.patients);
-        sessionStorage.setItem(
-          "patientList_patients",
-          JSON.stringify(data.patients),
-        );
-      }
-    } catch (err) {
-      console.error("Search error:", err);
-    }
+    setFilteredPatients(filtered);
   };
 
   const handlePatientClick = async (patientId: number) => {
@@ -218,7 +230,7 @@ const PatientList = () => {
                 />
               </div>
 
-              {patients.map((patient) => (
+              {filteredPatients.map((patient) => (
                 <div
                   key={patient.patient_id}
                   className="patient-card patient-list-card patient-list-card-border"
@@ -227,13 +239,13 @@ const PatientList = () => {
                 >
                   <div className="patient-list-avatar">
                     <img
-                      src={
-                        patient.profile_picture ||
-                        "/uploads/profiles/default-avatar.png"
-                      }
-                      alt={patient.full_name}
-                      className="patient-list-avatar-img"
-                    />
+  src={
+    patient.profile_picture ||
+    "/api/images/default" 
+  }
+  alt={patient.full_name}
+  className="patient-list-avatar-img"
+/>
                   </div>
                   <div className="patient-list-info-wrapper">
                     <div className="patient-name patient-list-name">

@@ -30,9 +30,10 @@ const Login = () => {
     const formData = new FormData(e.currentTarget);
     const username = (formData.get("username") as string) || "";
     const password = (formData.get("password") as string) || "";
-    const role = (formData.get("role") as string) || "";
+    const selectedRole = (formData.get("role") as string) || "";
 
-    const result = loginSchema.safeParse({ username, password, role });
+    // ✅ التحقق من صحة البيانات
+    const result = loginSchema.safeParse({ username, password, role: selectedRole });
 
     if (!result.success) {
       const fieldErrors = result.error.flatten().fieldErrors;
@@ -51,27 +52,41 @@ const Login = () => {
       return;
     }
 
-    const res = await signIn("credentials", {
-      username: result.data.username,
-      password: result.data.password,
-      redirect: false,
-    });
+    try {
+      // ✅ استخدام NextAuth مع تمرير الـ role
+      const res = await signIn("credentials", {
+        username: result.data.username,
+        password: result.data.password,
+        role: selectedRole, // ✅ هنا نمرر الـ role
+        redirect: false,
+      });
 
-    if (res?.error) {
-      setGeneralError("Login failed (wrong username or password)");
+      if (res?.error) {
+        // ✅ عرض رسالة الخطأ من NextAuth
+        setGeneralError(res.error);
+        setLoading(false);
+        return;
+      }
+
+      if (res?.ok) {
+        // ✅ التوجيه للصفحة الصحيحة
+        router.push(selectedRole);
+        router.refresh();
+      }
+      
       setLoading(false);
-      return;
+    } catch (error) {
+      console.error("Login error:", error);
+      setGeneralError("Network error. Please try again.");
+      setLoading(false);
     }
-
-    router.push(result.data.role);
-    setLoading(false);
   };
 
   return (
     <div className="login-page">
-      <Link href={"/viewimg"} className="absolute top-0 left-0 m-2">
+{/**<Link href={"/viewimg"} className="absolute top-0 left-0 m-2">
         go to Image
-      </Link>
+      </Link> */} 
 
       <main className="login-card">
         <div className="brand" style={{ marginTop: "-12px", marginBottom: "0px" }}>
@@ -108,7 +123,7 @@ const Login = () => {
         <form className="form" onSubmit={handelsumbite}>
           <label className="field">
             <span className="label">Username</span>
-            <input className="input" type="text" name="username" />
+            <input className="input" type="text" name="username" autoComplete="username" />
           </label>
 
           <label className="field">
@@ -120,6 +135,7 @@ const Login = () => {
                 name="password"
                 value={passwordValue}
                 onChange={(e) => setPasswordValue(e.target.value)}
+                autoComplete="current-password"
               />
               {passwordValue && (
                 <button

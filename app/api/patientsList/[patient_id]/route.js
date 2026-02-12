@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/authOptions";
 
 export async function GET(req, { params }) {
   try {
-   
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -14,8 +13,8 @@ export async function GET(req, { params }) {
       );
     }
 
-    const resolvedParams = await params;
-    const patient_id = resolvedParams.patient_id;
+    // ✅ await params
+    const { patient_id } = await params;
 
     console.log("Received patient_id:", patient_id);
 
@@ -59,6 +58,7 @@ export async function GET(req, { params }) {
 
     const patient = patientRows[0];
 
+    // ✅ تصليح الـ SQL query - body_part و report_text من جدول reports
     const [accessions] = await db.query(
       `
       SELECT 
@@ -66,8 +66,8 @@ export async function GET(req, { params }) {
         a.accession_number,
         a.exam_date,
         a.modality,
-        a.body_part,
-        r.report_content,
+        r.body_part,
+        r.report_text AS report_content,
         r.report_status
       FROM accession a
       LEFT JOIN reports r ON r.accession_id = a.accession_id
@@ -101,7 +101,7 @@ export async function GET(req, { params }) {
         modality: acc.modality,
         body_part: acc.body_part || "N/A",
         report_content: acc.report_content || "",
-        report_status: acc.report_status || "pending"
+        report_status: acc.report_status || "Draft"
       }))
     });
 

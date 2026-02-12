@@ -10,9 +10,11 @@ uniform sampler2D uFrontFaceTexture;
 uniform sampler2D uBackFaceTexture;
 uniform sampler3D uVolumeTexture;
 uniform sampler3D uMinMaxOctree;
+uniform sampler3D uNormalTexture;  // ← Normal Texture الجديد
 
 uniform float uBlockSize;
 uniform int uEnableEmptySpaceSkipping;
+
 //=============================================================
 // Constants
 //=============================================================
@@ -36,7 +38,6 @@ float get_scalar_value(vec3 sample_pos)
 //=============================================================
 // Empty Space Detection
 //=============================================================
-
 bool is_empty_space(vec3 sample_pos)
 {
     if (uEnableEmptySpaceSkipping == 0)
@@ -47,7 +48,6 @@ bool is_empty_space(vec3 sample_pos)
 
     return maxVal < 0.005;
 }
-
 
 //=============================================================
 // Transfer Function
@@ -61,7 +61,29 @@ vec4 get_color_TF(float scalar)
 }
 
 //=============================================================
-// Compute Normal
+// Compute Normal from View Direction (faster method)
+//=============================================================
+vec3 compute_normal_from_view(vec3 ray_dir)
+{
+    return normalize(-ray_dir);
+}
+
+//=============================================================
+// Get Normal from Texture (fastest method - pre-computed)
+//=============================================================
+vec3 get_normal_from_texture(vec3 sample_pos)
+{
+    // قراءة النورمال من الـ texture
+    vec3 normal = texture(uNormalTexture, sample_pos).rgb;
+    
+    // تحويل من [0, 1] إلى [-1, 1]
+    normal = normal * 2.0 - 1.0;
+    
+    return normalize(normal);
+}
+
+//=============================================================
+// Compute Normal (OLD - slow method, keep for reference)
 //=============================================================
 vec3 compute_normal(vec3 p)
 {
@@ -141,7 +163,12 @@ vec4 raycasting()
 
         if (sample_color.a > 0.0)
         {
-            vec3 normal = compute_normal(current_pos);
+            // استخدام النورمال من الـ Texture (الأسرع!) ✅
+            vec3 normal = get_normal_from_texture(current_pos);
+            
+            // البدائل الأخرى (اختاري وحدة):
+            // vec3 normal = compute_normal_from_view(ray_dir);  // سريعة
+            // vec3 normal = compute_normal(current_pos);        // بطيئة جداً
 
             vec3 light_dir = normalize(vec3(1.0, 1.0, 1.0) - current_pos);
             vec3 view_dir  = normalize(-ray_dir);

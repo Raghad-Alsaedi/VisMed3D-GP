@@ -18,12 +18,6 @@ export async function GET(req) {
       );
     }
 
-    if (!query) {
-      return NextResponse.json(
-        { status: "ok", patients: [] }
-      );
-    }
-
     console.log("Searching for patients with query:", query);
 
     const [userRows] = await db.query(
@@ -41,10 +35,9 @@ export async function GET(req) {
     const user = userRows[0];
     let patients = [];
 
-    const isNumeric = /^\d/.test(query);
-
-    if (user.role === "doctor" && user.doctor_id) {
-      if (isNumeric) {
+    // ✅ إذا ما فيه query، نجيب كل المرضى
+    if (!query || query.trim() === "") {
+      if (user.role === "doctor" && user.doctor_id) {
         [patients] = await db.query(
           `
           SELECT 
@@ -55,12 +48,12 @@ export async function GET(req) {
           FROM doctor_patient_assignments dpa
           JOIN patients p ON p.patient_id = dpa.patient_id
           JOIN users u ON u.patient_id = p.patient_id
-          WHERE dpa.doctor_id = ? 
-            AND p.medical_record_number LIKE ?
+          WHERE dpa.doctor_id = ?
+          ORDER BY p.patient_id ASC
           `,
-          [user.doctor_id, `%${query}%`]
+          [user.doctor_id]
         );
-      } else {
+      } else if (user.role === "technician" && user.technician_id) {
         [patients] = await db.query(
           `
           SELECT 
@@ -68,48 +61,87 @@ export async function GET(req) {
             CONCAT(u.first_name, ' ', u.last_name) AS full_name,
             p.medical_record_number,
             u.profile_picture
-          FROM doctor_patient_assignments dpa
-          JOIN patients p ON p.patient_id = dpa.patient_id
+          FROM technician_patient_assignments tpa
+          JOIN patients p ON p.patient_id = tpa.patient_id
           JOIN users u ON u.patient_id = p.patient_id
-          WHERE dpa.doctor_id = ? 
-            AND (u.first_name LIKE ? OR u.last_name LIKE ?)
+          WHERE tpa.technician_id = ?
+          ORDER BY p.patient_id ASC
           `,
-          [user.doctor_id, `${query}%`, `${query}%`]
+          [user.technician_id]
         );
       }
-    } else if (user.role === "technician" && user.technician_id) {
-      if (isNumeric) {
-        [patients] = await db.query(
-          `
-          SELECT 
-            p.patient_id,
-            CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-            p.medical_record_number,
-            u.profile_picture
-          FROM technician_patient_assignments tpa
-          JOIN patients p ON p.patient_id = tpa.patient_id
-          JOIN users u ON u.patient_id = p.patient_id
-          WHERE tpa.technician_id = ? 
-            AND p.medical_record_number LIKE ?
-          `,
-          [user.technician_id, `%${query}%`]
-        );
-      } else {
-        [patients] = await db.query(
-          `
-          SELECT 
-            p.patient_id,
-            CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-            p.medical_record_number,
-            u.profile_picture
-          FROM technician_patient_assignments tpa
-          JOIN patients p ON p.patient_id = tpa.patient_id
-          JOIN users u ON u.patient_id = p.patient_id
-          WHERE tpa.technician_id = ? 
-            AND (u.first_name LIKE ? OR u.last_name LIKE ?)
-          `,
-          [user.technician_id, `${query}%`, `${query}%`]
-        );
+    } else {
+      // ✅ إذا فيه query، نبحث
+      const isNumeric = /^\d/.test(query);
+
+      if (user.role === "doctor" && user.doctor_id) {
+        if (isNumeric) {
+          [patients] = await db.query(
+            `
+            SELECT 
+              p.patient_id,
+              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+              p.medical_record_number,
+              u.profile_picture
+            FROM doctor_patient_assignments dpa
+            JOIN patients p ON p.patient_id = dpa.patient_id
+            JOIN users u ON u.patient_id = p.patient_id
+            WHERE dpa.doctor_id = ? 
+              AND p.medical_record_number LIKE ?
+            `,
+            [user.doctor_id, `%${query}%`]
+          );
+        } else {
+          [patients] = await db.query(
+            `
+            SELECT 
+              p.patient_id,
+              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+              p.medical_record_number,
+              u.profile_picture
+            FROM doctor_patient_assignments dpa
+            JOIN patients p ON p.patient_id = dpa.patient_id
+            JOIN users u ON u.patient_id = p.patient_id
+            WHERE dpa.doctor_id = ? 
+              AND (u.first_name LIKE ? OR u.last_name LIKE ?)
+            `,
+            [user.doctor_id, `${query}%`, `${query}%`]
+          );
+        }
+      } else if (user.role === "technician" && user.technician_id) {
+        if (isNumeric) {
+          [patients] = await db.query(
+            `
+            SELECT 
+              p.patient_id,
+              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+              p.medical_record_number,
+              u.profile_picture
+            FROM technician_patient_assignments tpa
+            JOIN patients p ON p.patient_id = tpa.patient_id
+            JOIN users u ON u.patient_id = p.patient_id
+            WHERE tpa.technician_id = ? 
+              AND p.medical_record_number LIKE ?
+            `,
+            [user.technician_id, `%${query}%`]
+          );
+        } else {
+          [patients] = await db.query(
+            `
+            SELECT 
+              p.patient_id,
+              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+              p.medical_record_number,
+              u.profile_picture
+            FROM technician_patient_assignments tpa
+            JOIN patients p ON p.patient_id = tpa.patient_id
+            JOIN users u ON u.patient_id = p.patient_id
+            WHERE tpa.technician_id = ? 
+              AND (u.first_name LIKE ? OR u.last_name LIKE ?)
+            `,
+            [user.technician_id, `${query}%`, `${query}%`]
+          );
+        }
       }
     }
 

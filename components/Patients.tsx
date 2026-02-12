@@ -19,6 +19,7 @@ interface PatientRow extends RowDataPacket {
   national_id: string;
   date_of_birth: Date;
   age: number;
+  patient_id: number;
 }
 
 interface StudyRow extends RowDataPacket {
@@ -65,9 +66,10 @@ async function getPatientData(userId: string): Promise<{
         u.gender,
         p.national_id,
         p.date_of_birth,
+        p.patient_id,
         TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) AS age
       FROM users u
-      JOIN patients p ON p.patient_id = u.patient_id
+      INNER JOIN patients p ON u.patient_id = p.patient_id
       WHERE u.id = ? AND u.role = 'patient'
       LIMIT 1
       `,
@@ -83,17 +85,16 @@ async function getPatientData(userId: string): Promise<{
       SELECT 
         a.accession_id AS id,
         a.exam_date AS created_at,
-        a.body_part,
-        CONCAT(du.first_name, ' ', du.last_name) AS doctor_name
+        r.body_part,
+        COALESCE(CONCAT(du.first_name, ' ', du.last_name), 'Not Assigned') AS doctor_name
       FROM accession a
-      JOIN reports r ON r.accession_id = a.accession_id
-      JOIN doctors d ON d.doctor_id = r.doctor_id
-      JOIN users du ON du.doctor_id = d.doctor_id
-      JOIN users u ON u.patient_id = a.patient_id
-      WHERE u.id = ?
+      LEFT JOIN reports r ON r.accession_id = a.accession_id
+      LEFT JOIN doctors d ON d.doctor_id = r.doctor_id
+      LEFT JOIN users du ON du.doctor_id = d.doctor_id
+      WHERE a.patient_id = ?
       ORDER BY a.exam_date DESC
       `,
-      [userId],
+      [patient.patient_id],
     );
 
     return {
@@ -191,14 +192,12 @@ export default async function PatientsPage() {
               <div className="profile-photo-wrapper">
                 <div className="profile-photo">
                   <Image
-                    src={
-                      patient.profilePicture ||
-                      "/uploads/profiles/default-avatar.png"
-                    }
+                    src={patient.profilePicture || "/api/images/default"}
                     alt={patient.fullName}
                     width={200}
                     height={200}
                     className="w-full h-full object-cover"
+                    unoptimized
                   />
                 </div>
               </div>

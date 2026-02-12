@@ -1,6 +1,7 @@
+/**
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { db } from "@/database/db.js";
+import { db } from "../../../../database/db.js";
 
 export async function GET() {
   return NextResponse.json({ status: "ok", message: "Use POST to login" });
@@ -18,6 +19,7 @@ export async function POST(req) {
       );
     }
 
+    // ✅ استعلام متوافق مع قاعدة بيانات VisMed3D
     const [rows] = await db.query(
       `
       SELECT
@@ -25,7 +27,10 @@ export async function POST(req) {
         u.username,
         u.password_hash,
         u.is_active,
-        u.role
+        u.role,
+        u.doctor_id,
+        u.patient_id,
+        u.technician_id
       FROM users u
       WHERE u.username = ?
       LIMIT 1
@@ -42,6 +47,7 @@ export async function POST(req) {
 
     const user = rows[0];
 
+    // ✅ التحقق من is_active
     if (!user.is_active) {
       return NextResponse.json(
         { status: "error", message: "User is not active" },
@@ -49,6 +55,7 @@ export async function POST(req) {
       );
     }
 
+    // ✅ تحويل المسار إلى role في قاعدة البيانات
     const roleMap = {
       "/doctor": "doctor",
       "/patients": "patient",
@@ -65,7 +72,7 @@ export async function POST(req) {
       }
     }
 
-    // bcrypt compare
+    // ✅ bcrypt compare
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
       return NextResponse.json(
@@ -80,6 +87,9 @@ export async function POST(req) {
         id: user.id,
         username: user.username,
         role: user.role,
+        doctor_id: user.doctor_id,
+        patient_id: user.patient_id,
+        technician_id: user.technician_id,
       },
     });
   } catch (err) {
@@ -90,3 +100,4 @@ export async function POST(req) {
     );
   }
 }
+ */

@@ -16,8 +16,12 @@ const HomeProfile = () => {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ SINGLE useEffect - consolidated
   useEffect(() => {
-    if (!isDoctor) return;
+    if (!isDoctor) {
+      setLoading(false);
+      return;
+    }
 
     if (status === "loading") return;
 
@@ -32,23 +36,48 @@ const HomeProfile = () => {
     setLoading(true);
 
     fetch(`/api/doctor/dashboard?doctorId=${doctorId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setDoctor(data.doctor || null);
-        setPatients(data.patients || []);
+      .then((res) => {
+        console.log("🔵 Response status:", res.status);
+        console.log("🔵 Response headers:", res.headers.get("content-type"));
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON");
+        }
+        
+        return res.json();
       })
-      .catch(() => {
+      .then((data) => {
+        console.log("🔵 Dashboard data:", data);
+        
+        if (data.error) {
+          console.error("❌ API Error:", data.error);
+          setDoctor(null);
+          setPatients([]);
+        } else {
+          setDoctor(data.doctor || null);
+          setPatients(data.patients || []);
+        }
+      })
+      .catch((error) => {
+        console.error("❌ Fetch error:", error);
         setDoctor(null);
         setPatients([]);
       })
       .finally(() => setLoading(false));
   }, [isDoctor, session, status]);
 
+  // ===== Display states =====
   if (!isDoctor) {
-    
+    // Non-doctor page placeholder
+    return null;
   }
 
-  if (isDoctor && status === "loading") {
+  if (status === "loading") {
     return (
       <section className="main-section-container">
         <div className="content-wrapper">
@@ -58,7 +87,7 @@ const HomeProfile = () => {
     );
   }
 
-  if (isDoctor && status !== "loading" && !(session as any)?.user?.id) {
+  if (!(session as any)?.user?.id) {
     return (
       <section className="main-section-container">
         <div className="content-wrapper">
@@ -68,7 +97,7 @@ const HomeProfile = () => {
     );
   }
 
-  if (isDoctor && loading) {
+  if (loading) {
     return (
       <section className="main-section-container">
         <div className="content-wrapper">
@@ -78,7 +107,7 @@ const HomeProfile = () => {
     );
   }
 
-  if (isDoctor && !loading && !doctor) {
+  if (!doctor) {
     return (
       <section className="main-section-container">
         <div className="content-wrapper">
@@ -88,34 +117,15 @@ const HomeProfile = () => {
     );
   }
 
-  const fullName =
-    isDoctor && doctor
-      ? [doctor.first_name, doctor.middle_name, doctor.last_name].filter(Boolean).join(" ")
-      : "Sara Ahmed";
-
-  const roleTitle = isDoctor && doctor ? doctor.specialty || "-" : "Radiology Technician";
-
-  const profileImg =
-    isDoctor && doctor
-      ? doctor.profile_image_url || (doctor.gender === "female" ? "/doctor_female.png" : "/doctor.png")
-      : "doctor-photo.jpg";
-
-  const idLabel = isDoctor ? "Doctor ID" : "Technician ID";
-  const idValue = isDoctor ? doctor?.doctor_code || "-" : "T001";
-
-  const licenseValue = isDoctor ? doctor?.license_number || "-" : "SCFHS-987654";
-  const yearsValue = isDoctor ? doctor?.years_experience ?? "-" : "10";
-
-  const genderValue =
-    isDoctor
-      ? doctor?.gender === "male"
-        ? "Male"
-        : doctor?.gender === "female"
-        ? "Female"
-        : "-"
-      : "Female";
-
-  const phoneValue = isDoctor ? doctor?.phone || "-" : "+966 5 1234 5678";
+  // ===== Display values =====
+  const fullName = [doctor.firstName, doctor.middleName, doctor.lastName].filter(Boolean).join(" ");
+  const roleTitle = doctor.specialty || "-";
+  const profileImg = doctor.profile_image_url || (doctor.gender === "female" ? "/doctor_female.png" : "/doctor.png");
+  const idValue = doctor.doctor_code || "-";
+  const licenseValue = doctor.license_number || "-";
+  const yearsValue = doctor.years_experience ?? "-";
+  const genderValue = doctor.gender === "male" ? "Male" : doctor.gender === "female" ? "Female" : "-";
+  const phoneValue = doctor.phone || "-";
 
   return (
     <section className="main-section-container">
@@ -128,13 +138,13 @@ const HomeProfile = () => {
               <div className="profile-photo-mobile">
                 <img
                   src={profileImg}
-                  alt={isDoctor ? `Dr. ${fullName} `: fullName}
+                  alt={`Dr. ${fullName}`}
                   className="profile-photo-img"
                 />
               </div>
 
               <div className="text-center">
-                <h1 className="profile-name-mobile">{isDoctor ? `Dr. ${fullName} `: fullName}</h1>
+                <h1 className="profile-name-mobile">{`Dr. ${fullName}`}</h1>
                 <p className="profile-role-subtitle">{roleTitle}</p>
               </div>
             </div>
@@ -144,7 +154,7 @@ const HomeProfile = () => {
                 <span className="profile-info-icon-wrapper">
                   <ID className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-mobile">{idLabel}</span>
+                <span className="profile-info-label-mobile">Doctor ID</span>
                 <span className="profile-info-value-mobile">{idValue}</span>
               </div>
 
@@ -188,13 +198,13 @@ const HomeProfile = () => {
               <div className="profile-photo-desktop">
                 <img
                   src={profileImg}
-                  alt={isDoctor ? `Dr. ${fullName}` : fullName}
+                  alt={`Dr. ${fullName}`}
                   className="profile-photo-img"
                 />
               </div>
 
               <div className="text-center">
-                <h1 className="profile-name-desktop">{isDoctor ? `Dr. ${fullName} `: fullName}</h1>
+                <h1 className="profile-name-desktop">{`Dr. ${fullName}`}</h1>
                 <p className="profile-role-subtitle-desktop">{roleTitle}</p>
               </div>
             </div>
@@ -204,7 +214,7 @@ const HomeProfile = () => {
                 <span className="profile-info-icon-wrapper">
                   <ID className="w-5 h-5 text-gray-400" />
                 </span>
-                <span className="profile-info-label-desktop">{idLabel}</span>
+                <span className="profile-info-label-desktop">Doctor ID</span>
                 <span className="profile-info-value-desktop">{idValue}</span>
               </div>
 
@@ -245,7 +255,7 @@ const HomeProfile = () => {
 
         {/* Table Card */}
         <div className="data-table-card">
-          <h3 className="data-table-title">{isDoctor ? "My Patients" : "Recent Upload File"}</h3>
+          <h3 className="data-table-title">My Patients</h3>
 
           <div className="data-table-wrapper">
             <table className="data-table-base">
@@ -255,40 +265,30 @@ const HomeProfile = () => {
                   <th className="data-table-header-cell">Patient_Name</th>
                   <th className="data-table-header-cell">Accession</th>
                   <th className="data-table-header-cell">MRN</th>
-                  <th className="data-table-header-cell">{isDoctor ? "Image and Report" : "Modality"}</th>
+                  <th className="data-table-header-cell">Image and Report</th>
                 </tr>
               </thead>
 
               <tbody>
-                {isDoctor ? (
-                  patients.length ? (
-                    patients.map((p, index) => (
-                      <tr key={p.study_id} className="data-table-row">
-                        <td className="data-table-cell">{index + 1}</td>
-                        <td className="data-table-cell">{p.patient_name}</td>
-                        <td className="data-table-cell">{p.accession}</td>
-                        <td className="data-table-cell">{p.mrn}</td>
-                        <td className="data-table-cell">
-                          <Link href={`/viewimg?studyId=${p.study_id}`} className="data-table-link">
-                            view
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr className="data-table-row">
-                      <td className="data-table-cell" colSpan={5}>
-                        No patients
+                {patients.length ? (
+                  patients.map((p, index) => (
+                    <tr key={p.study_id} className="data-table-row">
+                      <td className="data-table-cell">{index + 1}</td>
+                      <td className="data-table-cell">{p.patient_name}</td>
+                      <td className="data-table-cell">{p.accession}</td>
+                      <td className="data-table-cell">{p.mrn}</td>
+                      <td className="data-table-cell">
+                        <Link href={`/viewimg?studyId=${p.study_id}`} className="data-table-link">
+                          view
+                        </Link>
                       </td>
                     </tr>
-                  )
+                  ))
                 ) : (
                   <tr className="data-table-row">
-                    <td className="data-table-cell">1</td>
-                    <td className="data-table-cell">—</td>
-                    <td className="data-table-cell">—</td>
-                    <td className="data-table-cell">—</td>
-                    <td className="data-table-cell">CT</td>
+                    <td className="data-table-cell" colSpan={5}>
+                      No patients
+                    </td>
                   </tr>
                 )}
               </tbody>
