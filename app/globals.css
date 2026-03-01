@@ -24,6 +24,9 @@
   --color-green-500: #10b981;
   --color-blue-500: #3b82f6;
   --color-cyan-400: #22d3ee;
+  
+  /* Border Colors */
+  --color-border-separator: #303A46;
 }
 
 /* ============================================
@@ -60,11 +63,48 @@
 }
 
 /* ============================================
-   MAIN SECTION CONTAINER
-   Used in: DoctorPatients.jsx, HomeDoctor.jsx, HomeTech.jsx
+   MAIN SECTION CONTAINER — FIXED ✅
+   
+   الـ Sidebar عرضه 250px (w-[250px] في sidebar-container-base).
+   
+   - Mobile  (< 768px) : السايدبار مخفي → padding-top فقط للـ hamburger
+   - Tablet  (768px+)  : السايدبار ظاهر بكامل عرضه 250px → pl-[258px]
+   - Desktop (1024px+) : مساحة padding أكبر → pl-[266px]
    ============================================ */
 .main-section-container {
-  @apply bg-[#0D1A2D] min-h-screen overflow-y-auto p-4 md:p-8 pl-4 md:pl-[270px] pt-16 md:pt-8;
+  background: var(--color-bg-secondary);
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Mobile: padding-top للـ hamburger button، padding جانبي ضئيل جداً */
+  padding: 60px 4px 12px 4px;
+}
+
+@media (min-width: 768px) {
+  .main-section-container {
+    /* Tablet: السايدبار 250px + 8px فراغ = 258px من اليسار */
+    padding: 16px 10px 16px 258px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-section-container {
+    /* Desktop: فراغ أكبر */
+    padding: 24px 20px 20px 266px;
+  }
+}
+
+/* ============================================
+   CONTENT WRAPPER - UPDATED FOR RESPONSIVE CARDS
+   ============================================ */
+.content-wrapper {
+  @apply max-w-4xl mx-auto p-4;
+}
+
+/* New full-width responsive wrapper */
+.content-wrapper-full {
+  @apply w-full max-w-full mx-auto px-4 py-4 overflow-x-hidden;
+  box-sizing: border-box;
 }
 
 /* ============================================
@@ -182,49 +222,48 @@
 }
 
 /* ============================================
-   PROFILE CARDS
-   Used in: HomeDoctor.jsx, HomeTech.jsx
+   PROFILE CARDS - UPDATED FOR RESPONSIVE SIZING
    ============================================ */
 
-/* Main profile card container */
 .profile-card-container {
-  @apply py-4 md:py-5 px-4 md:px-6 rounded-[20px] border border-[#FFFFFF]/30 bg-[#040A16] shadow-sm mb-6 md:mb-8 overflow-hidden whitespace-nowrap flex items-center justify-center;
+  @apply w-full max-w-full py-3 md:py-4 lg:py-5 px-3 md:px-4 lg:px-6 
+         rounded-[10px] border border-[#FFFFFF]/30 bg-[#040A16] 
+         shadow-sm mb-4 md:mb-6 lg:mb-8 
+         overflow-hidden flex items-center justify-center;
+  box-sizing: border-box;
 }
 
-/* Mobile layout wrapper */
 .profile-layout-mobile {
-  @apply md:hidden flex flex-col items-center space-y-4;
+  @apply md:hidden flex flex-col items-center space-y-3 w-full;
 }
 
-/* Desktop layout wrapper */
 .profile-layout-desktop {
-  @apply hidden md:grid grid-cols-[220px_1fr] gap-12 text-white;
+  @apply hidden md:grid gap-6 lg:gap-12 text-white w-full;
+  grid-template-columns: minmax(180px, 220px) 1fr;
 }
 
-/* Photo section */
 .profile-photo-section {
-  @apply flex flex-col items-center space-y-3;
+  @apply flex flex-col items-center space-y-2 md:space-y-3;
 }
 
 .profile-photo-mobile {
-  @apply w-[120px] h-[120px] rounded-[8px] bg-gray-600 overflow-hidden;
+  @apply w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] rounded-[8px] bg-gray-600 overflow-hidden;
 }
 
 .profile-photo-desktop {
-  @apply w-[140px] h-[140px] rounded-[8px] bg-gray-600 overflow-hidden;
+  @apply w-[120px] h-[120px] lg:w-[140px] lg:h-[140px] rounded-[8px] bg-gray-600 overflow-hidden;
 }
 
 .profile-photo-img {
   @apply w-full h-full object-cover;
 }
 
-/* Name and role */
 .profile-name-mobile {
-  @apply text-base font-bold text-white mb-1;
+  @apply text-sm sm:text-base font-bold text-white mb-0;
 }
 
 .profile-name-desktop {
-  @apply text-lg font-bold text-white mb-4;
+  @apply text-base lg:text-lg font-bold text-white mb-0;
 }
 
 .profile-role-subtitle {
@@ -235,44 +274,42 @@
   @apply text-sm text-gray-400;
 }
 
-/* Info grid section */
 .profile-info-wrapper-mobile {
-  @apply w-full space-y-4 pt-2;
+  @apply w-full space-y-3 pt-2;
 }
 
 .profile-info-grid-desktop {
-  @apply grid grid-cols-1 gap-4 content-start;
+  @apply grid grid-cols-1 gap-3 lg:gap-4 content-start;
 }
 
 .profile-info-item-mobile {
-  @apply flex items-start gap-3;
+  @apply flex items-start gap-2 sm:gap-3;
 }
 
 .profile-info-item-desktop {
-  @apply flex items-start gap-4;
+  @apply flex items-start gap-3 lg:gap-4;
 }
 
 .profile-info-icon-wrapper {
-  @apply flex-shrink-0 mt-1;
+  @apply flex-shrink-0 mt-0.5 sm:mt-1;
 }
 
 .profile-info-label-mobile {
-  @apply text-sm text-white min-w-[120px] font-medium;
+  @apply text-xs sm:text-sm text-white min-w-[100px] sm:min-w-[120px] font-medium;
 }
 
 .profile-info-label-desktop {
-  @apply text-base lg:text-lg text-white min-w-[150px] font-medium;
+  @apply text-sm lg:text-base xl:text-lg text-white min-w-[120px] lg:min-w-[150px] font-medium;
 }
 
 .profile-info-value-mobile {
-  @apply text-sm text-white;
+  @apply text-xs sm:text-sm text-white break-words;
 }
 
 .profile-info-value-desktop {
-  @apply text-base lg:text-lg text-white;
+  @apply text-sm lg:text-base xl:text-lg text-white break-words;
 }
 
-/* Profile info helpers (used in PATIENTS PAGE) */
 .profile-info-list {
   @apply flex flex-col gap-4 w-fit mx-auto md:mx-0;
 }
@@ -299,43 +336,42 @@
 
 /* ============================================
    DATA TABLES
-   Used in: HomeProfile.tsx
    ============================================ */
 
-/* Table card wrapper */
 .data-table-card {
-  @apply py-4 md:py-5 px-4 md:px-6 rounded-[20px] border border-[#FFFFFF]/30 bg-[#040A16] mb-6 md:mb-8;
+  @apply w-full max-w-full py-3 md:py-4 lg:py-5 px-3 md:px-4 lg:px-6 
+         rounded-[10px] border border-[#FFFFFF]/30 bg-[#040A16] 
+         mb-4 md:mb-6 lg:mb-8;
+  box-sizing: border-box;
 }
 
 .data-table-title {
-  @apply text-white font-semibold text-base md:text-lg mb-4;
+  @apply text-white font-semibold text-sm sm:text-base md:text-lg mb-3 md:mb-4;
 }
 
-/* Table container with scroll */
 .data-table-wrapper {
   @apply overflow-x-auto border border-[#FFFFFF]/30 rounded-lg;
+  max-width: 100%;
 }
 
 .data-table-base {
-  @apply w-full text-white;
+  @apply w-full text-white min-w-[500px];
 }
 
-/* Table header */
 .data-table-header {
   @apply border-b border-[#FFFFFF]/20;
 }
 
 .data-table-header-cell {
-  @apply py-3 px-2 md:px-3 text-xs md:text-sm lg:text-base font-medium text-center;
+  @apply py-2 md:py-3 px-2 md:px-3 text-xs sm:text-sm md:text-base font-medium text-center;
 }
 
-/* Table rows */
 .data-table-row {
   @apply border-b border-[#FFFFFF]/20 transition-colors bg-[#040A16] hover:bg-[#0D1A2D];
 }
 
 .data-table-cell {
-  @apply py-3 px-2 md:px-3 text-xs md:text-sm lg:text-base text-center;
+  @apply py-2 md:py-3 px-2 md:px-3 text-xs sm:text-sm md:text-base text-center;
 }
 
 .data-table-link {
@@ -343,8 +379,7 @@
 }
 
 /* ============================================
-   PATIENT CARDS (DoctorPatients)
-   Used in: DoctorPatients.jsx
+   PATIENT CARDS
    ============================================ */
 
 .patient-list-title {
@@ -381,8 +416,7 @@
 }
 
 /* ============================================
-   SEARCH INPUT (DoctorPatients)
-   Used in: DoctorPatients.jsx
+   SEARCH INPUT
    ============================================ */
 
 .search-input-wrapper {
@@ -399,8 +433,7 @@
 }
 
 /* ============================================
-   BASIC INFORMATION CARD (DoctorPatients)
-   Used in: DoctorPatients.jsx
+   BASIC INFORMATION CARD
    ============================================ */
 
 .basic-info-card {
@@ -430,8 +463,7 @@
 }
 
 /* ============================================
-   FILES TABLE CARD (DoctorPatients)
-   Used in: DoctorPatients.jsx
+   FILES TABLE CARD
    ============================================ */
 
 .files-card {
@@ -468,8 +500,7 @@
 }
 
 /* ============================================
-   LAYOUT UTILITIES (DoctorPatients)
-   Used in: DoctorPatients.jsx
+   LAYOUT UTILITIES
    ============================================ */
 
 .layout-flex-container {
@@ -485,20 +516,36 @@
 }
 
 .vertical-divider {
-  @apply hidden md:block w-px self-stretch;
-  background-color: #FFFFFF;
+  @apply hidden md:block self-stretch;
+  width: 3px;
+  background-color: #303A46;
 }
 
 /* ============================================
-   PATIENT LIST PAGE - EXTRACTED CLASSES
+   PATIENT LIST PAGE — FIXED ✅
+   نفس منطق main-section-container بالضبط
    ============================================ */
 
-/* Main section container */
 .patient-list-main-section {
-  @apply bg-[#0D1A2D] min-h-screen overflow-y-auto p-4 md:p-8 pl-4 md:pl-[270px] pt-16 md:pt-8;
+  background: var(--color-bg-secondary);
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 60px 4px 12px 4px;
 }
 
-/* Layout containers */
+@media (min-width: 768px) {
+  .patient-list-main-section {
+    padding: 16px 10px 16px 258px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .patient-list-main-section {
+    padding: 24px 20px 20px 266px;
+  }
+}
+
 .patient-list-flex-container {
   @apply flex flex-col md:flex-row gap-4 md:gap-8;
 }
@@ -511,7 +558,6 @@
   @apply rounded-xl p-4 md:p-6 mb-6 md:mb-8 shadow-sm bg-[#0D1A2D];
 }
 
-/* Search input */
 .patient-list-search-wrapper {
   @apply relative mb-4 md:mb-5;
 }
@@ -521,12 +567,19 @@
 }
 
 .patient-list-search-input {
-  @apply w-full pl-11 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 text-white bg-[#040A16];
+  @apply w-full pl-11 pr-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 text-white bg-[#040A16];
+  border: 1.5px solid #6b7280;
 }
 
-/* Patient card */
 .patient-list-card {
-  @apply border-2 rounded-lg p-3 md:p-4 mb-3 md:mb-4 flex items-center cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-[#0A1A2D] bg-[#040A16];
+  @apply rounded-lg p-3 md:p-4 mb-3 md:mb-4 flex items-center cursor-pointer transition-all duration-200 hover:shadow-lg bg-[#040A16];
+  border: 1.5px solid #6b7280;
+}
+
+.patient-list-card:hover,
+.patient-list-card.active {
+  background-color: #0D1A2D;
+  border: 3px solid #303A46;
 }
 
 .patient-list-avatar {
@@ -553,19 +606,18 @@
   @apply text-white text-lg md:text-xl flex-shrink-0;
 }
 
-/* Vertical separator */
 .patient-list-separator {
-  @apply hidden md:block w-px self-stretch;
+  @apply hidden md:block self-stretch;
+  width: 3px;
 }
 
-/* Right column */
 .patient-list-right-column {
   @apply w-full md:w-7/12;
 }
 
-/* Basic information card */
 .patient-list-basic-info-card {
-  @apply rounded-xl p-4 md:p-6 mb-6 md:mb-8 shadow-sm border bg-[#040A16];
+  @apply rounded-xl p-4 md:p-6 mb-6 md:mb-8 shadow-sm bg-[#040A16];
+  border: 1.5px solid #6b7280;
 }
 
 .patient-list-basic-info-title {
@@ -573,7 +625,8 @@
 }
 
 .patient-list-basic-info-row {
-  @apply flex justify-between py-3 border-b;
+  @apply flex justify-between py-3;
+  border-bottom: 1.5px solid #303A46;
 }
 
 .patient-list-basic-info-row-last {
@@ -588,9 +641,9 @@
   @apply text-white font-medium text-sm md:text-base;
 }
 
-/* Files table card */
 .patient-list-files-card {
-  @apply rounded-xl p-4 md:p-6 shadow-sm border bg-[#040A16];
+  @apply rounded-xl p-4 md:p-6 shadow-sm bg-[#040A16];
+  border: 1.5px solid #6b7280;
 }
 
 .patient-list-files-title {
@@ -598,7 +651,8 @@
 }
 
 .patient-list-files-wrapper {
-  @apply max-h-[300px] overflow-y-auto overflow-x-auto border border-white;
+  @apply max-h-[300px] overflow-y-auto overflow-x-auto;
+  border: 1.5px solid #303A46;
 }
 
 .patient-list-files-table {
@@ -606,7 +660,7 @@
 }
 
 .patient-list-files-thead {
-  @apply border-b border-[#FFFFFF]/20;
+  border-bottom: 1.5px solid #303A46;
 }
 
 .patient-list-files-th {
@@ -614,14 +668,14 @@
 }
 
 .patient-list-files-tr {
-  @apply border-b border-[#FFFFFF]/20 transition-colors bg-[#040A16] hover:bg-[#0D1A2D];
+  @apply transition-colors bg-[#040A16] hover:bg-[#0D1A2D];
+  border-bottom: 1.5px solid #303A46;
 }
 
 .patient-list-files-td {
   @apply py-3 px-2 md:px-3 text-xs md:text-sm text-center whitespace-nowrap;
 }
 
-/* Actions column - Tech view */
 .patient-list-actions-wrapper {
   @apply flex items-center gap-2 justify-center;
 }
@@ -642,52 +696,32 @@
   @apply text-white text-lg;
 }
 
-/* Doctor view link */
 .patient-list-doctor-link {
   @apply hover:text-blue-300 cursor-pointer transition-colors;
 }
 
-/* ============================================
-   PATIENT LIST PAGE - INLINE STYLES
-   ============================================ */
-
-/* Search input border */
 .patient-list-search-border {
-  border-color: #FFFFFF;
+  border: 1.5px solid #6b7280;
 }
 
-/* Patient card border */
 .patient-list-card-border {
-  border-color: #FFFFFF;
+  border: 1.5px solid #6b7280;
 }
 
-/* Vertical separator background */
 .patient-list-separator-bg {
-  background-color: #FFFFFF;
+  background-color: #303A46;
 }
 
-/* Basic info card border */
 .patient-list-basic-info-border {
-  border-color: #FFFFFF;
+  border: 1.5px solid #6b7280;
 }
 
-/* Basic info row borders */
 .patient-list-info-row-border {
-  border-color: #0D1A2D;
+  border-bottom: 1.5px solid #303A46;
 }
 
-/* Files card border */
 .patient-list-files-border {
-  border-color: #FFFFFF;
-}
-
-/* ============================================
-   CONTENT WRAPPER (HomeDoctor, HomeTech)
-   Used in: HomeDoctor.jsx, HomeTech.jsx
-   ============================================ */
-
-.content-wrapper {
-  @apply max-w-4xl mx-auto p-4;
+  border: 1.5px solid #6b7280;
 }
 
 /* ============================================
@@ -822,11 +856,21 @@
          transition-all duration-200;
   background: var(--color-bg-tertiary);
   box-sizing: border-box;
+  /* Fix: remove browser tap highlight on mobile */
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .input::placeholder,
 .select::placeholder {
   @apply text-white/25;
+}
+
+/* Fix: override browser default blue text selection color */
+.input::selection,
+.select::selection {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 .input:focus,
@@ -957,7 +1001,7 @@
 }
 
 .patients-card-table {
-  @apply border border-white/30 rounded-2xl sm:rounded-[20px] py-6 px-5 sm:py-7 sm:px-6 lg:flex-[7] lg:order-1 ;
+  @apply border border-white/30 rounded-2xl sm:rounded-[20px] py-6 px-5 sm:py-7 sm:px-6 lg:flex-[7] lg:order-1;
   background: var(--color-bg-primary);
 }
 
@@ -998,7 +1042,7 @@
 }
 
 .patients-table-wrapper {
-  @apply overflow-x-auto border border-white/30 rounded-lg ; 
+  @apply overflow-x-auto border border-white/30 rounded-lg;
 }
 
 .table-head-row {
@@ -1006,7 +1050,7 @@
 }
 
 .table-cell-head {
-  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg font-medium text-center whitespace-nowrap ;
+  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg font-medium text-center whitespace-nowrap;
 }
 
 .table-row {
@@ -1014,7 +1058,7 @@
 }
 
 .table-cell {
-  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg text-center whitespace-nowrap ;
+  @apply py-3 sm:py-4 px-3 sm:px-4 text-sm sm:text-base lg:text-lg text-center whitespace-nowrap;
 }
 
 .table-link {
@@ -1133,7 +1177,7 @@
 }
 
 .writing-report-container {
-  @apply w-full flex-1 border border-white/20 rounded-lg flex flex-col md:flex-row gap-4 p-4 mt-4 overflow-y-auto;
+  @apply w-full flex-1 border border-white/20 rounded-lg flex flex-col md:flex-row gap-4 p-4 mt-4 overflow-hidden;
   background: var(--color-bg-secondary);
 }
 
@@ -1143,18 +1187,31 @@
 }
 
 .writing-report-panel-viewer {
-  @apply w-full md:w-auto md:flex-1 min-h-[400px] rounded-md flex items-center justify-center border border-white/20 hover:border-white/30 relative;
+  @apply w-full min-h-[400px] rounded-md flex items-center justify-center border border-white/20 hover:border-white/30 relative overflow-hidden;
   background: var(--color-bg-primary);
 }
 
 .writing-report-panel-report {
-  @apply w-full md:w-auto md:flex-1 min-h-[400px] rounded-md p-4 flex flex-col border border-white/20;
-  background: var(--color-bg-primary);
+  @apply w-full min-h-[400px] rounded-md flex flex-col border border-white/20 overflow-hidden;
+  background: var(--color-bg-secondary);
+}
+
+@media (min-width: 768px) {
+  .writing-report-panel-viewer {
+    width: 35%;
+    flex: none;
+  }
+
+  .writing-report-panel-report {
+    width: 65%;
+    flex: none;
+  }
 }
 
 /* ============================================
    RESPONSIVE STYLES
    ============================================ */
+
 @media (max-width: 640px) {
   .login-card {
     @apply w-[90%] max-w-full px-5 py-6 rounded-[20px] gap-3;
@@ -1260,7 +1317,6 @@
 
 /* ============================================
    SIDEBAR COMPONENT STYLES
-   Used in: SideBar.tsx
    ============================================ */
 
 .sidebar-menu-toggle-btn {
@@ -1320,8 +1376,7 @@
 }
 
 /* ============================================
-   VIEWIMG PAGE STYLES (NEW)
-   Used in: ViewImg.jsx
+   VIEWIMG PAGE STYLES
    ============================================ */
 
 .viewimg-page-container {
@@ -1342,4 +1397,36 @@
 
 .viewimg-footer-section {
   @apply flex-shrink-0;
+}
+
+/* ============================================
+   AUTOFILL FIX — removes browser blue/yellow background
+   ============================================ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #0a1420 inset !important;
+  -webkit-text-fill-color: white !important;
+  caret-color: white;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+*::-webkit-scrollbar { width: 8px; height: 6px; }
+*::-webkit-scrollbar-track { background: #0D1A2D; border-radius: 10px; }
+*::-webkit-scrollbar-thumb { background: #040A16; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.3); }
+*::-webkit-scrollbar-thumb:hover { background: #1a2d42; border: 1px solid rgba(255, 255, 255, 0.5); }
+
+.tiptap-editor,
+.tiptap-editor *,
+.ProseMirror,
+.ProseMirror * {
+  color: white;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: rgba(156, 163, 175, 0.4);
 }

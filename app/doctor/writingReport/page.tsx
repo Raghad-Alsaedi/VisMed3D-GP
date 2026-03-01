@@ -1,8 +1,11 @@
 import WritingReport from '@/components/WritingReport'
+import { Suspense } from 'react'
 
 const page = () => {
   return (
-    <WritingReport />
+    <Suspense fallback={<div>Loading...</div>}>
+      <WritingReport />
+    </Suspense>
   )
 }
 

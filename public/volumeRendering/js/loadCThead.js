@@ -1,4 +1,4 @@
-
+ 
 
 export async function loadCTheadVolume() {
     console.log("🔥🔥🔥 CTHEAD LOADED SUCCESSFULLY 🔥🔥🔥");
@@ -59,4 +59,4 @@ for (let p = 0; p < voxelsPerSlice; p++) {
   console.log("✅ DONE. volumeData length =", volumeData.length);
 console.log("✅ Expected =", width * height * depth);
   return { data: volumeData, width, height, depth };
-}
+} 

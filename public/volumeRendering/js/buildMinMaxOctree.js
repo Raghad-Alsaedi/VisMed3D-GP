@@ -122,7 +122,7 @@ export function uploadMinMaxOctreeToGPU(gl, octree) {
         gl.UNSIGNED_BYTE,
         octree.data
     );
-    
+     
     console.log("Min/Max Octree uploaded to GPU");
     
     return texture;

@@ -10,7 +10,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
-        role: { label: "Role", type: "text" }, // ✅ إضافة role
+        role: { label: "Role", type: "text" },
       },
 
       async authorize(credentials) {
@@ -30,11 +30,12 @@ export const authOptions: NextAuthOptions = {
               u.email,
               u.password_hash,
               u.role,
+              u.is_active,
               u.doctor_id,
               u.patient_id,
               u.technician_id
             FROM users u
-            WHERE u.username = ? AND u.is_active = 1
+            WHERE u.username = ?
             LIMIT 1
             `,
             [credentials.username]
@@ -45,7 +46,6 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
-          // ✅ التحقق من كلمة المرور
           const isValid = await bcrypt.compare(
             credentials.password,
             user.password_hash
@@ -54,19 +54,22 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
-          // ✅ التحقق من الـ role (إذا تم اختياره من الـ dropdown)
+          if (!user.is_active) {
+            throw new Error("Account is inactive");
+          }
+
           if (credentials.role) {
-            // تحويل المسار إلى role
             const roleMap: Record<string, string> = {
-              "/doctor": "doctor",
-              "/patients": "patient",
+              "/doctor":     "doctor",
+              "/patients":   "patient",
               "/radio_tech": "technician",
+              "/admin":      "admin",
             };
 
             const selectedRole = roleMap[credentials.role] || credentials.role;
 
             if (selectedRole !== user.role) {
-              throw new Error("Role mismatch - Please select the correct role");
+              throw new Error("Invalid credentials");
             }
           }
 
@@ -82,7 +85,6 @@ export const authOptions: NextAuthOptions = {
           } as any;
         } catch (error) {
           console.error("Auth error:", error);
-          // ✅ رمي الخطأ بدل إرجاع null عشان NextAuth يعرض الرسالة للمستخدم
           throw error;
         }
       },
@@ -94,23 +96,33 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.username = (user as any).username;
-        token.doctor_id = (user as any).doctor_id;
-        token.patient_id = (user as any).patient_id;
+        token.id            = (user as any).id;
+        token.role          = (user as any).role;
+        token.username      = (user as any).username;
+        token.doctor_id     = (user as any).doctor_id;
+        token.patient_id    = (user as any).patient_id;
         token.technician_id = (user as any).technician_id;
       }
       return token;
     },
 
     async session({ session, token }) {
+      if (token?.id) {
+        const [rows]: any = await db.query(
+          `SELECT is_active FROM users WHERE id = ? LIMIT 1`,
+          [token.id]
+        );
+        if (!rows?.[0]?.is_active) {
+          return null as any;
+        }
+      }
+
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).username = token.username;
-        (session.user as any).doctor_id = token.doctor_id;
-        (session.user as any).patient_id = token.patient_id;
+        (session.user as any).id            = token.id;
+        (session.user as any).role          = token.role;
+        (session.user as any).username      = token.username;
+        (session.user as any).doctor_id     = token.doctor_id;
+        (session.user as any).patient_id    = token.patient_id;
         (session.user as any).technician_id = token.technician_id;
       }
       return session;
@@ -118,11 +130,10 @@ export const authOptions: NextAuthOptions = {
   },
 
   pages: {
-    signIn: "/login", // ✅ صفحة تسجيل الدخول
+    signIn: "/login",
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-  
-  // ✅ للتطوير فقط - شغله عشان تشوف الأخطاء بوضوح
+
   debug: process.env.NODE_ENV === "development",
 };

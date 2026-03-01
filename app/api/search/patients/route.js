@@ -18,7 +18,7 @@ export async function GET(req) {
       );
     }
 
-    console.log("Searching for patients with query:", query);
+    console.log(" Query:", query);
 
     const [userRows] = await db.query(
       `SELECT role, doctor_id, technician_id FROM users WHERE id = ?`,
@@ -33,9 +33,10 @@ export async function GET(req) {
     }
 
     const user = userRows[0];
+    console.log("User:", { role: user.role, doctor_id: user.doctor_id, technician_id: user.technician_id });
+    
     let patients = [];
 
-    // ✅ إذا ما فيه query، نجيب كل المرضى
     if (!query || query.trim() === "") {
       if (user.role === "doctor" && user.doctor_id) {
         [patients] = await db.query(
@@ -46,8 +47,8 @@ export async function GET(req) {
             p.medical_record_number,
             u.profile_picture
           FROM doctor_patient_assignments dpa
-          JOIN patients p ON p.patient_id = dpa.patient_id
-          JOIN users u ON u.patient_id = p.patient_id
+          INNER JOIN patients p ON p.patient_id = dpa.patient_id
+          INNER JOIN users u ON u.patient_id = p.patient_id
           WHERE dpa.doctor_id = ?
           ORDER BY p.patient_id ASC
           `,
@@ -62,8 +63,8 @@ export async function GET(req) {
             p.medical_record_number,
             u.profile_picture
           FROM technician_patient_assignments tpa
-          JOIN patients p ON p.patient_id = tpa.patient_id
-          JOIN users u ON u.patient_id = p.patient_id
+          INNER JOIN patients p ON p.patient_id = tpa.patient_id
+          INNER JOIN users u ON u.patient_id = p.patient_id
           WHERE tpa.technician_id = ?
           ORDER BY p.patient_id ASC
           `,
@@ -71,7 +72,6 @@ export async function GET(req) {
         );
       }
     } else {
-      // ✅ إذا فيه query، نبحث
       const isNumeric = /^\d/.test(query);
 
       if (user.role === "doctor" && user.doctor_id) {
@@ -84,8 +84,8 @@ export async function GET(req) {
               p.medical_record_number,
               u.profile_picture
             FROM doctor_patient_assignments dpa
-            JOIN patients p ON p.patient_id = dpa.patient_id
-            JOIN users u ON u.patient_id = p.patient_id
+            INNER JOIN patients p ON p.patient_id = dpa.patient_id
+            INNER JOIN users u ON u.patient_id = p.patient_id
             WHERE dpa.doctor_id = ? 
               AND p.medical_record_number LIKE ?
             `,
@@ -100,8 +100,8 @@ export async function GET(req) {
               p.medical_record_number,
               u.profile_picture
             FROM doctor_patient_assignments dpa
-            JOIN patients p ON p.patient_id = dpa.patient_id
-            JOIN users u ON u.patient_id = p.patient_id
+            INNER JOIN patients p ON p.patient_id = dpa.patient_id
+            INNER JOIN users u ON u.patient_id = p.patient_id
             WHERE dpa.doctor_id = ? 
               AND (u.first_name LIKE ? OR u.last_name LIKE ?)
             `,
@@ -118,8 +118,8 @@ export async function GET(req) {
               p.medical_record_number,
               u.profile_picture
             FROM technician_patient_assignments tpa
-            JOIN patients p ON p.patient_id = tpa.patient_id
-            JOIN users u ON u.patient_id = p.patient_id
+            INNER JOIN patients p ON p.patient_id = tpa.patient_id
+            INNER JOIN users u ON u.patient_id = p.patient_id
             WHERE tpa.technician_id = ? 
               AND p.medical_record_number LIKE ?
             `,
@@ -134,8 +134,8 @@ export async function GET(req) {
               p.medical_record_number,
               u.profile_picture
             FROM technician_patient_assignments tpa
-            JOIN patients p ON p.patient_id = tpa.patient_id
-            JOIN users u ON u.patient_id = p.patient_id
+            INNER JOIN patients p ON p.patient_id = tpa.patient_id
+            INNER JOIN users u ON u.patient_id = p.patient_id
             WHERE tpa.technician_id = ? 
               AND (u.first_name LIKE ? OR u.last_name LIKE ?)
             `,
@@ -145,7 +145,16 @@ export async function GET(req) {
       }
     }
 
-    console.log(`Found ${patients.length} patients`);
+    console.log(`get ${patients.length} patient`);
+    
+    patients.forEach((patient, index) => {
+      console.log(`patient ${index + 1}:`, {
+        id: patient.patient_id,
+        name: patient.full_name,
+        mrn: patient.medical_record_number,
+        picture: patient.profile_picture || " NULL"
+      });
+    });
 
     return NextResponse.json({
       status: "ok",
@@ -153,14 +162,14 @@ export async function GET(req) {
         patient_id: p.patient_id,
         full_name: p.full_name,
         medical_record_number: p.medical_record_number,
-        profile_picture: p.profile_picture
+        profile_picture: p.profile_picture || "picture/profiles/default-avatar.png"
       }))
     });
 
   } catch (err) {
-    console.error("SEARCH ERROR:", err);
+    console.error(" Error: ", err);
     return NextResponse.json(
-      { status: "error", message: "Server error" },
+      { status: "error", message: "Server error", error: err.message },
       { status: 500 }
     );
   }

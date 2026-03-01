@@ -1,292 +1,347 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback, Fragment } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ID, License_Number, Years_of_Experience, Gender, Phone } from "@/components/icons";
+import { ID, License_Number, Years_of_Experience, Gender, Phone, Signature } from "@/components/icons";
+
+const PAGE_SIZE = 20;
 
 const HomeProfile = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const isDoctor = pathname.startsWith("/doctor");
 
   const { data: session, status } = useSession();
 
-  const [doctor, setDoctor] = useState<any>(null);
-  const [patients, setPatients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [doctor, setDoctor]           = useState<any>(null);
+  const [allPatients, setAllPatients] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loading, setLoading]         = useState(true);
 
-  // ✅ SINGLE useEffect - consolidated
+  const sentinelRef = useRef<HTMLTableRowElement | null>(null);
+
   useEffect(() => {
-    if (!isDoctor) {
-      setLoading(false);
-      return;
-    }
-
+    if (!isDoctor) { setLoading(false); return; }
     if (status === "loading") return;
-
-    const doctorId = (session as any)?.user?.id;
-    if (!doctorId) {
-      setDoctor(null);
-      setPatients([]);
-      setLoading(false);
-      return;
-    }
+    if (status === "unauthenticated") { router.push("/login"); return; }
+    const doctorId = (session as any)?.user?.doctor_id;
+    if (!doctorId) { router.push("/login"); return; }
 
     setLoading(true);
-
     fetch(`/api/doctor/dashboard?doctorId=${doctorId}`)
       .then((res) => {
-        console.log("🔵 Response status:", res.status);
-        console.log("🔵 Response headers:", res.headers.get("content-type"));
-        
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Response is not JSON");
-        }
-        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get("content-type");
+        if (!ct?.includes("application/json")) throw new Error("Not JSON");
         return res.json();
       })
       .then((data) => {
-        console.log("🔵 Dashboard data:", data);
-        
-        if (data.error) {
-          console.error("❌ API Error:", data.error);
-          setDoctor(null);
-          setPatients([]);
-        } else {
+        if (data.error) router.push("/login");
+        else {
           setDoctor(data.doctor || null);
-          setPatients(data.patients || []);
+          setAllPatients(data.patients || []);
+          setVisibleCount(PAGE_SIZE);
         }
       })
-      .catch((error) => {
-        console.error("❌ Fetch error:", error);
-        setDoctor(null);
-        setPatients([]);
-      })
+      .catch(() => router.push("/login"))
       .finally(() => setLoading(false));
-  }, [isDoctor, session, status]);
+  }, [isDoctor, session, status, router]);
 
-  // ===== Display states =====
-  if (!isDoctor) {
-    // Non-doctor page placeholder
-    return null;
-  }
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + PAGE_SIZE, allPatients.length));
+  }, [allPatients.length]);
 
-  if (status === "loading") {
-    return (
-      <section className="main-section-container">
-        <div className="content-wrapper">
-          <div className="text-white p-6">Loading session...</div>
-        </div>
-      </section>
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { threshold: 0.1 }
     );
-  }
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [loadMore, visibleCount]);
 
-  if (!(session as any)?.user?.id) {
-    return (
-      <section className="main-section-container">
-        <div className="content-wrapper">
-          <div className="text-white p-6">Not signed in</div>
+  if (!isDoctor) return null;
+
+  const Spinner = ({ label }: { label: string }) => (
+    <section
+      className="bg-[#0D1A2D] min-h-screen overflow-y-auto overflow-x-hidden p-4 md:pl-[266px] md:pt-4 lg:pl-[270px] lg:pt-8"
+    >
+      <div className="w-full flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
+          <p className="text-white text-sm">{label}</p>
         </div>
-      </section>
-    );
-  }
+      </div>
+    </section>
+  );
 
-  if (loading) {
-    return (
-      <section className="main-section-container">
-        <div className="content-wrapper">
-          <div className="text-white p-6">Loading dashboard...</div>
+  if (status === "loading") return <Spinner label="Loading session..." />;
+  if (loading)              return <Spinner label="Loading dashboard..." />;
+  if (!doctor)              return null;
+
+  const fullName   = [doctor.firstName, doctor.middleName, doctor.lastName].filter(Boolean).join(" ");
+  const roleTitle  = doctor.specialty || "—";
+  const profileImg = doctor.doctor_id
+    ? `/api/images/doctor_${doctor.doctor_id}`
+    : "/api/images/default";
+
+  const idValue      = doctor.doctor_code      || "—";
+  const licenseValue = doctor.license_number   || "—";
+  const yearsValue   = doctor.years_experience ?? "—";
+  const genderValue  = doctor.gender === "male" ? "Male" : doctor.gender === "female" ? "Female" : "—";
+  const phoneValue   = doctor.phone            || "—";
+
+  const hasSignature =
+    (doctor.signature_url  && doctor.signature_url.trim()  !== "") ||
+    (doctor.signature_path && doctor.signature_path.trim() !== "");
+  const signatureText = hasSignature ? "View Signature" : "Add Signature";
+
+  const infoItems = [
+    { icon: <ID className="w-4 h-4 text-gray-400" />,                  label: "Doctor ID",           value: idValue },
+    { icon: <License_Number className="w-4 h-4 text-gray-400" />,      label: "License Number",      value: licenseValue },
+    { icon: <Years_of_Experience className="w-4 h-4 text-gray-400" />, label: "Years of Experience", value: String(yearsValue) },
+    { icon: <Gender className="w-4 h-4 text-gray-400" />,              label: "Gender",              value: genderValue },
+    { icon: <Phone className="w-4 h-4 text-gray-400" />,               label: "Phone",               value: phoneValue },
+    {
+      icon: <Signature className="w-4 h-4 text-gray-400" />,
+      label: "Signature",
+      value: (
+        <Link
+          href="/doctor/addSignature"
+          className="relative text-white inline-flex items-center min-h-[44px] min-w-[44px] -my-3 py-3"
+        >
+          {signatureText}
+        </Link>
+      ),
+    },
+  ];
+
+  const InfoGrid = () => (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", rowGap: "35px", columnGap: "4px" }}>
+      {infoItems.map((item, i) => (
+        <div key={i} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ opacity: 0.35, display: "flex" }}>{item.icon}</span>
+            <span style={{ color: "#6b7280", fontSize: "14px", fontWeight: 500, letterSpacing: "0.03em" }}>
+              {item.label}
+            </span>
+          </div>
+          <span style={{ color: "#f1f5f9", fontSize: "18px", fontWeight: 600, lineHeight: 1.3 }}>
+            {item.value}
+          </span>
         </div>
-      </section>
-    );
-  }
+      ))}
+    </div>
+  );
 
-  if (!doctor) {
-    return (
-      <section className="main-section-container">
-        <div className="content-wrapper">
-          <div className="text-white p-6">No doctor found</div>
-        </div>
-      </section>
-    );
-  }
+  const InfoList = () => (
+    <div
+      style={{
+        display: "inline-grid",
+        gridTemplateColumns: "18px auto auto",
+        rowGap: "clamp(10px, 2.5vw, 14px)",
+        columnGap: "8px",
+        alignItems: "center",
+      }}
+    >
+      {infoItems.map((item, i) => (
+        <Fragment key={i}>
+          <span style={{ opacity: 0.35, display: "flex", justifyContent: "center" }}>
+            {item.icon}
+          </span>
+          <span style={{ color: "#6b7280", fontSize: "14px", fontWeight: 500, letterSpacing: "0.02em" }}>
+            {item.label}
+          </span>
+          <span style={{ color: "#f1f5f9", fontSize: "14px", fontWeight: 600, lineHeight: 1.3, textAlign: "left" }}>
+            {item.value}
+          </span>
+        </Fragment>
+      ))}
+    </div>
+  );
 
-  // ===== Display values =====
-  const fullName = [doctor.firstName, doctor.middleName, doctor.lastName].filter(Boolean).join(" ");
-  const roleTitle = doctor.specialty || "-";
-  const profileImg = doctor.profile_image_url || (doctor.gender === "female" ? "/doctor_female.png" : "/doctor.png");
-  const idValue = doctor.doctor_code || "-";
-  const licenseValue = doctor.license_number || "-";
-  const yearsValue = doctor.years_experience ?? "-";
-  const genderValue = doctor.gender === "male" ? "Male" : doctor.gender === "female" ? "Female" : "-";
-  const phoneValue = doctor.phone || "-";
+  const visiblePatients = allPatients.slice(0, visibleCount);
+  const hasMore         = visibleCount < allPatients.length;
 
   return (
-    <section className="main-section-container">
-      <div className="content-wrapper">
-        {/* Profile Card */}
-        <div className="profile-card-container">
-          {/* Mobile Layout */}
-          <div className="profile-layout-mobile">
-            <div className="profile-photo-section">
-              <div className="profile-photo-mobile">
-                <img
-                  src={profileImg}
-                  alt={`Dr. ${fullName}`}
-                  className="profile-photo-img"
-                />
-              </div>
+    <section
+      className="bg-[#0D1A2D] w-full overflow-y-auto overflow-x-hidden p-4 md:pl-[266px] md:pt-4 lg:pl-[290px] lg:pt-2"
+      style={{
+        minHeight: "100dvh",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <div className="w-full max-w-full mx-auto py-2 box-border">
 
-              <div className="text-center">
-                <h1 className="profile-name-mobile">{`Dr. ${fullName}`}</h1>
-                <p className="profile-role-subtitle">{roleTitle}</p>
+        <div
+          className="w-full rounded-[10px] border border-white/30 bg-[#040A16] shadow-sm mt-0 md:mt-6 mb-4 md:mb-6 lg:mb-4 overflow-hidden box-border flex items-center justify-center"
+          style={{ padding: "clamp(12px, 3vw, 24px) clamp(10px, 2.5vw, 24px)" }}
+        >
+          <style>{`
+              @media (min-width: 600px) { .mobile-card { display: none !important; } }
+              @media (max-width: 599px) { .tablet-card { display: none !important; } .desktop-card { display: none !important; } }
+              @media (min-width: 600px) and (max-width: 900px) { .desktop-card { display: none !important; } }
+              @media (min-width: 901px) { .tablet-card { display: none !important; } }
+            `}</style>
+
+          {/* موبايل */}
+          <div className="mobile-card flex flex-col items-center w-full" style={{ gap: "clamp(6px, 2vw, 12px)" }}>
+            <div
+              className="rounded-[8px] bg-gray-600 overflow-hidden flex-shrink-0"
+              style={{ width: "clamp(85px, 25vw, 110px)", height: "clamp(85px, 25vw, 110px)" }}
+            >
+              <img src={profileImg} alt={`Dr. ${fullName}`} fetchPriority="high" className="w-full h-full object-cover" />
+            </div>
+            <div className="text-center" style={{ lineHeight: 1.2 }}>
+              <h1 className="font-bold text-white break-words" style={{ fontSize: "clamp(13px, 4vw, 19px)", lineHeight: 1.2 }}>
+                {`Dr. ${fullName}`}
+              </h1>
+              <p style={{ color: "#9ca3af", fontSize: "14px", marginTop: "2px" }}>{roleTitle}</p>
+            </div>
+            <div style={{ height: "clamp(4px, 1.5vw, 8px)" }} />
+            <div className="w-full flex justify-center"><InfoList /></div>
+            <div style={{ height: "clamp(4px, 1.5vw, 8px)" }} />
+          </div>
+
+          {/* آيباد 600-900 */}
+          <div className="tablet-card text-white w-full" style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "16px", alignItems: "start" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "90px", height: "90px", borderRadius: "8px", overflow: "hidden", background: "#4b5563" }}>
+                <img src={profileImg} alt={`Dr. ${fullName}`} fetchPriority="high" className="w-full h-full object-cover" />
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <h1 style={{ fontSize: "12px", fontWeight: 700, color: "white", lineHeight: 1.3, wordBreak: "break-word" }}>{`Dr. ${fullName}`}</h1>
+                <p style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>{roleTitle}</p>
               </div>
             </div>
-
-            <div className="profile-info-wrapper-mobile">
-              <div className="profile-info-item-mobile">
-                <span className="profile-info-icon-wrapper">
-                  <ID className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-mobile">Doctor ID</span>
-                <span className="profile-info-value-mobile">{idValue}</span>
-              </div>
-
-              <div className="profile-info-item-mobile">
-                <span className="profile-info-icon-wrapper">
-                  <License_Number className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-mobile">License Number</span>
-                <span className="profile-info-value-mobile">{licenseValue}</span>
-              </div>
-
-              <div className="profile-info-item-mobile">
-                <span className="profile-info-icon-wrapper">
-                  <Years_of_Experience className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-mobile">Years of Experience</span>
-                <span className="profile-info-value-mobile">{yearsValue}</span>
-              </div>
-
-              <div className="profile-info-item-mobile">
-                <span className="profile-info-icon-wrapper">
-                  <Gender className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-mobile">Gender</span>
-                <span className="profile-info-value-mobile">{genderValue}</span>
-              </div>
-
-              <div className="profile-info-item-mobile">
-                <span className="profile-info-icon-wrapper">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-mobile">Phone</span>
-                <span className="profile-info-value-mobile">{phoneValue}</span>
-              </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              rowGap: "16px",
+              columnGap: "8px",
+            }}>
+              {infoItems.map((item, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ opacity: 0.35, display: "flex" }}>{item.icon}</span>
+                    <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 500 }}>{item.label}</span>
+                  </div>
+                  <span style={{ color: "#f1f5f9", fontSize: "12px", fontWeight: 600, lineHeight: 1.3 }}>{item.value}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Desktop Layout */}
-          <div className="profile-layout-desktop">
-            <div className="profile-photo-section">
-              <div className="profile-photo-desktop">
-                <img
-                  src={profileImg}
-                  alt={`Dr. ${fullName}`}
-                  className="profile-photo-img"
-                />
+          {/* لاب توب وما فوق */}
+          <div className="desktop-card text-white w-full" style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "32px", alignItems: "start" }}>
+            <div className="flex flex-col items-center space-y-2 md:space-y-3">
+              <div className="w-[120px] h-[120px] lg:w-[140px] lg:h-[140px] rounded-[8px] bg-gray-600 overflow-hidden">
+                <img src={profileImg} alt={`Dr. ${fullName}`} fetchPriority="high" className="w-full h-full object-cover" />
               </div>
-
               <div className="text-center">
-                <h1 className="profile-name-desktop">{`Dr. ${fullName}`}</h1>
-                <p className="profile-role-subtitle-desktop">{roleTitle}</p>
+                <h1 className="text-base lg:text-lg font-bold text-white mb-0">{`Dr. ${fullName}`}</h1>
+                <p className="text-sm text-gray-400">{roleTitle}</p>
               </div>
             </div>
-
-            <div className="profile-info-grid-desktop">
-              <div className="profile-info-item-desktop">
-                <span className="profile-info-icon-wrapper">
-                  <ID className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-desktop">Doctor ID</span>
-                <span className="profile-info-value-desktop">{idValue}</span>
-              </div>
-
-              <div className="profile-info-item-desktop">
-                <span className="profile-info-icon-wrapper">
-                  <License_Number className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-desktop">License Number</span>
-                <span className="profile-info-value-desktop">{licenseValue}</span>
-              </div>
-
-              <div className="profile-info-item-desktop">
-                <span className="profile-info-icon-wrapper">
-                  <Years_of_Experience className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-desktop">Years of Experience</span>
-                <span className="profile-info-value-desktop">{yearsValue}</span>
-              </div>
-
-              <div className="profile-info-item-desktop">
-                <span className="profile-info-icon-wrapper">
-                  <Gender className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-desktop">Gender</span>
-                <span className="profile-info-value-desktop">{genderValue}</span>
-              </div>
-
-              <div className="profile-info-item-desktop">
-                <span className="profile-info-icon-wrapper">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                </span>
-                <span className="profile-info-label-desktop">Phone</span>
-                <span className="profile-info-value-desktop">{phoneValue}</span>
-              </div>
-            </div>
+            <div className="w-full"><InfoGrid /></div>
           </div>
         </div>
 
-        {/* Table Card */}
-        <div className="data-table-card">
-          <h3 className="data-table-title">My Patients</h3>
+        <div className="w-full rounded-[10px] border border-white/30 bg-[#040A16] mb-4 md:mb-6 lg:mb-8 box-border py-3 px-2 md:py-5 md:px-6">
+          <h3
+            className="text-white font-semibold"
+            style={{ fontSize: "clamp(12px, 3.5vw, 18px)", marginBottom: "clamp(8px, 2.5vw, 16px)" }}
+          >
+            My Patients
+          </h3>
 
-          <div className="data-table-wrapper">
-            <table className="data-table-base">
-              <thead className="data-table-header">
+          <div
+            className="overflow-x-auto border border-white/30 rounded-lg"
+            style={{ maxHeight: "40vh", minHeight: "120px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+          >
+            <table className="w-full text-white" style={{ tableLayout: "fixed", minWidth: "320px" }}>
+              <colgroup>
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "32%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "16%" }} />
+              </colgroup>
+
+              <thead className="border-b border-white/20 sticky top-0 bg-[#040A16] z-10">
                 <tr>
-                  <th className="data-table-header-cell">#</th>
-                  <th className="data-table-header-cell">Patient_Name</th>
-                  <th className="data-table-header-cell">Accession</th>
-                  <th className="data-table-header-cell">MRN</th>
-                  <th className="data-table-header-cell">Image and Report</th>
+                  {["#", "Patient Name", "Accession", "MRN", "Report"].map((h) => (
+                    <th
+                      key={h}
+                      className="font-medium text-center"
+                      style={{
+                        fontSize: "clamp(11px, 3vw, 14px)",
+                        padding: "clamp(4px, 1.5vw, 12px) clamp(2px, 1vw, 8px)",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
               <tbody>
-                {patients.length ? (
-                  patients.map((p, index) => (
-                    <tr key={p.study_id} className="data-table-row">
-                      <td className="data-table-cell">{index + 1}</td>
-                      <td className="data-table-cell">{p.patient_name}</td>
-                      <td className="data-table-cell">{p.accession}</td>
-                      <td className="data-table-cell">{p.mrn}</td>
-                      <td className="data-table-cell">
-                        <Link href={`/viewimg?studyId=${p.study_id}`} className="data-table-link">
-                          view
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                {visiblePatients.length ? (
+                  <>
+                    {visiblePatients.map((p, index) => (
+                      <tr
+                        key={`${p.accession_id}-${index}`}
+                        className="border-b border-white/20 bg-[#040A16] hover:bg-[#0D1A2D] transition-colors"
+                      >
+                        {[
+                          index + 1,
+                          p.patient_name,
+                          p.accession || "—",
+                          p.mrn       || "—",
+                          <Link
+                            key="link"
+                            href={`/doctor/writingReport?accession_id=${p.accession_id}`}
+                            className="relative text-white inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-3 py-3"
+                          >
+                            view
+                          </Link>,
+                        ].map((cell, ci) => (
+                          <td
+                            key={ci}
+                            className="text-center"
+                            style={{
+                              fontSize:     "clamp(11px, 3vw, 14px)",
+                              padding:      "clamp(4px, 1.5vw, 12px) clamp(2px, 1vw, 8px)",
+                              whiteSpace:   "normal",
+                              wordBreak:    "break-word",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+
+                    {hasMore && (
+                      <tr ref={sentinelRef} className="border-b border-white/20 bg-[#040A16]">
+                        <td colSpan={5} className="text-center py-3">
+                          <div className="inline-flex items-center gap-2 text-gray-400" style={{ fontSize: "clamp(11px, 3vw, 13px)" }}>
+                            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            Loading more…
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ) : (
-                  <tr className="data-table-row">
-                    <td className="data-table-cell" colSpan={5}>
+                  <tr className="border-b border-white/20 bg-[#040A16]">
+                    <td colSpan={5} className="text-center" style={{ fontSize: "clamp(11px, 3vw, 14px)", padding: "clamp(4px, 1.5vw, 12px)" }}>
                       No patients
                     </td>
                   </tr>
@@ -295,6 +350,7 @@ const HomeProfile = () => {
             </table>
           </div>
         </div>
+
       </div>
     </section>
   );

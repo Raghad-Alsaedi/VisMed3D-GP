@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Footer from "./Footer";
 import Img from "./Img";
 import Header from "./Header";
+import AutoTF from "./AutoTF";
 
 const ViewImg = () => {
   const [fps, setFps] = useState<number>(0);
@@ -53,7 +54,11 @@ const ViewImg = () => {
            <h2 className="text-white font-mono text-[14px] font-semibold">
             {fps}
            </h2>
+          
+
         </div>
+         <AutoTF />
+
       </div>
 
       <div className="flex-shrink-0">

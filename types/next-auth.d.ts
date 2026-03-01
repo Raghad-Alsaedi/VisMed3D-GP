@@ -6,18 +6,18 @@ declare module "next-auth" {
     user: {
       id: string;
       role: string;
-      doctor_id?: number | null;      // ✅ إضافة
-      patient_id?: number | null;     // ✅ إضافة
-      technician_id?: number | null;  // ✅ إضافة
+      doctor_id?: number | null;     
+      patient_id?: number | null;     
+      technician_id?: number | null; 
     } & DefaultSession["user"];
   }
 
   interface User {
     id: string;
     role: string;
-    doctor_id?: number | null;        // ✅ إضافة
-    patient_id?: number | null;       // ✅ إضافة
-    technician_id?: number | null;    // ✅ إضافة
+    doctor_id?: number | null;        
+    patient_id?: number | null;       
+    technician_id?: number | null;    
   }
 }
 
@@ -25,8 +25,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: string;
-    doctor_id?: number | null;        // ✅ إضافة
-    patient_id?: number | null;       // ✅ إضافة
-    technician_id?: number | null;    // ✅ إضافة
+    doctor_id?: number | null;        
+    patient_id?: number | null;       
+    technician_id?: number | null;   
   }
 }

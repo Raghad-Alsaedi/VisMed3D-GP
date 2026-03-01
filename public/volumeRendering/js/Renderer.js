@@ -24,6 +24,7 @@ async function loadVolume(url, width, height, depth) {
 }  
 /**   program = await initShaders(gl, "/volumeRendering/shaders/vs.glsl", "/volumeRendering/shaders/fs.glsl");
     final_program = await initShaders(gl, "/volumeRendering/shaders/final_pass_vs.glsl", "/volumeRendering/shaders/final_pass_fs.glsl"); */
+
 // Helper: save a texture to image (PNG/JPEG)
 function saveTextureAsImage(gl, texture, width, height, filename = 'texture.png') {
     // Create framebuffer and attach the texture
@@ -286,7 +287,6 @@ if (DATASET === "CTHEAD") {
   // Build Min/Max Octree
   console.log("Building Min/Max Octree for empty space skipping...");
   const octree = buildMinMaxOctree(volume.data, volume.width, volume.height, volume.depth, 8);
-  
   // =========================================
   // Upload Volume Texture
 const volumeTexture = gl.createTexture();
@@ -438,7 +438,41 @@ gl.framebufferTexture2D(
   console.log("=== FRAMEBUFFER INFO ===");
   console.log("Front face texture:", canvas.width, "x", canvas.height);
   console.log("Back face texture:", canvas.width, "x", canvas.height);
+//========================================================
+ //===================================
+// create to render to
+const screenshotTexture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, screenshotTexture);
+{
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,                  // level
+   gl.RGBA,       // internal format (float texture)
+    canvas.width,
+    canvas.height,
+  0,                // border
+  gl.RGBA,          // format
+  gl.UNSIGNED_BYTE,         // type
+    null                // no initial data
+);
 
+// VERY IMPORTANT for float textures:
+ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+}
+// Create and bind the framebuffer
+const screenshot_framebuffer = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, screenshot_framebuffer);
+ 
+// attach the texture as the first color attachment
+//const attachmentPoint = gl.COLOR_ATTACHMENT0;
+gl.framebufferTexture2D(
+    gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, screenshotTexture, 0);
+
+gl.bindTexture(gl.TEXTURE_2D, null);
+//=====================================================
+//=====================================================
  
 //=====================================================
   // Load shaders from files and create program
@@ -479,7 +513,212 @@ let mvpMatrix = mat4();
 
 let mvpInverseMatrix = mat4();
 mvpInverseMatrix = inverse4(mvpMatrix);
+// ============================================================
+//  Screenshot Capture Function - مع API Upload
+// ============================================================
+window.triggerScreenshot = async function(accessionId) {
+  console.log('Screenshot triggered for accession:', accessionId);
+  
+  try {
+    // ===== الحصول على الـ Matrices الحالية من الكاميرا =====
+    const modelMatrix = camera.getModelMatrix();
+    const viewMatrix = camera.getViewMatrix();
+    const projectionMatrix = camera.getProjectionMatrix();
+    let mvpMatrix = mult(projectionMatrix, mult(viewMatrix, modelMatrix));
+    let mvpInverseMatrix = inverse4(mvpMatrix);
 
+    // ===== رسم Front Faces =====
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frontFace_framebuffer);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.FRONT);
+    gl.useProgram(program);
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix));
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "viewMatrix"), false, flatten(viewMatrix));
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projectionMatrix));
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
+    gl.vertexAttribPointer(vertexPositionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vertexPositionAttributeLocation);
+    gl.drawArrays(gl.TRIANGLES, 0, nbCubeVertices);
+
+    // ===== رسم Back Faces =====
+    gl.bindFramebuffer(gl.FRAMEBUFFER, backFace_framebuffer);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.useProgram(program);
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "modelMatrix"), false, flatten(modelMatrix));
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "viewMatrix"), false, flatten(viewMatrix));
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projectionMatrix));
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeVBO);
+    gl.vertexAttribPointer(vertexPositionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vertexPositionAttributeLocation);
+    gl.drawArrays(gl.TRIANGLES, 0, nbCubeVertices);
+
+    // ===== رسم النتيجة النهائية في screenshot_framebuffer =====
+    gl.bindFramebuffer(gl.FRAMEBUFFER, screenshot_framebuffer);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(final_program);
+    gl.uniformMatrix4fv(gl.getUniformLocation(final_program, "uMvpInverseMatrix"), false, flatten(mvpInverseMatrix));
+    
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, frontFaceTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uFrontFaceTexture"), 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, backFaceTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uBackFaceTexture"), 1);
+
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uVolumeTexture"), 2);
+
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_3D, minMaxOctreeTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uMinMaxOctree"), 3);
+
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_3D, normalTexture);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uNormalTexture"), 4);
+
+    gl.uniform1f(gl.getUniformLocation(final_program, "uBlockSize"), octree.blockSize);
+    gl.uniform1i(gl.getUniformLocation(final_program, "uEnableEmptySpaceSkipping"), enableEmptySpaceSkipping);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // ===== إجبار WebGL على إكمال كل الأوامر =====
+    gl.finish();
+    console.log(' WebGL rendering finished');
+
+    // ===== قراءة البيكسلات مباشرة كـ UNSIGNED_BYTE =====
+    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    console.log('Pixels read:', pixels.length, 'bytes');
+
+    // ===== قلب الصورة عمودياً (Flip vertically) =====
+    const rowSize = canvas.width * 4;
+    const flipped = new Uint8ClampedArray(canvas.width * canvas.height * 4);
+    for (let y = 0; y < canvas.height; y++) {
+        const srcOffset = y * rowSize;
+        const dstOffset = (canvas.height - y - 1) * rowSize;
+        for (let i = 0; i < rowSize; i++) {
+            flipped[dstOffset + i] = pixels[srcOffset + i];
+        }
+    }
+    console.log(' Image flipped vertically');
+
+    // ===== تحويل لـ Canvas =====
+    const imageCanvas = document.createElement('canvas');
+    imageCanvas.width = canvas.width;
+    imageCanvas.height = canvas.height;
+    const ctx = imageCanvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error("Failed to get 2D context");
+    }
+    
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    imageData.data.set(flipped);
+    ctx.putImageData(imageData, 0, 0);
+    console.log('Image converted to canvas');
+    
+    // ===== تحويل لـ Blob =====
+    const blob = await new Promise((resolve, reject) => {
+      imageCanvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error("Failed to create blob"));
+      }, 'image/png');
+    });
+    
+    console.log(`Blob created: ${blob.size} bytes`);
+    
+    // ===== رفع الصورة للـ Backend =====
+    const formData = new FormData();
+    formData.append('image', blob, `screenshot_${accessionId}_${Date.now()}.png`);
+    formData.append('accession_id', accessionId);
+    
+    console.log('Uploading to /api/reports/upload-image...');
+    
+    const response = await fetch('/api/reports/upload-image', {
+      method: 'POST',
+      body: formData
+    });
+    
+    console.log('Response status:', response.status);
+    
+    const data = await response.json();
+    console.log('Upload response:', data);
+    
+    if (data.status === 'ok') {
+      console.log('Screenshot uploaded successfully!');
+      
+      const eventDetail = {
+        imageUrl: data.imageUrl,
+        filename: data.filename
+      };
+      
+      console.log('Event detail:', eventDetail);
+      
+      // إرسال Event للـ parent window
+      if (window.parent && window.parent !== window) {
+        console.log('Dispatching to parent window');
+        window.parent.dispatchEvent(new CustomEvent('screenshotUploaded', {
+          detail: eventDetail
+        }));
+        console.log(' Event dispatched to parent');
+      } else {
+        console.log(' Dispatching to current window (no parent)');
+        window.dispatchEvent(new CustomEvent('screenshotUploaded', {
+          detail: eventDetail
+        }));
+        console.log(' Event dispatched to current window');
+      }
+    } else {
+      throw new Error(data.message || 'Upload failed');
+    }
+    
+  } catch (error) {
+    console.error('Screenshot error:', error);
+    console.error('Error stack:', error.stack);
+    
+    const errorDetail = {
+      error: error.message || String(error)
+    };
+    
+    // إرسال Error Event
+    if (window.parent && window.parent !== window) {
+      console.log('Dispatching error to parent window');
+      window.parent.dispatchEvent(new CustomEvent('screenshotError', {
+        detail: errorDetail
+      }));
+    } else {
+      console.log('Dispatching error to current window');
+      window.dispatchEvent(new CustomEvent('screenshotError', {
+        detail: errorDetail
+      }));
+    }
+  } finally {
+    // ===== استعادة الـ default framebuffer =====
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    console.log('Framebuffer restored to default');
+  }
+};
+
+console.log('window.triggerScreenshot() registered successfully');
+console.log('Running in iframe:', window !== window.parent);
+// ============================================================
+// Render Function - حلقة الرسم الرئيسية
+// ============================================================
 function render() {
   
     const modelMatrix = camera.getModelMatrix();
@@ -584,19 +823,19 @@ function render() {
     gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
     gl.uniform1i(gl.getUniformLocation(final_program, "uVolumeTexture"), 2);
 
-    // Bind Min/Max Octree texture
-    gl.activeTexture(gl.TEXTURE3);
-    gl.bindTexture(gl.TEXTURE_3D, minMaxOctreeTexture);
-    gl.uniform1i(gl.getUniformLocation(final_program, "uMinMaxOctree"), 3);
+      // Bind Min/Max Octree texture
+      gl.activeTexture(gl.TEXTURE3);
+      gl.bindTexture(gl.TEXTURE_3D, minMaxOctreeTexture);
+      gl.uniform1i(gl.getUniformLocation(final_program, "uMinMaxOctree"), 3);
 
-    // Bind Normal Texture (التكستشر الجديد!)
-    gl.activeTexture(gl.TEXTURE4);
-    gl.bindTexture(gl.TEXTURE_3D, normalTexture);
-    gl.uniform1i(gl.getUniformLocation(final_program, "uNormalTexture"), 4);
+      gl.activeTexture(gl.TEXTURE4);
+      gl.bindTexture(gl.TEXTURE_3D, normalTexture);
+      gl.uniform1i(gl.getUniformLocation(final_program, "uNormalTexture"), 4);
 
-    // Send block size uniform
-    gl.uniform1f(gl.getUniformLocation(final_program, "uBlockSize"), octree.blockSize);
-    gl.uniform1i(gl.getUniformLocation(final_program, "uEnableEmptySpaceSkipping"), enableEmptySpaceSkipping);
+      // Send block size uniform
+      gl.uniform1f(gl.getUniformLocation(final_program, "uBlockSize"), octree.blockSize);
+      gl.uniform1i(gl.getUniformLocation(final_program, "uEnableEmptySpaceSkipping"), enableEmptySpaceSkipping);
+
 
     // fullscreen triangle
    
@@ -606,11 +845,74 @@ function render() {
 }
 }
     render(); 
+    //================================================================
+
+// =================== TRANSFER FUNCTION من React ===================
+let currentSteps = []; 
+window.addEventListener('message', (event) => {
+ 
+  if (event.origin !== window.location.origin) return;
+  
+  if (event.data.type === 'UPDATE_TRANSFER_FUNCTION') {
+    currentSteps = event.data.steps;
+    console.log('Received steps from React:', currentSteps);
+    updateShaderUniforms();
+  }
+});
+
+function updateShaderUniforms() {
+  gl.useProgram(final_program);
+  
+  
+  const numStepsLoc = gl.getUniformLocation(final_program, 'uNumSteps');
+  gl.uniform1i(numStepsLoc, currentSteps.length);
+  
+  // تحويل hex إلى RGB
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16) / 255,
+      g: parseInt(result[2], 16) / 255,
+      b: parseInt(result[3], 16) / 255
+    } : { r: 1, g: 1, b: 1 };
+  };
+  
+  // Update each steps
+  for (let i = 0; i < Math.min(currentSteps.length, 10); i++) {
+    const step = currentSteps[i];
+    
+    // Range Start
+    const rangeStartLoc = gl.getUniformLocation(final_program, `uTFRangeStarts[${i}]`);
+    gl.uniform1f(rangeStartLoc, step.rangeStart);
+    
+    // Range End
+    const rangeEndLoc = gl.getUniformLocation(final_program, `uTFRangeEnds[${i}]`);
+    gl.uniform1f(rangeEndLoc, step.rangeEnd);
+    
+    // Color
+    const rgb = hexToRgb(step.color);
+    const colorLoc = gl.getUniformLocation(final_program, `uTFColors[${i}]`);
+    gl.uniform3f(colorLoc, rgb.r, rgb.g, rgb.b);
+    
+    // Opacity
+    const opacityLoc = gl.getUniformLocation(final_program, `uTFOpacities[${i}]`);
+    gl.uniform1f(opacityLoc, step.opacity);
+  }
+  
+  console.log('Shader uniforms updated!');
+}
+
+window.parent.postMessage({ type: 'WEBGL_READY' }, window.location.origin);
+console.log('WebGL is ready and listening for transfer function updates');
 
 // Save front-face texture
 //saveTextureAsImage(gl, frontFaceTexture, canvas.width, canvas.height, 'front_face.png');
 //
+
 }//<<=== end of main ()
 //===============================================================================
 // Run the main function
-main().catch(e => { throw new Error(`Uncaught JS exception: ${e}`); });
+main().catch(e => { 
+  console.error(' Main function error:', e);
+  throw new Error(`Uncaught JS exception: ${e}`); 
+});

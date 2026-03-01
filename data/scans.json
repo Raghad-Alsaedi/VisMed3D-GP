@@ -251,6 +251,70 @@
       "status": "uploaded",
       "isTemporary": false,
       "savedDate": "2026-02-12T14:22:36.277Z"
+    },
+    "23a0a9af-5528-412b-b037-fcc12c2083a3": {
+      "fileId": "23a0a9af-5528-412b-b037-fcc12c2083a3",
+      "fileName": "foot183x255x125.raw",
+      "savedFileName": "23a0a9af-5528-412b-b037-fcc12c2083a3_1771386966359.raw",
+      "filePath": "/uploads/scans/23a0a9af-5528-412b-b037-fcc12c2083a3_1771386966359.raw",
+      "fileSize": 16777216,
+      "patientName": "Nasser Saeed",
+      "accountNumber": "ACC-321",
+      "uploadDate": "2026-02-18T03:56:06.508Z",
+      "status": "uploaded",
+      "isTemporary": false,
+      "savedDate": "2026-02-18T03:56:15.678Z"
+    },
+    "239d2477-44a2-4465-9528-a495d54e5271": {
+      "fileId": "239d2477-44a2-4465-9528-a495d54e5271",
+      "fileName": "foot183x255x125.raw",
+      "savedFileName": "239d2477-44a2-4465-9528-a495d54e5271_1771387331034.raw",
+      "filePath": "/uploads/scans/239d2477-44a2-4465-9528-a495d54e5271_1771387331034.raw",
+      "fileSize": 16777216,
+      "patientName": "Nasser Saeed",
+      "accountNumber": "ACC-321",
+      "uploadDate": "2026-02-18T04:02:11.116Z",
+      "status": "uploaded",
+      "isTemporary": false,
+      "savedDate": "2026-02-18T04:03:26.663Z"
+    },
+    "7997a461-a5dd-4526-93f8-999cd2925e4d": {
+      "fileId": "7997a461-a5dd-4526-93f8-999cd2925e4d",
+      "fileName": "foot183x255x125.raw",
+      "savedFileName": "7997a461-a5dd-4526-93f8-999cd2925e4d_1771388692031.raw",
+      "filePath": "/uploads/scans/7997a461-a5dd-4526-93f8-999cd2925e4d_1771388692031.raw",
+      "fileSize": 16777216,
+      "patientName": "Nasser Saeed",
+      "accountNumber": "ACC-321",
+      "uploadDate": "2026-02-18T04:24:52.092Z",
+      "status": "uploaded",
+      "isTemporary": false,
+      "savedDate": "2026-02-18T04:25:00.783Z"
+    },
+    "ae7e045a-1eb7-474b-bdaf-686ed3257a36": {
+      "fileId": "ae7e045a-1eb7-474b-bdaf-686ed3257a36",
+      "fileName": "foot183x255x125.raw",
+      "savedFileName": "ae7e045a-1eb7-474b-bdaf-686ed3257a36_1771389600251.raw",
+      "filePath": "/uploads/scans/ae7e045a-1eb7-474b-bdaf-686ed3257a36_1771389600251.raw",
+      "fileSize": 16777216,
+      "patientName": "Nasser Saeed",
+      "accountNumber": "ACC-321",
+      "uploadDate": "2026-02-18T04:40:00.338Z",
+      "status": "uploaded",
+      "isTemporary": false,
+      "savedDate": "2026-02-18T04:40:11.727Z"
+    },
+    "9dbe5484-80f2-457a-9a16-be20c2939589": {
+      "fileId": "9dbe5484-80f2-457a-9a16-be20c2939589",
+      "fileName": "foot183x255x125.raw",
+      "savedFileName": "9dbe5484-80f2-457a-9a16-be20c2939589_1771886712181.raw",
+      "filePath": "/uploads/temp/9dbe5484-80f2-457a-9a16-be20c2939589_1771886712181.raw",
+      "fileSize": 16777216,
+      "patientName": "Noura Alrashid",
+      "accountNumber": "ACC000005",
+      "uploadDate": "2026-02-23T22:45:12.328Z",
+      "status": "temporary",
+      "isTemporary": true
     }
   }
 }

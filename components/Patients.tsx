@@ -1,44 +1,23 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import LogOutButton from "@/components/LogOutButton";
 import { ID, Age, Gender, Phone } from "@/components/icons";
-import { redirect } from "next/navigation";
-import { db } from "@/database/db";
-import { RowDataPacket } from "mysql2";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
-interface PatientRow extends RowDataPacket {
+interface Patient {
   id: number;
   first_name: string;
   middle_name: string | null;
   last_name: string;
+  national_id: string;
+  age: number;
   gender: "male" | "female";
   phone: string;
   profile_picture: string | null;
-  national_id: string;
-  date_of_birth: Date;
-  age: number;
-  patient_id: number;
-}
-
-interface StudyRow extends RowDataPacket {
-  id: number;
-  created_at: Date;
-  body_part: string | null;
-  doctor_name: string;
-}
-
-interface Patient {
-  id: number;
-  fullName: string;
-  firstName: string;
-  lastName: string;
-  nationalId: string;
-  age: number;
-  gender: string;
-  phone: string;
-  profilePicture: string | null;
 }
 
 interface Study {
@@ -47,239 +26,202 @@ interface Study {
   date: string;
   doctorName: string;
   bodyPart: string;
+  reportStatus: string;
 }
 
-async function getPatientData(userId: string): Promise<{
-  patient: Patient;
-  studies: Study[];
-} | null> {
-  try {
-    const [rows] = await db.query<PatientRow[]>(
-      `
-      SELECT 
-        u.id,
-        u.first_name,
-        u.middle_name,
-        u.last_name,
-        u.phone,
-        u.profile_picture,
-        u.gender,
-        p.national_id,
-        p.date_of_birth,
-        p.patient_id,
-        TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) AS age
-      FROM users u
-      INNER JOIN patients p ON u.patient_id = p.patient_id
-      WHERE u.id = ? AND u.role = 'patient'
-      LIMIT 1
-      `,
-      [userId],
-    );
+export default function Patients() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
 
-    if (!rows.length) return null;
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const patient = rows[0];
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      if (status === "loading") return;
 
-    const [studies] = await db.query<StudyRow[]>(
-      `
-      SELECT 
-        a.accession_id AS id,
-        a.exam_date AS created_at,
-        r.body_part,
-        COALESCE(CONCAT(du.first_name, ' ', du.last_name), 'Not Assigned') AS doctor_name
-      FROM accession a
-      LEFT JOIN reports r ON r.accession_id = a.accession_id
-      LEFT JOIN doctors d ON d.doctor_id = r.doctor_id
-      LEFT JOIN users du ON du.doctor_id = d.doctor_id
-      WHERE a.patient_id = ?
-      ORDER BY a.exam_date DESC
-      `,
-      [patient.patient_id],
-    );
+      if (status === "unauthenticated") {
+        router.push("/");
+        return;
+      }
 
-    return {
-      patient: {
-        id: patient.id,
-        fullName:
-          `${patient.first_name} ${patient.middle_name || ""} ${patient.last_name}`.trim(),
-        firstName: patient.first_name,
-        lastName: patient.last_name,
-        nationalId: patient.national_id,
-        age: patient.age,
-        gender: patient.gender === "male" ? "Male" : "Female",
-        phone: patient.phone,
-        profilePicture: patient.profile_picture,
-      },
-      studies: studies.map((study, index) => ({
-        number: index + 1,
-        id: study.id,
-        date: new Date(study.created_at).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        doctorName: study.doctor_name,
-        bodyPart: study.body_part || "N/A",
-      })),
+      if (!session?.user) {
+        setError("User session not found");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const response = await fetch("/api/patients/profile");
+        const data = await response.json();
+
+        if (data.status === "ok") {
+          setPatient(data.patient);
+          setStudies(data.studies);
+        } else {
+          setError(data.message || "Failed to load patient data");
+        }
+      } catch (err) {
+        console.error("Error fetching patient data:", err);
+        setError("Failed to load patient data");
+      } finally {
+        setLoading(false);
+      }
     };
-  } catch (err) {
-    console.error("GET PATIENT DATA ERROR:", err);
-    return null;
-  }
-}
 
-export default async function PatientsPage() {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+    fetchPatientData();
+  }, [session, status, router]);
 
-  if (!userId) {
-    redirect("/");
-  }
-
-  console.log("Fetching patient data for user_id:", userId);
-
-  const data = await getPatientData(userId);
-
-  if (!data) {
+  if (status === "loading" || (loading && status === "authenticated")) {
     return (
       <section className="patients-page">
         <nav className="patients-nav">
           <div className="patients-nav-logo-wrapper">
-            <Image
-              src="/logo.png"
-              alt="Logo"
-              width={240}
-              height={150}
-              className="w-full h-full object-cover"
-            />
+            <Image src="/logo.png" alt="Logo" width={240} height={150} className="w-full h-full object-cover" />
           </div>
-          <LogOutButton />
         </nav>
         <main className="patients-main">
-          <div className="text-center text-red-500 p-8">
-            <h2 className="text-2xl font-bold mb-4">Error</h2>
-            <p>Patient data not found</p>
-            <Link href="/" className="text-blue-500 underline mt-4 block">
-              Go to Login
-            </Link>
+          <div className="text-center text-white p-8">
+            <div className="border-4 border-gray-300 border-t-blue-600 rounded-full w-10 h-10 animate-spin mx-auto"></div>
+            <p className="mt-4">Loading...</p>
           </div>
         </main>
       </section>
     );
   }
 
-  const { patient, studies } = data;
+  if (error || !patient) {
+    return (
+      <section className="patients-page">
+        <nav className="patients-nav">
+          <div className="patients-nav-logo-wrapper">
+            <Image src="/logo.png" alt="Logo" width={240} height={150} className="w-full h-full object-cover" />
+          </div>
+          <LogOutButton />
+        </nav>
+        <main className="patients-main">
+          <div className="text-center text-red-500 p-8">
+            <h2 className="text-2xl font-bold mb-4">Error</h2>
+            <p>{error || "Patient data not found"}</p>
+            <Link href="/" className="text-blue-500 underline mt-4 block">Go to Login</Link>
+          </div>
+        </main>
+      </section>
+    );
+  }
+
+  const fullName   = [patient.first_name, patient.middle_name, patient.last_name].filter(Boolean).join(" ");
+  const genderText = patient.gender === "male" ? "Male" : "Female";
+  const profileImg = patient.profile_picture || "/api/images/default";
 
   return (
     <section className="patients-page">
       <nav className="patients-nav">
         <div className="patients-nav-logo-wrapper">
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={240}
-            height={150}
-            className="w-full h-full object-cover"
-          />
+          <Image src="/logo.png" alt="Logo" width={240} height={150} className="w-full h-full object-cover" />
         </div>
         <LogOutButton />
       </nav>
 
       <main className="patients-main">
         <div className="patients-grid">
+
           <div className="patients-card-profile">
-            <div className="profile-wrapper">
-              <div className="profile-photo-wrapper">
+            <div className="flex flex-col md:flex-row lg:flex-col items-center md:justify-center md:gap-20 lg:gap-4">
+
+              <div className="flex flex-col items-center gap-3 flex-shrink-0">
                 <div className="profile-photo">
                   <Image
-                    src={patient.profilePicture || "/api/images/default"}
-                    alt={patient.fullName}
+                    src={profileImg}
+                    alt={fullName}
                     width={200}
                     height={200}
                     className="w-full h-full object-cover"
                     unoptimized
                   />
                 </div>
+
+                <h1 className="[@media(min-width:600px)_and_(max-width:1023px)]:block hidden text-white font-semibold text-lg text-center">
+                  {fullName}
+                </h1>
               </div>
 
-              <div className="profile-details-wrapper">
-                <h1 className="profile-name-desktop ">{patient.fullName}</h1>
+              <div className="flex flex-col items-center md:items-start lg:items-center w-full md:w-auto mt-4 md:mt-0 lg:mt-0">
+
+                <h1 className="profile-name-desktop block [@media(min-width:600px)_and_(max-width:1023px)]:!hidden">
+                  {fullName}
+                </h1>
 
                 <div className="profile-info-list">
                   <div className="profile-info-row">
-                    <span className="profile-info-icon">
-                      <ID />
-                    </span>
-                    <span className="profile-info-label">National ID</span>
-                    <span className="profile-info-value">
-                      {patient.nationalId}
-                    </span>
+                    <span className="profile-info-icon"><ID /></span>
+                    <span className="profile-info-label" style={{ fontSize: "14px" }}>National ID</span>
+                    <span className="profile-info-value">{patient.national_id}</span>
                   </div>
-
                   <div className="profile-info-row">
-                    <span className="profile-info-icon">
-                      <Age />
-                    </span>
-                    <span className="profile-info-label">Age</span>
+                    <span className="profile-info-icon"><Age /></span>
+                    <span className="profile-info-label" style={{ fontSize: "14px" }}>Age</span>
                     <span className="profile-info-value">{patient.age}</span>
                   </div>
-
                   <div className="profile-info-row">
-                    <span className="profile-info-icon">
-                      <Gender />
-                    </span>
-                    <span className="profile-info-label">Gender</span>
-                    <span className="profile-info-value">{patient.gender}</span>
+                    <span className="profile-info-icon"><Gender /></span>
+                    <span className="profile-info-label" style={{ fontSize: "14px" }}>Gender</span>
+                    <span className="profile-info-value">{genderText}</span>
                   </div>
-
                   <div className="profile-info-row">
-                    <span className="profile-info-icon">
-                      <Phone />
-                    </span>
-                    <span className="profile-info-label">Phone</span>
+                    <span className="profile-info-icon"><Phone /></span>
+                    <span className="profile-info-label" style={{ fontSize: "14px" }}>Phone</span>
                     <span className="profile-info-value">{patient.phone}</span>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
 
+          
           <div className="patients-card-table">
             <h4 className="patients-table-title">My File</h4>
-            <div className="patients-table-wrapper">
+
+            <div className="patients-table-wrapper" style={{ maxHeight: "300px", overflowY: "auto" }}>
               <table className="w-full text-white">
                 <thead className="table-head-row">
                   <tr>
-                    <th className="table-cell-head">#</th>
-                    <th className="table-cell-head">Date</th>
-                    <th className="table-cell-head">Doctor Name</th>
-                    <th className="table-cell-head">Body Part</th>
-                    <th className="table-cell-head">Report</th>
+                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">#</th>
+                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Date</th>
+                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Doctor Name</th>
+                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Body Part</th>
+                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Report</th>
                   </tr>
                 </thead>
                 <tbody>
                   {studies && studies.length > 0 ? (
                     studies.map((study) => (
                       <tr key={study.id} className="table-row">
-                        <td className="table-cell">{study.number}</td>
-                        <td className="table-cell">{study.date}</td>
-                        <td className="table-cell">{study.doctorName}</td>
-                        <td className="table-cell">{study.bodyPart}</td>
-                        <td className="table-cell">
-                          <Link
-                            href={`/patients/reportPatients?accession_id=${study.id}`}
-                            className="table-link"
-                          >
-                            View
-                          </Link>
+                        <td className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base text-center whitespace-nowrap">{study.number}</td>
+                        <td className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base text-center whitespace-nowrap">{study.date}</td>
+                        <td className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base text-center whitespace-nowrap">{study.doctorName}</td>
+                        <td className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base text-center whitespace-nowrap">{study.bodyPart}</td>
+                        <td className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base text-center whitespace-nowrap">
+                          {study.reportStatus === "completed" ? (
+                            <Link href={`/patients/reportPatients?accession_id=${study.id}`} className="table-link">
+                              View Report
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400 cursor-not-allowed select-none">
+                              Not available yet
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr className="table-row">
-                      <td colSpan={5} className="table-cell text-center">
-                        No records found
-                      </td>
+                      <td colSpan={5} className="table-cell text-center">No records found</td>
                     </tr>
                   )}
                 </tbody>

@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
@@ -32,170 +33,177 @@ interface Accession {
   report_status?: string;
 }
 
+const ALLOWED_PATHS = ["/dropfile", "/viewimg", "/writingReport", "/patientsList", "/patients", "/radio_tech"];
+
+const clearSessionData = () => {
+  sessionStorage.removeItem("patientList_searchQuery");
+  sessionStorage.removeItem("patientList_selectedPatient");
+  sessionStorage.removeItem("patientList_accessions");
+  sessionStorage.removeItem("patientList_showDetails");
+  sessionStorage.removeItem("patientList_selectedPatientId");
+  sessionStorage.removeItem("patientList_shouldRefresh");
+};
+
+const applyFilter = (patients: Patient[], query: string): Patient[] => {
+  if (!query.trim()) return patients;
+  const q = query.toLowerCase().trim();
+  return patients.filter(
+    (p) =>
+      p.full_name.toLowerCase().includes(q) ||
+      p.medical_record_number.toLowerCase().includes(q)
+  );
+};
+
 const PatientList = () => {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [allPatients, setAllPatients] = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient] = useState<PatientDetails | null>(
-    null,
-  );
-  const [accessions, setAccessions] = useState<Accession[]>([]);
-  const [showDetails, setShowDetails] = useState(false);
-  
-  const isPageVisible = useRef(true);
+  const [searchQuery, setSearchQuery]             = useState("");
+  const [allPatients, setAllPatients]             = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients]   = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient]     = useState<PatientDetails | null>(null);
+  const [accessions, setAccessions]               = useState<Accession[]>([]);
+  const [showDetails, setShowDetails]             = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+
+  const allPatientsRef  = useRef<Patient[]>([]);
+  const searchQueryRef  = useRef<string>("");
 
   const isDoctor = pathname.startsWith("/doctor");
-  const isTech = pathname.startsWith("/radio_tech");
+  const isTech   = pathname.startsWith("/radio_tech");
 
-  // ✅ جلب كل المرضى عند التحميل
+  useEffect(() => { allPatientsRef.current = allPatients; }, [allPatients]);
+  useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (isDoctor)    localStorage.setItem("userRole", "/doctor");
+      else if (isTech) localStorage.setItem("userRole", "/radio_tech");
+    }
+  }, [isDoctor, isTech]);
+
+  useEffect(() => {
+    const savedSearchQuery       = sessionStorage.getItem("patientList_searchQuery");
+    const savedSelectedPatient   = sessionStorage.getItem("patientList_selectedPatient");
+    const savedAccessions        = sessionStorage.getItem("patientList_accessions");
+    const savedShowDetails       = sessionStorage.getItem("patientList_showDetails");
+    const savedSelectedPatientId = sessionStorage.getItem("patientList_selectedPatientId");
+
+    if (savedSearchQuery)            setSearchQuery(savedSearchQuery);
+    if (savedSelectedPatient)        setSelectedPatient(JSON.parse(savedSelectedPatient));
+    if (savedAccessions)             setAccessions(JSON.parse(savedAccessions));
+    if (savedShowDetails === "true") setShowDetails(true);
+    if (savedSelectedPatientId)      setSelectedPatientId(parseInt(savedSelectedPatientId));
+  }, []);
+
   useEffect(() => {
     if (status === "loading") return;
-    
     const fetchAllPatients = async () => {
       try {
-        const res = await fetch(`/api/search/patients?query=`);
+        const res  = await fetch(`/api/search/patients?query=`);
         const data = await res.json();
-
         if (data.status === "ok") {
-          setAllPatients(data.patients);
-          setFilteredPatients(data.patients);
+          const patients: Patient[] = data.patients;
+          setAllPatients(patients);
+          setFilteredPatients(applyFilter(patients, searchQueryRef.current));
         }
       } catch (err) {
         console.error("Fetch all patients error:", err);
       }
     };
-
     fetchAllPatients();
   }, [status]);
 
   useEffect(() => {
-    const savedSearchQuery = sessionStorage.getItem("patientList_searchQuery");
-    const savedSelectedPatient = sessionStorage.getItem(
-      "patientList_selectedPatient",
-    );
-    const savedAccessions = sessionStorage.getItem("patientList_accessions");
-    const savedShowDetails = sessionStorage.getItem("patientList_showDetails");
-
-    if (savedSearchQuery) setSearchQuery(savedSearchQuery);
-    if (savedSelectedPatient)
-      setSelectedPatient(JSON.parse(savedSelectedPatient));
-    if (savedAccessions) setAccessions(JSON.parse(savedAccessions));
-    if (savedShowDetails) setShowDetails(savedShowDetails === "true");
-  }, []);
+    setFilteredPatients(applyFilter(allPatientsRef.current, searchQuery));
+  }, [searchQuery]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      isPageVisible.current = !document.hidden;
-    };
+    const isOnPatientsPage = pathname.includes("/patientsList") || pathname.includes("/patients");
+    const isAllowed        = ALLOWED_PATHS.some((path) => pathname.includes(path));
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!showDetails || !selectedPatient || !isDoctor) return;
-
-    const interval = setInterval(async () => {
-      if (!isPageVisible.current) return;
-
-      try {
-        const res = await fetch(`/api/patientsList/${selectedPatient.id}`);
-        const data = await res.json();
-
-        if (data.status === "ok") {
-          const hasChanges = data.accessions.some((newAcc: Accession, index: number) => {
-            const oldAcc = accessions[index];
-            return oldAcc && (
-              newAcc.report_status !== oldAcc.report_status ||
-              newAcc.report_content !== oldAcc.report_content
-            );
-          });
-
-          if (hasChanges) {
-            setAccessions(data.accessions);
-            sessionStorage.setItem(
-              "patientList_accessions",
-              JSON.stringify(data.accessions),
-            );
-          }
-        }
-      } catch (err) {
-        console.error("Auto-refresh error:", err);
+    if (isOnPatientsPage) {
+      const shouldRefresh  = sessionStorage.getItem("patientList_shouldRefresh");
+      const savedPatientId = sessionStorage.getItem("patientList_selectedPatientId");
+      if (shouldRefresh === "true" && savedPatientId) {
+        sessionStorage.removeItem("patientList_shouldRefresh");
+        fetch(`/api/patientsList/${savedPatientId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.status === "ok") {
+              setAccessions(data.accessions);
+              sessionStorage.setItem("patientList_accessions", JSON.stringify(data.accessions));
+            }
+          })
+          .catch((err) => console.error("Refresh accessions error:", err));
       }
-    }, 200); 
+    } else if (!isAllowed) {
+      clearSessionData();
+      setSearchQuery("");
+      setAllPatients([]);
+      setFilteredPatients([]);
+      setSelectedPatient(null);
+      setAccessions([]);
+      setShowDetails(false);
+      setSelectedPatientId(null);
+    }
+  }, [pathname]);
 
-    return () => clearInterval(interval);
-  }, [showDetails, selectedPatient, accessions, isDoctor]);
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const isAllowed = ALLOWED_PATHS.some((path) =>
+        window.location.pathname.includes(path)
+      );
+      if (!isAllowed) clearSessionData();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
-  // ✅ البحث/الفلتر المحلي
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toLowerCase().trim();
+    const query = e.target.value;
     setSearchQuery(query);
     sessionStorage.setItem("patientList_searchQuery", query);
-
-    if (!query) {
-      setFilteredPatients(allPatients);
-      return;
-    }
-
-    const filtered = allPatients.filter(patient => 
-      patient.full_name.toLowerCase().includes(query) ||
-      patient.medical_record_number.toLowerCase().includes(query)
-    );
-
-    setFilteredPatients(filtered);
   };
 
   const handlePatientClick = async (patientId: number) => {
+    if (selectedPatientId === patientId) {
+      setSelectedPatient(null);
+      setAccessions([]);
+      setShowDetails(false);
+      setSelectedPatientId(null);
+      sessionStorage.removeItem("patientList_selectedPatient");
+      sessionStorage.removeItem("patientList_accessions");
+      sessionStorage.removeItem("patientList_showDetails");
+      sessionStorage.removeItem("patientList_selectedPatientId");
+      return;
+    }
     try {
-      const res = await fetch(`/api/patientsList/${patientId}`);
+      const res  = await fetch(`/api/patientsList/${patientId}`);
       const data = await res.json();
-
       if (data.status === "ok") {
         setSelectedPatient(data.patient);
         setAccessions(data.accessions);
         setShowDetails(true);
-
-        sessionStorage.setItem(
-          "patientList_selectedPatient",
-          JSON.stringify(data.patient),
-        );
-        sessionStorage.setItem(
-          "patientList_accessions",
-          JSON.stringify(data.accessions),
-        );
-        sessionStorage.setItem("patientList_showDetails", "true");
+        setSelectedPatientId(patientId);
+        sessionStorage.setItem("patientList_selectedPatient",   JSON.stringify(data.patient));
+        sessionStorage.setItem("patientList_accessions",        JSON.stringify(data.accessions));
+        sessionStorage.setItem("patientList_showDetails",       "true");
+        sessionStorage.setItem("patientList_selectedPatientId", patientId.toString());
       }
     } catch (err) {
       console.error("Fetch patient error:", err);
     }
   };
 
-  const getReportStatusLabel = (reportStatus: string | undefined, reportContent: string | undefined) => {
-    if (reportStatus === 'completed') {
-      return { label: "Completed", bgColor: "bg-green-500" };
-    }
-    
-    if (reportContent && reportContent.trim().length > 0) {
-      return { label: "Completed", bgColor: "bg-green-500" };
-    }
-    
-    return { label: "Draft", bgColor: "bg-gray-500" };
+  const getReportStatusLabel = (reportStatus: string | undefined) => {
+    if (reportStatus === "completed") return { label: "Completed" };
+    return { label: "Draft" };
   };
 
   return (
     <>
       <style>{`
-        .table-row-hover:hover {
-          background-color: #0D1A2D !important;
-        }
-        
         .status-badge {
           padding: 0.25rem 0.75rem;
           border-radius: 9999px;
@@ -204,196 +212,219 @@ const PatientList = () => {
           display: inline-block;
           color: white;
         }
-        
-        .status-completed {
-          background-color: #22c55e;
+        .status-completed { background-color: #1F9C3E; }
+        .status-draft     { background-color: #6E6E6E; }
+
+        @media (min-width: 768px) {
+          .hide-scrollbar-md::-webkit-scrollbar { display: none; }
+          .hide-scrollbar-md { -ms-overflow-style: none; scrollbar-width: none; }
         }
-        
-        .status-draft {
-          background-color: #6b7280;
+
+        html, body {
+          background-color: #0D1A2D !important;
+        }
+
+        @media (min-width: 600px) and (max-width: 850px) {
+          .table-cell-wrap {
+            white-space: nowrap !important;
+            font-size: 9px !important;
+            padding: 4px 3px !important;
+          }
+          .files-table {
+            table-layout: auto;
+            width: 100%;
+          }
+          .status-badge {
+            font-size: 8px !important;
+            padding: 0.15rem 0.4rem !important;
+          }
         }
       `}</style>
 
-      <section className="patient-list-main-section">
-        <div className="patient-list-flex-container">
-          <div className="patient-list-left-column">
-            <div className="patient-list-left-column-card">
-              <h2 className="patient-list-title">Patients List</h2>
-              <div className="patient-list-search-wrapper">
-                <Search className="patient-list-search-icon" />
-                <input
-                  type="text"
-                  className="patient-list-search-input patient-list-search-border"
-                  placeholder="Search by Name or MRN"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                />
-              </div>
+      <section className="bg-[#0D1A2D] overflow-y-auto overflow-x-hidden px-4 pt-16 pb-4 md:p-8 md:pl-[270px] md:pt-8" style={{ minHeight: "100dvh" }}>
 
-              {filteredPatients.map((patient) => (
-                <div
-                  key={patient.patient_id}
-                  className="patient-card patient-list-card patient-list-card-border"
-                  onClick={() => handlePatientClick(patient.patient_id)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <div className="patient-list-avatar">
-                    <img
-  src={
-    patient.profile_picture ||
-    "/api/images/default" 
-  }
-  alt={patient.full_name}
-  className="patient-list-avatar-img"
-/>
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8 md:items-stretch">
+
+          <div className="w-full min-w-0 md:w-5/12">
+
+            <h2 className="text-xl md:text-2xl font-semibold text-white mb-4 md:mb-5 md:-mt-4">
+              Patients List
+            </h2>
+
+            <div className="relative mb-4 md:mb-5">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                className="w-full max-w-full pl-11 pr-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 text-white bg-[#040A16]"
+                style={{ border: "1.5px solid rgba(255, 255, 255, 0.3)", boxSizing: "border-box" }}
+                placeholder="Search by Name or MRN"
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+            </div>
+
+            {filteredPatients.map((patient) => (
+              <div
+                key={patient.patient_id}
+                className="w-full max-w-full rounded-lg p-3 md:p-4 mb-3 md:mb-4 flex items-center cursor-pointer transition-all duration-200 hover:shadow-lg"
+                style={{
+                  border: selectedPatientId === patient.patient_id
+                    ? "3px solid #303A46"
+                    : "1.5px solid rgba(255, 255, 255, 0.3)",
+                  backgroundColor: "#040A16",
+                  boxSizing: "border-box",
+                }}
+                onClick={() => handlePatientClick(patient.patient_id)}
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 mr-3 md:mr-4 overflow-hidden flex-shrink-0">
+                  <img
+                    src={patient.profile_picture ? `/${patient.profile_picture}` : "/api/images/default"}
+                    alt={patient.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm md:text-base font-semibold text-white mb-1 truncate">
+                    {patient.full_name}
                   </div>
-                  <div className="patient-list-info-wrapper">
-                    <div className="patient-name patient-list-name">
-                      {patient.full_name}
-                    </div>
-                    <div className="patient-mrn patient-list-mrn">
-                      {patient.medical_record_number}
-                    </div>
-                  </div>
-                  <div className="patient-list-chevron">
-                    <ChevronRight />
+                  <div className="text-xs md:text-sm text-gray-200 truncate">
+                    {patient.medical_record_number}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="text-white text-lg md:text-xl flex-shrink-0">
+                  <ChevronRight />
+                </div>
+              </div>
+            ))}
+
           </div>
 
-          {/* Vertical Separator */}
           {showDetails && (
-            <div className="vertical-separator patient-list-separator patient-list-separator-bg"></div>
+            <div
+              className="hidden md:block flex-shrink-0 h-screen"
+              style={{ width: "3px", backgroundColor: "#303A46" }}
+            />
           )}
 
-          {/* Right Column - Basic Information and Files */}
           {showDetails && selectedPatient && (
-            <div className="right-column patient-list-right-column">
-              {/* Basic Information */}
-              <div className="patient-list-basic-info-card patient-list-basic-info-border">
-                <h2 className="patient-list-basic-info-title">
+            <div className="w-full min-w-0 md:w-7/12 overflow-x-hidden">
+
+              <div
+                className="w-full max-w-full rounded-[10px] p-3 md:p-4 lg:p-6 mb-3 md:mb-4 lg:mb-8 shadow-sm bg-[#040A16]"
+                style={{
+                  border: "1.5px solid rgba(255, 255, 255, 0.3)",
+                  boxSizing: "border-box",
+                }}
+              >
+                <h2 className="text-base md:text-lg lg:text-xl font-semibold text-white mb-3 md:mb-3 lg:mb-5">
                   Basic Information
                 </h2>
-                <div className="patient-list-basic-info-row patient-list-info-row-border">
-                  <span className="patient-list-basic-info-label">
-                    National ID
-                  </span>
-                  <span className="patient-list-basic-info-value">
-                    {selectedPatient.national_id}
-                  </span>
-                </div>
-                <div className="patient-list-basic-info-row patient-list-info-row-border">
-                  <span className="patient-list-basic-info-label">MRN</span>
-                  <span className="patient-list-basic-info-value">
-                    {selectedPatient.mrn}
-                  </span>
-                </div>
-                <div className="patient-list-basic-info-row patient-list-info-row-border">
-                  <span className="patient-list-basic-info-label">Age</span>
-                  <span className="patient-list-basic-info-value">
-                    {selectedPatient.age}
-                  </span>
-                </div>
-                <div className="patient-list-basic-info-row patient-list-info-row-border">
-                  <span className="patient-list-basic-info-label">Gender</span>
-                  <span className="patient-list-basic-info-value">
-                    {selectedPatient.gender}
-                  </span>
-                </div>
-                <div className="patient-list-basic-info-row-last">
-                  <span className="patient-list-basic-info-label">Phone</span>
-                  <span className="patient-list-basic-info-value">
-                    {selectedPatient.phone}
-                  </span>
-                </div>
+                {[
+                  { label: "National ID", value: selectedPatient.national_id },
+                  { label: "MRN",         value: selectedPatient.mrn         },
+                  { label: "Age",         value: selectedPatient.age         },
+                  { label: "Gender",      value: selectedPatient.gender      },
+                  { label: "Phone",       value: selectedPatient.phone       },
+                ].map(({ label, value }, i, arr) => (
+                  <div
+                    key={label}
+                    className="flex justify-between py-2 md:py-2 lg:py-3"
+                    style={i < arr.length - 1 ? { borderBottom: "1.5px solid #303A46" } : undefined}
+                  >
+                    <span className="font-medium text-gray-300 text-xs md:text-sm lg:text-base">{label}</span>
+                    <span className="text-white font-medium text-xs md:text-sm lg:text-base">{value}</span>
+                  </div>
+                ))}
               </div>
 
-              {/* Files Table */}
-              <div className="patient-list-files-card patient-list-files-border">
-                <h2 className="patient-list-files-title">Files</h2>
-                <div className="patient-list-files-wrapper">
-                  <table className="patient-list-files-table">
-                    <thead className="patient-list-files-thead">
+              <div
+                className="w-full max-w-full rounded-[10px] p-3 md:p-4 lg:p-6 shadow-sm bg-[#040A16]"
+                style={{
+                  border: "1.5px solid rgba(255, 255, 255, 0.3)",
+                  boxSizing: "border-box",
+                }}
+              >
+                <h2 className="text-base md:text-lg lg:text-xl font-semibold text-white mb-3 md:mb-3 lg:mb-5">
+                  Files
+                </h2>
+
+                <div
+                  className="hide-scrollbar-md w-full max-h-[300px] overflow-y-auto overflow-x-auto"
+                  style={{ border: "1.5px solid #303A46", boxSizing: "border-box" }}
+                >
+                  <table className="files-table w-full border-collapse text-white">
+                    <thead style={{ borderBottom: "1.5px solid #303A46" }}>
                       <tr>
-                        <th className="patient-list-files-th">Accession</th>
-                        <th className="patient-list-files-th">Date</th>
-                        {isTech && (
-                          <th className="patient-list-files-th">Modality</th>
-                        )}
-                        {isDoctor && (
-                          <th className="patient-list-files-th">Report Status</th>
-                        )}
-                        <th className="patient-list-files-th">
+                        <th className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm font-medium text-center table-cell-wrap">Accession</th>
+                        <th className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm font-medium text-center table-cell-wrap">Date</th>
+                        {isTech   && <th className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm font-medium text-center table-cell-wrap">Modality</th>}
+                        {isDoctor && <th className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm font-medium text-center table-cell-wrap">Report Status</th>}
+                        <th className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm font-medium text-center table-cell-wrap">
                           {isTech ? "Actions" : "Action"}
                         </th>
                       </tr>
                     </thead>
-
                     <tbody>
                       {accessions.length > 0 ? (
-                        accessions.map((acc) => {
-                          const reportStatus = isDoctor ? getReportStatusLabel(acc.report_status, acc.report_content) : null;
-                          
+                        accessions.map((acc, idx) => {
+                          const reportStatus = isDoctor ? getReportStatusLabel(acc.report_status) : null;
                           return (
                             <tr
-                              key={acc.accession_id}
-                              className="patient-list-files-tr"
+                              key={`${acc.accession_id}-${idx}`}
+                              className="transition-colors bg-[#040A16] hover:bg-[#0D1A2D]"
+                              style={{ borderBottom: "1.5px solid #303A46" }}
                             >
-                              <td className="patient-list-files-td">
-                                {acc.accession_number}
-                              </td>
-                              <td className="patient-list-files-td">
-                                {acc.exam_date}
-                              </td>
+                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.accession_number}</td>
+                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.exam_date}</td>
                               {isTech && (
-                                <td className="patient-list-files-td">
-                                  {acc.modality}
-                                </td>
+                                <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.modality}</td>
                               )}
                               {isDoctor && reportStatus && (
-                                <td className="patient-list-files-td">
+                                <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">
                                   <span className={`status-badge status-${reportStatus.label.toLowerCase()}`}>
                                     {reportStatus.label}
                                   </span>
                                 </td>
                               )}
-                              <td className="patient-list-files-td">
+                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">
                                 {isTech ? (
-                                  <div className="patient-list-actions-wrapper">
-                                    <Link
-                                      href="/radio_tech/dropfile"
-                                      className="patient-list-upload-link"
-                                      title="Upload File"
-                                    >
-                                      <Upload_Action className="patient-list-upload-icon" />
-                                    </Link>
-                                    <Link
-                                      href="/viewimg"
-                                      className="patient-list-view-link"
-                                      title="View Image"
-                                    >
-                                      <Img className="patient-list-view-icon" />
-                                    </Link>
+                                  <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
+                                    <div className="relative group">
+                                      <Link
+                                        href={`/radio_tech/dropfile?accession_id=${acc.accession_id}`}
+                                        className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
+                                      >
+                                        <Upload_Action className="text-lg text-white" />
+                                      </Link>
+                                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                        Upload File
+                                      </div>
+                                    </div>
+                                    <div className="relative group">
+                                      <Link
+                                        href={`/viewimg?accession_id=${acc.accession_id}`}
+                                        className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
+                                      >
+                                        <Img className="text-white text-lg" />
+                                      </Link>
+                                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                        View Image
+                                      </div>
+                                    </div>
                                   </div>
                                 ) : isDoctor ? (
-                                  <div className="patient-list-actions-wrapper" style={{ display: 'flex', gap: '0 rem' }}>
-                                    <Link
-                                      href="/viewimg"
-                                      className="patient-list-view-link"
-                                      title="View Image"
-                                      style={{ marginRight: '-0.25rem' }}
-                                    >
-                                      <Img className="patient-list-view-icon" style={{ fontSize: '1.5rem' }} />
-                                    </Link>
-                                    <Link
-                                      href={`/doctor/writingReport?accession_id=${acc.accession_id}`}
-                                      className="patient-list-view-link"
-                                      title="View Report"
-                                    >
-                                      <Report className="patient-list-view-icon" style={{ fontSize: '1.5rem' }} />
-                                    </Link>
+                                  <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
+                                    <div className="relative group">
+                                      <Link
+                                        href={`/doctor/writingReport?accession_id=${acc.accession_id}`}
+                                        className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
+                                      >
+                                        <Report className="text-white" style={{ fontSize: "1.5rem" }} />
+                                      </Link>
+                                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                        Write Report
+                                      </div>
+                                    </div>
                                   </div>
                                 ) : null}
                               </td>
@@ -401,11 +432,8 @@ const PatientList = () => {
                           );
                         })
                       ) : (
-                        <tr className="patient-list-files-tr">
-                          <td
-                            colSpan={4}
-                            className="patient-list-files-td text-center"
-                          >
+                        <tr className="transition-colors bg-[#040A16] hover:bg-[#0D1A2D]" style={{ borderBottom: "1.5px solid #303A46" }}>
+                          <td colSpan={4} className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center whitespace-nowrap">
                             No records found
                           </td>
                         </tr>
@@ -414,6 +442,7 @@ const PatientList = () => {
                   </table>
                 </div>
               </div>
+
             </div>
           )}
         </div>

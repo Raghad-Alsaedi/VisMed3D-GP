@@ -16,6 +16,10 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const accessionId = searchParams.get("accession_id");
 
+    console.log('GET REPORT API');
+    console.log('Fetching report for accessionId:', accessionId);
+    console.log('User ID:', session.user.id);
+
     if (!accessionId) {
       return NextResponse.json(
         { status: "error", message: "accession_id is required" },
@@ -31,6 +35,9 @@ export async function GET(req) {
         r.doctor_id,
         r.report_text,
         r.body_part,
+        r.autosave_text,
+        r.images,
+        r.report_status,
         r.created_at,
         r.updated_at,
         CONCAT(du.first_name, ' ', du.last_name) AS doctor_name,
@@ -52,6 +59,7 @@ export async function GET(req) {
     );
 
     if (!rows.length) {
+      console.log('No report found for accessionId:', accessionId);
       return NextResponse.json({
         status: "ok",
         report: null,
@@ -60,6 +68,13 @@ export async function GET(req) {
     }
 
     const report = rows[0];
+    
+    console.log('Report found:', {
+      report_id: report.report_id,
+      status: report.report_status,
+      has_autosave: !!report.autosave_text,
+      has_images: !!report.images
+    });
 
     return NextResponse.json({
       status: "ok",
@@ -74,12 +89,16 @@ export async function GET(req) {
         modality: report.modality,
         bodyPart: report.body_part,
         reportText: report.report_text,
+        autosave_text: report.autosave_text,
+        images: report.images,
+        report_status: report.report_status,
         createdAt: report.created_at,
         updatedAt: report.updated_at,
       },
     });
   } catch (err) {
-    console.error("GET REPORT ERROR:", err);
+    console.error("GET REPORT ERROR");
+    console.error("Error details:", err);
     return NextResponse.json(
       { status: "error", message: "Server error" },
       { status: 500 },

@@ -2,16 +2,20 @@ export class Camera {
     constructor(canvas) {
         this.canvas = canvas;
 
-        this.rotationX = 0;
-        this.rotationY = 0;
+        const saved = JSON.parse(sessionStorage.getItem("cameraState"));
+
+        // هنا التعديل عشان يبان الوجهه 
+        this.rotationX = saved?.rotationX ?? -90;
+        this.rotationY = saved?.rotationY ?? 0;
+
+        this.zoom = saved?.zoom ?? -1.5;
+
+        this.minZoom = -5.0;
+        this.maxZoom = -0.1;
 
         this.isDragging = false;
         this.lastMouseX = 0;
-        this.lastMouseY = 0;
-
-        this.zoom = -1.5;
-        this.minZoom = -5.0;
-        this.maxZoom = -0.1;
+        this.lastMouseY = 0; 
 
         this.eye = vec3(0.5, 0.5, this.zoom);
         this.at  = vec3(0.5, 0.5, 0.5);
@@ -20,9 +24,19 @@ export class Camera {
         this.setupEvents();
     }
 
+    //  نحفظ الحالة
+    saveState() {
+        sessionStorage.setItem("cameraState", JSON.stringify({
+            rotationX: this.rotationX,
+            rotationY: this.rotationY,
+            zoom: this.zoom
+        }));
+    }
+
     applyZoom(amount) {
         this.zoom += amount;
         this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom));
+        this.saveState();   // نحفظ بعد الزوم
     }
 
     setupEvents() {
@@ -46,6 +60,8 @@ export class Camera {
 
             this.lastMouseX = e.clientX;
             this.lastMouseY = e.clientY;
+
+            this.saveState();  // نحفظ بعد الحركة
         });
 
         // ===== Mouse Wheel Zoom =====
@@ -54,7 +70,7 @@ export class Camera {
             this.applyZoom(e.deltaY * -0.002);
         }, { passive: false });
 
-        // ===== Keyboard Rotation + Zoom (ARROWS + +/-) =====
+        // ===== Keyboard Rotation + Zoom =====
         window.addEventListener("keydown", (e) => {
 
             const rotSpeed = 2.0;
@@ -80,19 +96,14 @@ export class Camera {
                 case "+":
                 case "=":
                     this.applyZoom(zoomSpeed);
-                    break;
+                    return;
 
                 case "-":
                     this.applyZoom(-zoomSpeed);
-                    break;
-
-                // Reset (اختياري)
-                case "r":
-                    this.rotationX = 0;
-                    this.rotationY = 0;
-                    this.zoom = -1.5;
-                    break;
+                    return;
             }
+
+            this.saveState();  // نحفظ بعد الكيبورد
         });
     }
 
@@ -113,4 +124,4 @@ export class Camera {
     getProjectionMatrix() {
         return perspective(70.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
     }
-}
+} 
