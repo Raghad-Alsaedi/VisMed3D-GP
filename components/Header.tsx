@@ -1,16 +1,22 @@
 "use client";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { ArrowL } from "./icons";
 
 const Header = () => {
-  const router = useRouter();
-  const pathname = usePathname();
+  const router       = useRouter();
+  const pathname     = usePathname();
   const searchParams = useSearchParams();
+
+  const { data: session } = useSession();
+  const tokenRole = (session?.user as any)?.role as string | undefined;
+
+  const isTech   = tokenRole === "technician";
+  const isDoctor = tokenRole === "doctor";
 
   const [isSaving, setIsSaving]               = useState(false);
   const [mounted, setMounted]                 = useState(false);
-  const [userRole, setUserRole]               = useState<string | null>(null);
   const [patientName, setPatientName]         = useState<string>("");
   const [accessionNumber, setAccessionNumber] = useState<string>("");
 
@@ -21,17 +27,15 @@ const Header = () => {
   const fromUpload  = searchParams.get("fromUpload") === "true";
   const accessionId = searchParams.get("accession_id");
 
-  const isTech   = userRole === "/radio_tech";
-  const isDoctor = userRole === "/doctor";
-
   useEffect(() => {
     setMounted(true);
-    setUserRole(localStorage.getItem("userRole"));
-  }, [pathname]);
+  }, []);
 
-  const resolvedAccessionId = accessionId || (isViewImage && typeof window !== "undefined"
-    ? sessionStorage.getItem("viewimg_accession_id")
-    : null);
+  const resolvedAccessionId =
+    accessionId ||
+    (isViewImage && typeof window !== "undefined"
+      ? sessionStorage.getItem("viewimg_accession_id")
+      : null);
 
   useEffect(() => {
     if (!resolvedAccessionId) return;
@@ -46,15 +50,21 @@ const Header = () => {
     }
 
     fetch(`/api/accession?accession_id=${resolvedAccessionId}`)
-      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.status === "ok") {
           setPatientName(data.patientName || "");
           setAccessionNumber(data.accessionNumber || "");
-          sessionStorage.setItem(`patient_${resolvedAccessionId}`, JSON.stringify({
-            patientName: data.patientName,
-            accessionNumber: data.accessionNumber,
-          }));
+          sessionStorage.setItem(
+            `patient_${resolvedAccessionId}`,
+            JSON.stringify({
+              patientName:     data.patientName,
+              accessionNumber: data.accessionNumber,
+            })
+          );
         }
       })
       .catch((err) => console.error("Header fetch error:", err));
@@ -66,9 +76,9 @@ const Header = () => {
       const tempFileId = localStorage.getItem("tempFileId");
       if (!tempFileId) { alert("No file to save"); return; }
       const response = await fetch("/api/save-file", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId: tempFileId }),
+        body:    JSON.stringify({ fileId: tempFileId }),
       });
       const data = await response.json();
       if (data.success) {
@@ -90,9 +100,9 @@ const Header = () => {
       const tempFileId = localStorage.getItem("tempFileId");
       if (tempFileId) {
         await fetch("/api/delete-temp-file", {
-          method: "POST",
+          method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId: tempFileId }),
+          body:    JSON.stringify({ fileId: tempFileId }),
         });
         localStorage.removeItem("tempFileId");
       }
@@ -104,28 +114,31 @@ const Header = () => {
   };
 
   const showBackArrow = () => {
-    if (!mounted) return false;
+    if (!mounted)   return false;
     if (isManualTF) return false;
     if (isDropFile) return true;
     if (isViewImage) return !fromUpload;
-    if (isDoctor && isReport) return true;
-    if (isReport) return true;
+    if (isReport)    return true;
     return false;
   };
 
   const handleBack = () => {
-    if (isDropFile) router.push("/radio_tech/uploadFile");
-    else if (isReport) router.push("/doctor/patients");
-    else if (isViewImage && resolvedAccessionId) {
-      if (isDoctor) router.push(`/doctor/writingReport?accession_id=${resolvedAccessionId}`);
+    if (isDropFile) {
+      router.push("/radio_tech/uploadFile");
+    } else if (isReport) {
+      router.push("/doctor/patients");
+    } else if (isViewImage && resolvedAccessionId) {
+      if (isDoctor)    router.push(`/doctor/writingReport?accession_id=${resolvedAccessionId}`);
       else if (isTech) router.push("/radio_tech/uploadFile");
-      else router.back();
+      else             router.back();
+    } else {
+      router.back();
     }
-    else router.back();
   };
 
   const showSaveCancelButtons = mounted && isTech && isViewImage && fromUpload;
-  const showName = !!(patientName);
+  const showResetButton       = isViewImage || isReport;
+  const showName              = !!patientName;
 
   return (
     <header className="w-full flex justify-between items-center gap-2 md:gap-3">
@@ -135,8 +148,8 @@ const Header = () => {
           <button
             onClick={handleBack}
             className="text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30
-                       p-1.5 sm:p-2 md:p-4 flex items-center justify-center transition-all hover:border-white/60
-                       bg-[#0D1A2D]"
+                       p-1.5 sm:p-2 md:p-4 flex items-center justify-center transition-all
+                       hover:border-white/60 bg-[#0D1A2D]"
           >
             <ArrowL />
           </button>
@@ -189,7 +202,7 @@ const Header = () => {
           </>
         )}
 
-        {(isViewImage || isReport) && (
+        {showResetButton && (
           <button
             className="text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30
                        transition-all font-semibold bg-[#0D1A2D]
@@ -200,6 +213,7 @@ const Header = () => {
             Reset The View
           </button>
         )}
+
       </div>
     </header>
   );
