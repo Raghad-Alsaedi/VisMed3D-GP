@@ -5,7 +5,7 @@ CREATE DATABASE VisMed3D;
 USE VisMed3D;
 
 -- ============================================================
--- Function to generate random MRN (6 alphanumeric characters)
+-- Function لتوليد MRN عشوائي (6 خانات حروف وأرقام)
 -- ============================================================
 
 DELIMITER //
@@ -53,12 +53,15 @@ BEGIN
     DECLARE mrn_exists INT DEFAULT 1;
 
     IF NEW.medical_record_number IS NULL OR NEW.medical_record_number = '' THEN
+
         WHILE mrn_exists > 0 DO
             SET new_mrn = CONCAT('MRN-', generate_random_mrn(6));
+
             SELECT COUNT(*) INTO mrn_exists
             FROM patients
             WHERE medical_record_number = new_mrn;
         END WHILE;
+
         SET NEW.medical_record_number = new_mrn;
     END IF;
 END//
@@ -77,7 +80,7 @@ CREATE TABLE users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('doctor', 'patient', 'technician', 'admin') NOT NULL,
+    role ENUM('doctor', 'patient', 'technician') NOT NULL,
     first_name VARCHAR(50) NOT NULL,
     middle_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NOT NULL,
@@ -90,13 +93,7 @@ CREATE TABLE users (
     patient_id INT NULL UNIQUE,
     technician_id INT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_users_doctor
-        FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
-    CONSTRAINT fk_users_patient
-        FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
-    CONSTRAINT fk_users_technician
-        FOREIGN KEY (technician_id) REFERENCES technicians(technician_id) ON DELETE CASCADE
+    updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- ============================================================
@@ -208,7 +205,6 @@ CREATE TABLE reports (
     last_autosave TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_accession (accession_id),
     FOREIGN KEY (accession_id) REFERENCES accession(accession_id) ON DELETE CASCADE,
     FOREIGN KEY (volume_id) REFERENCES volumes(id) ON DELETE SET NULL,
     FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
@@ -244,6 +240,15 @@ CREATE TABLE technician_patient_assignments (
 );
 
 -- ============================================================
+-- Foreign Keys: Users
+-- ============================================================
+
+ALTER TABLE users
+    ADD FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE,
+    ADD FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    ADD FOREIGN KEY (technician_id) REFERENCES technicians(technician_id) ON DELETE CASCADE;
+
+-- ============================================================
 -- Sample Data: Doctors
 -- ============================================================
 
@@ -261,6 +266,7 @@ INSERT INTO doctor_profiles (doctor_id, doctor_code, license_number, years_exper
 
 -- ============================================================
 -- Sample Data: Patients
+-- (MRN يتولد تلقائياً عشوائي بصيغة MRN-XXXXXX)
 -- ============================================================
 
 INSERT INTO patients (medical_record_number, national_id, date_of_birth, patient_code) VALUES
@@ -287,13 +293,12 @@ INSERT INTO technician_profiles (technician_id, technician_code, license_number,
 -- ============================================================
 
 INSERT INTO users (username, password_hash, role, first_name, middle_name, last_name, gender, email, phone, profile_picture, is_active, doctor_id, patient_id, technician_id) VALUES
-('doc1001',  '$2b$10$mqM1gor10c4M/QiRuKj8o.1HYbXFs8LbrWY5cGOpgRA5yEqvclKfq', 'doctor',     'Ahmed',  'Mohammed', 'Alharbi',   'male',   'ahmed.alharbi@vismed.com',    '+966501111111', 'api/images/doctor_1/', 1, 1,    NULL, NULL),
-('doc1002',  '$2b$10$KN.y8Sypx3foKRACmIBR9u2hdL.JPQoZM3T1Vk.vAEDq98LzTlSLq', 'doctor',     'Sarah',  'Abdullah', 'Almutairi', 'female', 'sarah.almutairi@vismed.com',  '+966502222222', 'api/images/doctor_2/', 1, 2,    NULL, NULL),
-('rt2001',   '$2b$10$ucyd3XrJg0ySCiQQCaPZ8uwHASukxkkrTMDQVZoNmfPzxDHNRofk2', 'technician', 'Khalid', 'Omar',     'Alqahtani', 'male',   'khalid.alqahtani@vismed.com', '+966503333333', 'api/images/tech_1/',   1, NULL, NULL, 1),
-('pat3001',  '$2b$10$d2MxrKiP3eC8cn15AlRAs.EXwJbxj7yNjYj5pckCNvXlY1FsMXKoK', 'patient',    'Noura',  NULL,       'Alrashid',  'female', 'noura.alrashid@vismed.com',   '+966551234567', 'api/images/patient_1', 1, NULL, 1,    NULL),
-('pat3002',  '$2b$10$lVuWle9.VgOxCAidjxRI3O2/PTsURWxTWHtzblGhUPi81Ov/bc1y.', 'patient',    'Yousef', NULL,       'Alshehri',  'male',   'yousef.alshehri@vismed.com',  '+966552345678', 'api/images/patient_2', 1, NULL, 2,    NULL),
-('pat3003',  '$2b$10$3O5.d1OdfQq90eH5PXYweef4E36HZqk7NHxp2xTYsoZVcsrY4du9W', 'patient',    'Hessa',  NULL,       'Alotaibi',  'female', 'hessa.alotaibi@vismed.com',   '+966553456789', 'api/images/patient_3', 1, NULL, 3,    NULL),
-('admin001', '$2b$10$RP7aPzAo2aaFXVUrKMYqO..oEuskZB52lFsI.5tG/YMjLMdsmEo9a', 'admin',      'System', NULL,       'Admin',     'male',   'admin@vismed.com',            '+966500000000', 'api/images/admin_1',   1, NULL, NULL, NULL);
+('doc1001',  '$2b$10$a2jhxMMDP4mYrMa7AabQZO58JrLuhHh57QDT/m6F65uA6AuQBr/bW', 'doctor',     'Ahmed',   'Mohammed', 'Alharbi',   'male',   'ahmed.alharbi@vismed.com',    '+966501111111', 'api/images/doctor_1/', 1, 1, NULL, NULL),
+('doc1002',  '$2b$10$P/Pw0bx4SI3UDqNKZLYyOubOQke6NQHtkYWSFWj6tGFcFbHMuUd2y', 'doctor',     'Sarah',   'Abdullah', 'Almutairi', 'female', 'sarah.almutairi@vismed.com',  '+966502222222', 'api/images/doctor_2/', 1, 2, NULL, NULL),
+('rt2001',   '$2b$10$rk1mkMFmC9rAnZ4ta4gFROr1LZyg35piOP0D5AOylP25FJdjciOS6', 'technician', 'Khalid',  'Omar',     'Alqahtani', 'male',   'khalid.alqahtani@vismed.com', '+966503333333', 'api/images/tech_1/',   1, NULL, NULL, 1),
+('pat3001',  '$2b$10$irpUdxCoUtsbPwu4jjDZt.3xvkVT6rtifEdN7HIo/dF0yfYAabZdm', 'patient',    'Noura',   NULL,       'Alrashid',  'female', 'noura.alrashid@vismed.com',   '+966551234567', 'api/images/patient_1', 1, NULL, 1, NULL),
+('pat3002',  '$2b$10$220u8vryPF57UBW04CD1.e9/sHeWFp7jHUIEUhl6Pu01JfKoHlrnG', 'patient',    'Yousef',  NULL,       'Alshehri',  'male',   'yousef.alshehri@vismed.com',  '+966552345678', 'api/images/patient_2', 1, NULL, 2, NULL),
+('pat3003',  '$2b$10$n9W9/K5ql..0f/MUAvyqeu0j7KG2Ix4oXsD9MHw5EFJUR5UPBg0cS', 'patient',    'Hessa',   NULL,       'Alotaibi',  'female', 'hessa.alotaibi@vismed.com',   '+966553456789', 'api/images/patient_3', 1, NULL, 3, NULL);
 
 -- ============================================================
 -- Sample Data: Technician - Patient Assignments
@@ -321,3 +326,74 @@ INSERT INTO accession (accession_number, patient_id, exam_date, modality) VALUES
 (NULL, 1, '2023-03-12', 'CT'),
 (NULL, 2, '2023-03-12', 'CT'),
 (NULL, 3, '2023-03-12', 'CT');
+
+
+
+-- ============================================================
+-- Volume Binary Storage (Chunks)  ✅ (DB storage + fast retrieval)
+-- ============================================================
+
+
+CREATE TABLE IF NOT EXISTS volume_chunks (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  volume_id INT NOT NULL,
+  chunk_index INT NOT NULL,
+  data LONGBLOB NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_volume_chunk (volume_id, chunk_index),
+  INDEX idx_volume_chunk (volume_id, chunk_index),
+  CONSTRAINT fk_chunks_volume
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+    ON DELETE CASCADE
+);
+
+ALTER TABLE volumes
+  ADD COLUMN byte_size BIGINT NULL;
+
+
+CREATE INDEX idx_accession_patient ON accession(patient_id);
+CREATE INDEX idx_volumes_accession ON volumes(accession_id);
+CREATE INDEX idx_volumes_uploaded_by ON volumes(uploaded_by);
+
+
+-- 1) منع تكرار accession لنفس المريض في نفس اليوم
+ALTER TABLE accession
+  ADD UNIQUE KEY uq_accession_patient_examdate (patient_id, exam_date);
+
+-- 2) تسريع الاستعلامات اللي تجيب volumes الجاهزة (READY)
+CREATE INDEX idx_volumes_status ON volumes(status);
+
+
+CREATE INDEX idx_volumes_uploaded_at ON volumes(uploaded_at);
+
+ALTER TABLE volumes
+  MODIFY storage_path VARCHAR(255) NULL,
+  MODIFY file_prefix VARCHAR(100) NULL;
+  
+ALTER TABLE volumes
+ADD COLUMN chunk_size INT NOT NULL DEFAULT 1048576;
+
+SELECT * FROM patients WHERE patient_id = 1;
+SELECT * FROM accession WHERE accession_id = 1;
+
+SHOW COLUMNS FROM volumes LIKE 'chunk_size';
+
+SELECT DATABASE();
+SHOW CREATE TABLE volumes;
+SHOW COLUMNS FROM volumes LIKE 'chunk_size';
+
+SELECT DATABASE();
+SHOW CREATE TABLE volumes;
+
+SELECT id, status, byte_size, chunk_size
+FROM volumes
+WHERE id = 16;
+
+SELECT COUNT(*) AS chunks
+FROM volume_chunks
+WHERE volume_id = 16;
+
+SELECT SUM(OCTET_LENGTH(data)) AS total_bytes
+FROM volume_chunks
+WHERE volume_id = 16;
+SET GLOBAL max_allowed_packet = 134217728;

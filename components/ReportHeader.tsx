@@ -45,6 +45,7 @@ const ReportHeader = ({
   const [generating, setGenerating]         = useState(false);
   const [warningShown, setWarningShown]     = useState(false);
   const [warningVisible, setWarningVisible] = useState(false);
+  const [isSaved, setIsSaved]               = useState(false);
 
   const openPdfPreview = async () => {
     setGenerating(true);
@@ -92,6 +93,7 @@ const ReportHeader = ({
     setShowPreview(false);
     setDoctorInfo(null);
     setPatientInfo(null);
+    setIsSaved(true);
     onConfirmSave();
   };
 
@@ -122,12 +124,11 @@ const ReportHeader = ({
             </span>
           )}
 
-          {/* Attach Image */}
           <button
             onClick={() => onAttachImage()}
-            disabled={uploadingImage}
+            disabled={uploadingImage || !canSave}
             className={`bg-transparent border border-white/30 h-8 lg:h-10 px-3 lg:px-4 rounded-[12px] flex items-center justify-center gap-2 transition-colors ${
-              uploadingImage
+              uploadingImage || !canSave
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:border-white/60 cursor-pointer"
             }`}
@@ -139,14 +140,15 @@ const ReportHeader = ({
             <Attach_Image className="w-4 h-4 text-white" />
           </button>
 
-          {/* Save */}
           <button
             onClick={handleSaveClick}
             disabled={!canSave || isSaving || generating}
             className={`h-8 lg:h-10 px-4 lg:px-6 rounded-[12px] flex items-center justify-center gap-2 transition-colors border ${
               !canSave || isSaving || generating
-                ? "bg-[#17387C]/40 border-white/20 cursor-not-allowed opacity-50"
-                : "bg-[#17387C] hover:bg-[#1e4a9a] border-white/30 cursor-pointer"
+                ? "bg-[#6E6E6E]/40 border-white/20 cursor-not-allowed opacity-50"
+                : isSaved
+                ? "bg-[#2563EB] hover:bg-[#1D4ED8] border-blue-400/50 cursor-pointer"
+                : "bg-[#6E6E6E] hover:bg-[#555] border-white/20 cursor-pointer"
             }`}
           >
             {generating ? (
@@ -166,7 +168,6 @@ const ReportHeader = ({
         </div>
       </header>
 
-      {/* ── Small screens ── */}
       <div className="md:hidden sticky top-0 z-50 bg-[#0D1A2D] w-full pb-2 pt-2 px-4">
         {warningVisible && (
           <p className="text-white/60 text-[9px] font-mono text-right mb-1 leading-tight">
@@ -186,12 +187,11 @@ const ReportHeader = ({
           </div>
 
           <div className="flex flex-row items-center gap-2 flex-shrink-0 pr-1">
-            {/* Attach Image */}
             <button
               onClick={() => onAttachImage()}
-              disabled={uploadingImage}
+              disabled={uploadingImage || !canSave}
               className={`border border-white/30 rounded-[8px] flex flex-row items-center gap-1.5 px-3 h-7 bg-transparent transition-colors ${
-                uploadingImage
+                uploadingImage || !canSave
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:border-white/60 cursor-pointer"
               }`}
@@ -202,14 +202,15 @@ const ReportHeader = ({
               <Attach_Image className="text-white w-3 h-3 flex-shrink-0" />
             </button>
 
-            {/* Save */}
             <button
               onClick={handleSaveClick}
               disabled={!canSave || isSaving || generating}
               className={`rounded-[8px] flex flex-row items-center gap-1.5 px-3 h-7 border transition-colors ${
                 !canSave || isSaving || generating
-                  ? "bg-[#17387C]/40 border-white/20 cursor-not-allowed opacity-50"
-                  : "bg-[#17387C] hover:bg-[#1e4a9a] border-white/30 cursor-pointer"
+                  ? "bg-[#6E6E6E]/40 border-white/20 cursor-not-allowed opacity-50"
+                  : isSaved
+                  ? "bg-[#2563EB] hover:bg-[#1D4ED8] border-blue-400/50 cursor-pointer"
+                  : "bg-[#6E6E6E] hover:bg-[#555] border-white/20 cursor-pointer"
               }`}
             >
               {generating ? (

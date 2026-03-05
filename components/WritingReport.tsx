@@ -29,6 +29,8 @@ const WritingReport = () => {
 
   const navigateToViewer = () => {
     if (accessionId) sessionStorage.setItem("viewimg_accession_id", accessionId);
+    const from = searchParams.get("from");
+    if (from) sessionStorage.setItem("viewimg_from", from);
     router.push("/viewimg");
   };
 

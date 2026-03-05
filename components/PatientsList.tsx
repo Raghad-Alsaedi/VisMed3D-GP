@@ -66,8 +66,8 @@ const PatientList = () => {
   const [showDetails, setShowDetails]             = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
 
-  const allPatientsRef  = useRef<Patient[]>([]);
-  const searchQueryRef  = useRef<string>("");
+  const allPatientsRef = useRef<Patient[]>([]);
+  const searchQueryRef = useRef<string>("");
 
   const isDoctor = pathname.startsWith("/doctor");
   const isTech   = pathname.startsWith("/radio_tech");
@@ -391,7 +391,7 @@ const PatientList = () => {
                                   <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
                                     <div className="relative group">
                                       <Link
-                                        href={`/radio_tech/dropfile?accession_id=${acc.accession_id}`}
+                                        href={`/radio_tech/dropfile?patientId=${selectedPatient.id}&accessionId=${acc.accession_id}`}
                                         className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
                                       >
                                         <Upload_Action className="text-lg text-white" />
@@ -416,7 +416,7 @@ const PatientList = () => {
                                   <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
                                     <div className="relative group">
                                       <Link
-                                        href={`/doctor/writingReport?accession_id=${acc.accession_id}`}
+                                        href={`/doctor/writingReport?accession_id=${acc.accession_id}&from=patientlist`}
                                         className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
                                       >
                                         <Report className="text-white" style={{ fontSize: "1.5rem" }} />

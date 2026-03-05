@@ -114,26 +114,27 @@ const Header = () => {
   };
 
   const showBackArrow = () => {
-    if (!mounted)   return false;
-    if (isManualTF) return false;
-    if (isDropFile) return true;
+    if (!mounted)    return false;
+    if (isManualTF)  return false;
+    if (isDropFile)  return true;
     if (isViewImage) return !fromUpload;
     if (isReport)    return true;
     return false;
   };
 
   const handleBack = () => {
-    if (isDropFile) {
-      router.push("/radio_tech/uploadFile");
-    } else if (isReport) {
-      router.push("/doctor/patients");
-    } else if (isViewImage && resolvedAccessionId) {
-      if (isDoctor)    router.push(`/doctor/writingReport?accession_id=${resolvedAccessionId}`);
-      else if (isTech) router.push("/radio_tech/uploadFile");
-      else             router.back();
-    } else {
-      router.back();
+    if (isViewImage && isDoctor) {
+      const id   = resolvedAccessionId;
+      const from = typeof window !== "undefined" ? sessionStorage.getItem("viewimg_from") ?? "" : "";
+      router.push(`/doctor/writingReport${id ? `?accession_id=${id}&from=${from}` : ""}`);
+      return;
     }
+    if (isReport && isDoctor) {
+      const from = searchParams.get("from");
+      if (from === "patientlist") { router.push("/doctor/patients"); return; }
+      if (from === "homeprofile") { router.push("/doctor"); return; }
+    }
+    router.back();
   };
 
   const showSaveCancelButtons = mounted && isTech && isViewImage && fromUpload;

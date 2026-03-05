@@ -65,7 +65,7 @@ export default function AdminPatientList() {
   const renderCell = (col: Column, row: Patient) => {
     if (col.key === "is_active")
       return (
-        <span className={`px-1 md:px-1.5 py-px rounded-full text-[8px] md:text-[10px] font-medium ${row.is_active ? "bg-green-600" : "bg-[#6E6E6E]"} text-white`}>
+        <span className={`px-1 md:px-2 py-px md:py-0.5 rounded-full text-[8px] md:text-xs font-medium ${row.is_active ? "bg-[#1F9C3E]" : "bg-[#6E6E6E]"} text-white`}>
           {row.is_active ? "Active" : "Inactive"}
         </span>
       );
