@@ -50,7 +50,6 @@ export async function GET(req, { params }) {
 
     const patient = patientRows[0];
 
-  
     const [accessions] = await db.query(
       `
       SELECT 
@@ -60,13 +59,20 @@ export async function GET(req, { params }) {
         a.modality,
         r.body_part,
         r.report_text AS report_content,
-        r.report_status
+        r.report_status,
+        v.id AS volume_id
       FROM accession a
       LEFT JOIN reports r ON r.report_id = (
         SELECT report_id 
         FROM reports
         WHERE accession_id = a.accession_id
         ORDER BY report_id DESC
+        LIMIT 1
+      )
+      LEFT JOIN volumes v ON v.id = (
+        SELECT id FROM volumes
+        WHERE accession_id = a.accession_id AND status = 'READY'
+        ORDER BY uploaded_at DESC
         LIMIT 1
       )
       WHERE a.patient_id = ?
@@ -106,6 +112,7 @@ export async function GET(req, { params }) {
           body_part:      acc.body_part      || "N/A",
           report_content: acc.report_content || "",
           report_status:  normalizedStatus,
+          volume_id:      acc.volume_id ?? null,
         };
       }),
     });

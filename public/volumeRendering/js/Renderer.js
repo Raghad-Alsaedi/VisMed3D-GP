@@ -2,6 +2,19 @@ import { Camera } from './Common/Camera.js';
 import { loadCTheadVolume } from './loadCThead.js';
 import { buildMinMaxOctree, uploadMinMaxOctreeToGPU } from './buildMinMaxOctree.js';
 
+// ============================================================
+// RawDataDB.js fetches raw bytes from Supabase.
+// No processing inside it — all processing happens in main().
+// ============================================================
+import { loadVolumeFromDB } from './RawDataDB.js';
+
+// ── Fetch raw data before main() and store in global variable ──
+let rawVolumeData = null;
+const params   = new URLSearchParams(window.location.search);
+const volumeId = params.get("volumeId");
+if (volumeId) {
+  rawVolumeData = await loadVolumeFromDB();
+}
 
 // ================= VOLUME LOADER =================
 async function loadVolume(url, width, height, depth) {
@@ -263,14 +276,46 @@ gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
 //=================================================
 ///===================================
 
-const DATASET = "CTHEAD"; // غيريها لـ "CURRENT" وقت تبين الحالي
-
+// ============================================================
+// Volume Loading
+// ============================================================
 let volume;
-console.log("MAIN REACHED - ABOUT TO LOAD CTHEAD");
-if (DATASET === "CTHEAD") {
-  volume = await loadCTheadVolume();
+console.log("MAIN REACHED - ABOUT TO LOAD VOLUME");
+
+if (rawVolumeData) {
+  // ── DB volume: process raw bytes exactly like CThead ──────
+  const { bytes, width, height, depth } = rawVolumeData;
+
+  const voxelsPerSlice  = width * height;
+  const bytesPerSlice16 = voxelsPerSlice * 2;
+  const data            = new Uint8Array(voxelsPerSlice * depth);
+
+  const low   = 0;
+  const high  = 1500;
+  const denom = high - low;
+
+  for (let z = 0; z < depth; z++) {
+    const byteOffset = z * bytesPerSlice16;
+
+    // Read 16-bit Big-endian — same as CThead
+    const slice16 = new Uint16Array(voxelsPerSlice);
+    for (let p = 0; p < voxelsPerSlice; p++) {
+      slice16[p] = (bytes[byteOffset + 2*p] << 8) | bytes[byteOffset + 2*p + 1];
+    }
+
+    // Windowing + convert to 8-bit — same as CThead
+    for (let p = 0; p < voxelsPerSlice; p++) {
+      let v = slice16[p];
+      if (v < low)  v = low;
+      if (v > high) v = high;
+      data[z * voxelsPerSlice + p] = Math.round(((v - low) / denom) * 255);
+    }
+  }
+
+  volume = { data, width, height, depth };
+
 } else {
-  volume = await loadVolume("/volumeRendering/data/volume/head256x256x109", 256, 256, 109);
+  volume = await loadCTheadVolume();
 }
 
 //const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك

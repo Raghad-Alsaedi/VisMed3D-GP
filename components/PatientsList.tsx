@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Search, Upload_Action, Img, Report, ChevronRight } from "@/components/icons";
+import { Search, Upload_Action, Img, Report, ChevronRight, Success, Error as ErrorIcon } from "@/components/icons";
 
 interface Patient {
   patient_id: number;
@@ -31,18 +31,8 @@ interface Accession {
   body_part: string;
   report_content?: string;
   report_status?: string;
+  volume_id: number | null;
 }
-
-const ALLOWED_PATHS = ["/dropfile", "/viewimg", "/writingReport", "/patientsList", "/patients", "/radio_tech"];
-
-const clearSessionData = () => {
-  sessionStorage.removeItem("patientList_searchQuery");
-  sessionStorage.removeItem("patientList_selectedPatient");
-  sessionStorage.removeItem("patientList_accessions");
-  sessionStorage.removeItem("patientList_showDetails");
-  sessionStorage.removeItem("patientList_selectedPatientId");
-  sessionStorage.removeItem("patientList_shouldRefresh");
-};
 
 const applyFilter = (patients: Patient[], query: string): Patient[] => {
   if (!query.trim()) return patients;
@@ -55,16 +45,19 @@ const applyFilter = (patients: Patient[], query: string): Patient[] => {
 };
 
 const PatientList = () => {
-  const pathname = usePathname();
-  const { status } = useSession();
+  const pathname     = usePathname();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const { status }   = useSession();
 
-  const [searchQuery, setSearchQuery]             = useState("");
-  const [allPatients, setAllPatients]             = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients]   = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient]     = useState<PatientDetails | null>(null);
-  const [accessions, setAccessions]               = useState<Accession[]>([]);
-  const [showDetails, setShowDetails]             = useState(false);
+  const [searchQuery, setSearchQuery]           = useState("");
+  const [allPatients, setAllPatients]           = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient]   = useState<PatientDetails | null>(null);
+  const [accessions, setAccessions]             = useState<Accession[]>([]);
+  const [showDetails, setShowDetails]           = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [savedToast, setSavedToast] = useState<"success" | "error" | null>(null);
 
   const allPatientsRef = useRef<Patient[]>([]);
   const searchQueryRef = useRef<string>("");
@@ -76,25 +69,24 @@ const PatientList = () => {
   useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
 
   useEffect(() => {
+    const checkToast = () => {
+      const result = sessionStorage.getItem("upload_result");
+      if (result === "success" || result === "error") {
+        sessionStorage.removeItem("upload_result");
+        setSavedToast(result as "success" | "error");
+      }
+    };
+    checkToast();
+    window.addEventListener("upload_result_set", checkToast);
+    return () => window.removeEventListener("upload_result_set", checkToast);
+  }, []);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       if (isDoctor)    localStorage.setItem("userRole", "/doctor");
       else if (isTech) localStorage.setItem("userRole", "/radio_tech");
     }
   }, [isDoctor, isTech]);
-
-  useEffect(() => {
-    const savedSearchQuery       = sessionStorage.getItem("patientList_searchQuery");
-    const savedSelectedPatient   = sessionStorage.getItem("patientList_selectedPatient");
-    const savedAccessions        = sessionStorage.getItem("patientList_accessions");
-    const savedShowDetails       = sessionStorage.getItem("patientList_showDetails");
-    const savedSelectedPatientId = sessionStorage.getItem("patientList_selectedPatientId");
-
-    if (savedSearchQuery)            setSearchQuery(savedSearchQuery);
-    if (savedSelectedPatient)        setSelectedPatient(JSON.parse(savedSelectedPatient));
-    if (savedAccessions)             setAccessions(JSON.parse(savedAccessions));
-    if (savedShowDetails === "true") setShowDetails(true);
-    if (savedSelectedPatientId)      setSelectedPatientId(parseInt(savedSelectedPatientId));
-  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -119,65 +111,14 @@ const PatientList = () => {
   }, [searchQuery]);
 
   useEffect(() => {
-    const isOnPatientsPage = pathname.includes("/patientsList") || pathname.includes("/patients");
-    const isAllowed        = ALLOWED_PATHS.some((path) => pathname.includes(path));
-
-    if (isOnPatientsPage) {
-      const shouldRefresh  = sessionStorage.getItem("patientList_shouldRefresh");
-      const savedPatientId = sessionStorage.getItem("patientList_selectedPatientId");
-      if (shouldRefresh === "true" && savedPatientId) {
-        sessionStorage.removeItem("patientList_shouldRefresh");
-        fetch(`/api/patientsList/${savedPatientId}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.status === "ok") {
-              setAccessions(data.accessions);
-              sessionStorage.setItem("patientList_accessions", JSON.stringify(data.accessions));
-            }
-          })
-          .catch((err) => console.error("Refresh accessions error:", err));
-      }
-    } else if (!isAllowed) {
-      clearSessionData();
-      setSearchQuery("");
-      setAllPatients([]);
-      setFilteredPatients([]);
-      setSelectedPatient(null);
-      setAccessions([]);
-      setShowDetails(false);
-      setSelectedPatientId(null);
+    const patientIdFromUrl = searchParams.get("patientId");
+    if (patientIdFromUrl) {
+      const id = parseInt(patientIdFromUrl);
+      fetchPatient(id);
     }
-  }, [pathname]);
+  }, [searchParams]);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const isAllowed = ALLOWED_PATHS.some((path) =>
-        window.location.pathname.includes(path)
-      );
-      if (!isAllowed) clearSessionData();
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    sessionStorage.setItem("patientList_searchQuery", query);
-  };
-
-  const handlePatientClick = async (patientId: number) => {
-    if (selectedPatientId === patientId) {
-      setSelectedPatient(null);
-      setAccessions([]);
-      setShowDetails(false);
-      setSelectedPatientId(null);
-      sessionStorage.removeItem("patientList_selectedPatient");
-      sessionStorage.removeItem("patientList_accessions");
-      sessionStorage.removeItem("patientList_showDetails");
-      sessionStorage.removeItem("patientList_selectedPatientId");
-      return;
-    }
+  const fetchPatient = async (patientId: number) => {
     try {
       const res  = await fetch(`/api/patientsList/${patientId}`);
       const data = await res.json();
@@ -186,14 +127,26 @@ const PatientList = () => {
         setAccessions(data.accessions);
         setShowDetails(true);
         setSelectedPatientId(patientId);
-        sessionStorage.setItem("patientList_selectedPatient",   JSON.stringify(data.patient));
-        sessionStorage.setItem("patientList_accessions",        JSON.stringify(data.accessions));
-        sessionStorage.setItem("patientList_showDetails",       "true");
-        sessionStorage.setItem("patientList_selectedPatientId", patientId.toString());
       }
     } catch (err) {
       console.error("Fetch patient error:", err);
     }
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handlePatientClick = (patientId: number) => {
+    if (selectedPatientId === patientId) {
+      setSelectedPatient(null);
+      setAccessions([]);
+      setShowDetails(false);
+      setSelectedPatientId(null);
+      router.replace(pathname);
+      return;
+    }
+    router.replace(`${pathname}?patientId=${patientId}`);
   };
 
   const getReportStatusLabel = (reportStatus: string | undefined) => {
@@ -240,6 +193,32 @@ const PatientList = () => {
           }
         }
       `}</style>
+
+      {savedToast && (
+        <>
+          <style>{`
+            @keyframes toastFadeOut {
+              0%   { opacity: 1; }
+              70%  { opacity: 1; }
+              100% { opacity: 0; }
+            }
+            .toast-fade-out {
+              animation: toastFadeOut 2s ease forwards;
+            }
+          `}</style>
+          <div
+            className={`toast-fade-out fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white shadow-lg whitespace-nowrap ${
+              savedToast === "success" ? "bg-[#1F9C3E]" : "bg-red-600"
+            }`}
+            onAnimationEnd={() => setSavedToast(null)}
+          >
+            {savedToast === "success"
+              ? <><Success className="icon-svg-sm" /> Volume saved successfully</>
+              : <><ErrorIcon className="icon-svg-sm" /> Failed to save volume</>
+            }
+          </div>
+        </>
+      )}
 
       <section className="bg-[#0D1A2D] overflow-y-auto overflow-x-hidden px-4 pt-16 pb-4 md:p-8 md:pl-[270px] md:pt-8" style={{ minHeight: "100dvh" }}>
 
@@ -400,23 +379,25 @@ const PatientList = () => {
                                         Upload File
                                       </div>
                                     </div>
-                                    <div className="relative group">
-                                      <Link
-                                        href={`/viewimg?accession_id=${acc.accession_id}`}
-                                        className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
-                                      >
-                                        <Img className="text-white text-lg" />
-                                      </Link>
-                                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                        View Image
+                                    {acc.volume_id && (
+                                      <div className="relative group">
+                                        <Link
+                                          href={`/viewimg?volumeId=${acc.volume_id}&accession_id=${acc.accession_id}`}
+                                          className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
+                                        >
+                                          <Img className="text-white text-lg" />
+                                        </Link>
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                          View Image
+                                        </div>
                                       </div>
-                                    </div>
+                                    )}
                                   </div>
                                 ) : isDoctor ? (
                                   <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
                                     <div className="relative group">
                                       <Link
-                                        href={`/doctor/writingReport?accession_id=${acc.accession_id}&from=patientlist`}
+                                        href={`/doctor/writingReport?accession_id=${acc.accession_id}&from=patientlist&patientId=${selectedPatient.id}`}
                                         className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
                                       >
                                         <Report className="text-white" style={{ fontSize: "1.5rem" }} />

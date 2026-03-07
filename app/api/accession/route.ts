@@ -7,6 +7,7 @@ import { RowDataPacket } from "mysql2";
 interface AccessionRow extends RowDataPacket {
   accession_number: string;
   patient_name: string;
+  volume_id: number | null;
 }
 
 export async function GET(req: Request) {
@@ -33,11 +34,14 @@ export async function GET(req: Request) {
       `
       SELECT
         a.accession_number,
-        CONCAT(u.first_name, ' ', COALESCE(u.middle_name, ''), ' ', u.last_name) AS patient_name
+        CONCAT(u.first_name, ' ', COALESCE(u.middle_name, ''), ' ', u.last_name) AS patient_name,
+        v.id AS volume_id
       FROM accession a
       JOIN patients p ON p.patient_id = a.patient_id
       JOIN users u ON u.patient_id = p.patient_id
+      LEFT JOIN volumes v ON v.accession_id = a.accession_id AND v.status = 'READY'
       WHERE a.accession_id = ?
+      ORDER BY v.uploaded_at DESC
       LIMIT 1
       `,
       [accessionId]
@@ -51,9 +55,10 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({
-      status: "ok",
-      patientName: rows[0].patient_name.replace(/\s+/g, " ").trim(),
+      status:          "ok",
+      patientName:     rows[0].patient_name.replace(/\s+/g, " ").trim(),
       accessionNumber: rows[0].accession_number,
+      volumeId:        rows[0].volume_id ?? null,
     });
   } catch (err) {
     console.error("GET ACCESSION ERROR:", err);

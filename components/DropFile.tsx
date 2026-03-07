@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import Footer from "./Footer";
 import ProgressBar from "../components/ProgressBar";
-import { Upload, ArrowL, Error, Success } from "./icons";
+import { Upload, ArrowL, Error as ErrorIcon, Success } from "./icons";
 
 type DimField = "width" | "height" | "depth";
 
@@ -16,7 +16,7 @@ function parsePositiveInt(v: string | null) {
   return Math.floor(n);
 }
 
-const BYTES_PER_VOXEL = 2; // 16-bit RAW
+const BYTES_PER_VOXEL = 2;
 
 const DropFile = () => {
   const router = useRouter();
@@ -28,9 +28,12 @@ const DropFile = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  const uploadStartTime = useRef<number>(0);
 
   const [dims, setDims] = useState<{ width: string; height: string; depth: string }>({
     width: "",
@@ -77,7 +80,7 @@ const DropFile = () => {
     const expected = w * h * d * BYTES_PER_VOXEL;
     if (expected !== file.size) {
       setErrorMessage(
-       ` Size mismatch: expected ${expected} bytes (w*h*d*${BYTES_PER_VOXEL}) but file is ${file.size} bytes.`
+        ` Size mismatch: expected ${expected} bytes (w*h*d*${BYTES_PER_VOXEL}) but file is ${file.size} bytes.`
       );
       return false;
     }
@@ -105,49 +108,61 @@ const DropFile = () => {
     }
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      formData.append("patientId", String(patientId));
-      formData.append("accessionId", String(accessionId));
-
-      formData.append("width", String(w));
-      formData.append("height", String(h));
-      formData.append("depth", String(d));
-
-      formData.append("datasetName", file.name);
-      formData.append("modality", "CT");
-
       setIsUploading(true);
       setUploadProgress(0);
+      setEstimatedTime(null);
       setErrorMessage(null);
       setSuccessMessage(null);
+      uploadStartTime.current = Date.now();
 
+      const prepareForm = new FormData();
+      prepareForm.append("patientId",   String(patientId));
+      prepareForm.append("accessionId", String(accessionId));
+      prepareForm.append("width",       String(w));
+      prepareForm.append("height",      String(h));
+      prepareForm.append("depth",       String(d));
+      prepareForm.append("fileName",    file.name);
 
-      const response = await axios.post("/api/upload", formData, {
+      const prepareRes = await axios.post("/api/upload/prepare", prepareForm);
+
+      if (!prepareRes.data?.success) {
+        throw new Error(prepareRes.data?.error || "Failed to prepare upload");
+      }
+
+      const { signedUrl, volumeId } = prepareRes.data;
+
+      await axios.put(signedUrl, file, {
+        headers: { "Content-Type": "application/octet-stream" },
         onUploadProgress: (evt) => {
-          if (evt.total) {
-            setUploadProgress(Math.round((evt.loaded * 100) / evt.total));
+          if (evt.total && evt.loaded > 0) {
+            const progress = Math.round((evt.loaded * 100) / evt.total);
+            setUploadProgress(progress);
+
+            const elapsedMs = Date.now() - uploadStartTime.current;
+            const bytesPerMs = evt.loaded / elapsedMs;
+            const remainingBytes = evt.total - evt.loaded;
+            const remainingSec = Math.round(remainingBytes / (bytesPerMs * 1000));
+            setEstimatedTime(remainingSec > 0 ? remainingSec : 0);
           }
         },
       });
 
-      if (response.data?.success) {
-        setUploadProgress(100);
-        setSuccessMessage("File uploaded successfully");
+      await axios.post("/api/upload/confirm", {
+        volumeId,
+        byteSize: file.size,
+      });
 
-        const volumeId = response.data.volumeId;
-        localStorage.setItem("lastVolumeId", String(volumeId));
-        localStorage.setItem("userRole", "/radio_tech");
+      setUploadProgress(100);
+      setEstimatedTime(0);
+      setSuccessMessage("File uploaded successfully");
 
-        setTimeout(() => {
-          router.push(`/viewimg?volumeId=${volumeId}&fromUpload=true`);
-        }, 800);
-      } else {
-        setIsUploading(false);
-        setUploadProgress(0);
-        setErrorMessage(response.data?.error || "Upload failed");
-      }
+      localStorage.setItem("lastVolumeId", String(volumeId));
+      localStorage.setItem("userRole", "/radio_tech");
+
+      setTimeout(() => {
+        router.push(`/viewimg?volumeId=${volumeId}&fromUpload=true&patientId=${patientId}&accessionId=${accessionId}`);
+      }, 800);
+
     } catch (err: any) {
       console.error("Upload error:", err);
 
@@ -159,6 +174,7 @@ const DropFile = () => {
       setErrorMessage(msg);
       setIsUploading(false);
       setUploadProgress(0);
+      setEstimatedTime(null);
     }
   };
 
@@ -210,7 +226,7 @@ const DropFile = () => {
   return (
     <div className="page-container">
       <header className="header-wrapper">
-        <button className="btn-back" onClick={() => router.push("/radio_tech/uploadFile")}>
+        <button className="btn-back" onClick={() => router.push(`/radio_tech/uploadFile?patientId=${patientId}`)}>
           <ArrowL />
         </button>
 
@@ -293,28 +309,53 @@ const DropFile = () => {
           </div>
         ) : (
           <div className="card-dark card-upload-progress">
-            <div className={uploadProgress < 100 ? "text-upload-primary" : "text-upload-primary-complete"}>
+
+            <h1
+              style={{
+                fontSize: "2.6rem",
+                fontWeight: 700,
+                color: "white",
+                textAlign: "center",
+                marginBottom: "4px",
+              }}
+            >
               {uploadProgress < 100 ? "Uploading..." : "Complete"}
-            </div>
+            </h1>
 
-            <h2 className="text-upload-secondary">
-              {uploadProgress < 100 ? "Uploading scan data" : "Upload successful"}
-            </h2>
-
-            <p className="text-upload-tertiary">
-              {uploadProgress < 100 ? "Please wait" : "Redirecting to viewer"}
+            <p
+              style={{
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "16px",
+                textAlign: "center",
+                marginBottom: "28px",
+              }}
+            >
+              {uploadProgress < 100
+                ? estimatedTime !== null
+                  ? `Estimated time: ${estimatedTime}s`
+                  : "Calculating..."
+                : "Redirecting to viewer"}
             </p>
 
-            <div className="w-full max-w-md">
+            <div style={{ width: "100%", maxWidth: "560px" }}>
               <ProgressBar progress={uploadProgress} />
             </div>
 
             {selectedFile && (
-              <div className="text-file-info">
-                <p>File: {selectedFile.name}</p>
-                <p>Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+              <div
+                style={{
+                  marginTop: "24px",
+                  textAlign: "center",
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "13px",
+                  lineHeight: "1.8",
+                }}
+              >
+                <p>file name:  {selectedFile.name.replace(/\.[^.]+$/, "")}</p>
+                <p>size:  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             )}
+
           </div>
         )}
       </div>
@@ -322,7 +363,7 @@ const DropFile = () => {
       {errorMessage && (
         <div className="alert-error">
           <div className="alert-icon-wrapper">
-            <Error className="icon-svg-sm" />
+            <ErrorIcon className="icon-svg-sm" />
             <span className="font-semibold">{errorMessage}</span>
           </div>
         </div>

@@ -45,7 +45,6 @@ const ReportHeader = ({
   const [generating, setGenerating]         = useState(false);
   const [warningShown, setWarningShown]     = useState(false);
   const [warningVisible, setWarningVisible] = useState(false);
-  const [isSaved, setIsSaved]               = useState(false);
 
   const openPdfPreview = async () => {
     setGenerating(true);
@@ -93,7 +92,6 @@ const ReportHeader = ({
     setShowPreview(false);
     setDoctorInfo(null);
     setPatientInfo(null);
-    setIsSaved(true);
     onConfirmSave();
   };
 
@@ -146,7 +144,7 @@ const ReportHeader = ({
             className={`h-8 lg:h-10 px-4 lg:px-6 rounded-[12px] flex items-center justify-center gap-2 transition-colors border ${
               !canSave || isSaving || generating
                 ? "bg-[#6E6E6E]/40 border-white/20 cursor-not-allowed opacity-50"
-                : isSaved
+                : reportStatus === "completed"
                 ? "bg-[#2563EB] hover:bg-[#1D4ED8] border-blue-400/50 cursor-pointer"
                 : "bg-[#6E6E6E] hover:bg-[#555] border-white/20 cursor-pointer"
             }`}
@@ -208,7 +206,7 @@ const ReportHeader = ({
               className={`rounded-[8px] flex flex-row items-center gap-1.5 px-3 h-7 border transition-colors ${
                 !canSave || isSaving || generating
                   ? "bg-[#6E6E6E]/40 border-white/20 cursor-not-allowed opacity-50"
-                  : isSaved
+                  : reportStatus === "completed"
                   ? "bg-[#2563EB] hover:bg-[#1D4ED8] border-blue-400/50 cursor-pointer"
                   : "bg-[#6E6E6E] hover:bg-[#555] border-white/20 cursor-pointer"
               }`}

@@ -26,6 +26,8 @@ const Header = () => {
   const isDropFile  = pathname.includes("/dropfile");
   const fromUpload  = searchParams.get("fromUpload") === "true";
   const accessionId = searchParams.get("accession_id");
+  const patientId   = searchParams.get("patientId");
+  const urlAccessionId = searchParams.get("accessionId");
 
   useEffect(() => {
     setMounted(true);
@@ -73,23 +75,30 @@ const Header = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const tempFileId = localStorage.getItem("tempFileId");
-      if (!tempFileId) { alert("No file to save"); return; }
-      const response = await fetch("/api/save-file", {
+      const volumeId = localStorage.getItem("lastVolumeId");
+      if (!volumeId) { alert("No volume to save"); return; }
+      const accessionId = searchParams.get("accessionId");
+      const response = await fetch(`/api/volumes/${volumeId}/save`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ fileId: tempFileId }),
+        body: JSON.stringify({ accessionId }),
       });
       const data = await response.json();
       if (data.success) {
-        localStorage.removeItem("tempFileId");
-        localStorage.setItem("currentScanId", tempFileId);
-        alert("File saved successfully");
-        router.push("/radio_tech/patientsList");
+        localStorage.removeItem("lastVolumeId");
+        sessionStorage.setItem("upload_result", "success");
+        window.dispatchEvent(new Event("upload_result_set"));
+        router.push(`/radio_tech/uploadFile?patientId=${patientId}`);
+      } else {
+        sessionStorage.setItem("upload_result", "error");
+        window.dispatchEvent(new Event("upload_result_set"));
+        router.push(`/radio_tech/uploadFile?patientId=${patientId}`);
       }
     } catch (error) {
       console.error("Save error:", error);
-      alert("Failed to save file");
+      sessionStorage.setItem("upload_result", "error");
+      window.dispatchEvent(new Event("upload_result_set"));
+      router.push(`/radio_tech/uploadFile?patientId=${patientId}`);
     } finally {
       setIsSaving(false);
     }
@@ -97,19 +106,18 @@ const Header = () => {
 
   const handleCancel = async () => {
     try {
-      const tempFileId = localStorage.getItem("tempFileId");
-      if (tempFileId) {
-        await fetch("/api/delete-temp-file", {
+      const volumeId = localStorage.getItem("lastVolumeId");
+      if (volumeId) {
+        await fetch(`/api/volumes/${volumeId}/cancel`, {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ fileId: tempFileId }),
         });
-        localStorage.removeItem("tempFileId");
+        localStorage.removeItem("lastVolumeId");
       }
-      router.push(`/radio_tech/dropfile?accession_id=${accessionId}`);
+      router.push(`/radio_tech/dropfile?patientId=${patientId}&accessionId=${urlAccessionId}`);
     } catch (error) {
       console.error("Cancel error:", error);
-      router.push(`/radio_tech/dropfile?accession_id=${accessionId}`);
+      router.push(`/radio_tech/dropfile?patientId=${patientId}&accessionId=${urlAccessionId}`);
     }
   };
 
@@ -131,7 +139,7 @@ const Header = () => {
     }
     if (isReport && isDoctor) {
       const from = searchParams.get("from");
-      if (from === "patientlist") { router.push("/doctor/patients"); return; }
+      if (from === "patientlist") { router.push(`/doctor/patients?patientId=${searchParams.get("patientId")}`); return; }
       if (from === "homeprofile") { router.push("/doctor"); return; }
     }
     router.back();
