@@ -1,5 +1,5 @@
 "use client";
-import React, { Suspense, useState } from 'react';
+import React, {useEffect, Suspense, useState } from 'react';
 import Header from './Header';
 import Img from './Img';
 import ManualTF from './ManualTF';
@@ -12,7 +12,6 @@ interface Step {
   rangeEnd: number;
   color: string;
   opacity: number;
-  isOpen: boolean;
 }
 
 const TF = () => {
@@ -25,12 +24,12 @@ const TF = () => {
   };
 
   return (
-    <div className="h-screen bg-[#040A16] flex flex-col p-4">
+   <div className="h-screen bg-[#040A16] flex flex-col p-4">
       <div className="flex-shrink-0">
         <Header />
       </div>
-
-      <div className="mt-2 flex-1 overflow-hidden relative">
+      
+      <div className="mt-4 flex-1 bg-[#0D1A2D] border border-white/20 rounded-lg flex items-center justify-center relative min-h-0">
         <div
           className={`w-full h-full transition-all duration-300 sm:translate-x-0 ${
             isPanelOpen ? "-translate-x-10" : "translate-x-0"
@@ -43,7 +42,7 @@ const TF = () => {
 
         <ManualTF
           onTransferFunctionChange={handleTransferFunctionChange}
-          onPanelToggle={setIsPanelOpen}
+        
         />
       </div>
 
