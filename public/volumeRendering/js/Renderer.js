@@ -2,6 +2,8 @@ import { Camera } from './Common/Camera.js';
 import { loadCTheadVolume } from './loadCThead.js';
 import { buildMinMaxOctree, uploadMinMaxOctreeToGPU } from './buildMinMaxOctree.js';
 
+window._vismedMainStarted = window._vismedMainStarted || false;
+
 // ============================================================
 // RawDataDB.js fetches raw bytes from Supabase.
 // No processing inside it — all processing happens in main().
@@ -201,6 +203,7 @@ function getVoxelValue(volume, x, y, z) {
 //===================================================================================
 /** Main function to draw a triangle */
 async function main() {
+  console.log("MAIN CALLED");
     let enableEmptySpaceSkipping = 0;
 
     window.addEventListener("keydown", (e) => {
@@ -283,42 +286,78 @@ let volume;
 console.log("MAIN REACHED - ABOUT TO LOAD VOLUME");
 
 if (rawVolumeData) {
-  // ── DB volume: process raw bytes exactly like CThead ──────
   const { bytes, width, height, depth } = rawVolumeData;
 
-  const voxelsPerSlice  = width * height;
+  const voxelsPerSlice = width * height;
   const bytesPerSlice16 = voxelsPerSlice * 2;
-  const data            = new Uint8Array(voxelsPerSlice * depth);
+  const data = new Uint8Array(voxelsPerSlice * depth);
 
-  const low   = 0;
-  const high  = 1500;
-  const denom = high - low;
+  const isMRbrain = (depth === 109);
+
+  if (isMRbrain) {
+    console.log("Detected MRbrain dataset");
+  } else {
+    console.log("Detected CThead dataset");
+  }
 
   for (let z = 0; z < depth; z++) {
     const byteOffset = z * bytesPerSlice16;
-
-    // Read 16-bit Big-endian — same as CThead
     const slice16 = new Uint16Array(voxelsPerSlice);
+
     for (let p = 0; p < voxelsPerSlice; p++) {
-      slice16[p] = (bytes[byteOffset + 2*p] << 8) | bytes[byteOffset + 2*p + 1];
+      if (isMRbrain) {
+        // MRbrain = little-endian
+        slice16[p] = bytes[byteOffset + 2 * p] | (bytes[byteOffset + 2 * p + 1] << 8);
+      } else {
+        // CThead = big-endian
+        slice16[p] = (bytes[byteOffset + 2 * p] << 8) | bytes[byteOffset + 2 * p + 1];
+      }
     }
 
-    // Windowing + convert to 8-bit — same as CThead
-    for (let p = 0; p < voxelsPerSlice; p++) {
-      let v = slice16[p];
-      if (v < low)  v = low;
-      if (v > high) v = high;
-      data[z * voxelsPerSlice + p] = Math.round(((v - low) / denom) * 255);
+    if (isMRbrain) {
+      // MRbrain: auto-normalize each slice
+      let minV = 65535;
+      let maxV = 0;
+
+      for (let p = 0; p < voxelsPerSlice; p++) {
+        const v = slice16[p];
+        if (v < minV) minV = v;
+        if (v > maxV) maxV = v;
+      }
+
+      const denom = (maxV - minV) || 1;
+
+      for (let p = 0; p < voxelsPerSlice; p++) {
+        data[z * voxelsPerSlice + p] =
+          Math.round(((slice16[p] - minV) / denom) * 255);
+      }
+    } else {
+      // CThead: CT windowing
+      const low = 0;
+      const high = 1500;
+      const denom = (high - low) || 1;
+
+      for (let p = 0; p < voxelsPerSlice; p++) {
+        let v = slice16[p];
+        if (v < low) v = low;
+        if (v > high) v = high;
+        data[z * voxelsPerSlice + p] =
+          Math.round(((v - low) / denom) * 255);
+      }
     }
   }
 
-  volume = { data, width, height, depth };
+ volume = { data, width, height, depth };
 
 } else {
-  volume = await loadCTheadVolume();
+  if (dataset === "skull") {
+    volume = await loadSkullVolume();
+  } else {
+    volume = await loadCTheadVolume();
+  }
 }
 
-//const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك
+//const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   
  // 183, 255, 125);
 
   // =========================================
@@ -367,7 +406,7 @@ gl.texSubImage3D(
 console.log(" Volume uploaded to GPU");
 
   // =========================================
-  // Create Normal Texture 3D (استخدام النورمالز اللي حسبناها قبل)
+  // Create Normal Texture 3D 
   console.log("Creating normal texture...");
 
   // إنشاء Normal Texture
@@ -434,18 +473,35 @@ const level = 0;
 );
 
 // VERY IMPORTANT for float textures:
- gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
 // Create and bind the framebuffer
 const frontFace_framebuffer = gl.createFramebuffer();
 gl.bindFramebuffer(gl.FRAMEBUFFER, frontFace_framebuffer);
- 
-// attach the texture as the first color attachment
+
+// attach color texture
 const attachmentPoint = gl.COLOR_ATTACHMENT0;
 gl.framebufferTexture2D(
-    gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, frontFaceTexture, level);
+    gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, frontFaceTexture, level
+);
+
+// ===== add depth buffer =====
+const frontDepthBuffer = gl.createRenderbuffer();
+gl.bindRenderbuffer(gl.RENDERBUFFER, frontDepthBuffer);
+gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, canvas.width, canvas.height);
+gl.framebufferRenderbuffer(
+  gl.FRAMEBUFFER,
+  gl.DEPTH_ATTACHMENT,
+  gl.RENDERBUFFER,
+  frontDepthBuffer
+);
+
+gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+gl.bindTexture(gl.TEXTURE_2D, null);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 gl.bindTexture(gl.TEXTURE_2D, null);
 //=====================================================
@@ -474,11 +530,25 @@ gl.bindTexture(gl.TEXTURE_2D, backFaceTexture);
 // Create and bind the framebuffer
 const backFace_framebuffer = gl.createFramebuffer();
 gl.bindFramebuffer(gl.FRAMEBUFFER, backFace_framebuffer);
- 
-// attach the texture as the first color attachment
-//const attachmentPoint = gl.COLOR_ATTACHMENT0;
+
 gl.framebufferTexture2D(
-    gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, backFaceTexture, level);
+    gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, backFaceTexture, level
+);
+
+// ===== add depth buffer =====
+const backDepthBuffer = gl.createRenderbuffer();
+gl.bindRenderbuffer(gl.RENDERBUFFER, backDepthBuffer);
+gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, canvas.width, canvas.height);
+gl.framebufferRenderbuffer(
+  gl.FRAMEBUFFER,
+  gl.DEPTH_ATTACHMENT,
+  gl.RENDERBUFFER,
+  backDepthBuffer
+);
+
+gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+gl.bindTexture(gl.TEXTURE_2D, null);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 // Debug: Framebuffer sizes
   console.log("=== FRAMEBUFFER INFO ===");
   console.log("Front face texture:", canvas.width, "x", canvas.height);
@@ -502,7 +572,8 @@ gl.bindTexture(gl.TEXTURE_2D, screenshotTexture);
 );
 
 // VERY IMPORTANT for float textures:
- gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
@@ -957,7 +1028,13 @@ console.log('WebGL is ready and listening for transfer function updates');
 }//<<=== end of main ()
 //===============================================================================
 // Run the main function
-main().catch(e => { 
-  console.error(' Main function error:', e);
-  throw new Error(`Uncaught JS exception: ${e}`); 
-});
+if (window.__vismedMainStarted) {
+  console.warn("main already started, skipping duplicate init");
+} else {
+  window.__vismedMainStarted = true;
+
+  main().catch(e => { 
+    console.error(' Main function error:', e);
+    throw new Error(`Uncaught JS exception: ${e}`); 
+  });
+}
