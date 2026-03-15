@@ -9,7 +9,7 @@ interface Step {
   rangeEnd: number;
   color: string;
   opacity: number;
-} 
+}
 
 interface ManualTFProps {
   onTransferFunctionChange?: (steps: Step[]) => void;
@@ -19,13 +19,13 @@ const defaultSteps: Step[] = [
   { id: 1, rangeValue: 300, rangeStart: -1000, rangeEnd: -700, color: "#000000", opacity: 0.0 },
   { id: 2, rangeValue: 100, rangeStart: -700, rangeEnd: -600, color: "#999999", opacity: 0.0 },
   { id: 3, rangeValue: 30, rangeStart: -120, rangeEnd: -90, color: "#FFE099", opacity: 0.1932 },
-  { id: 4, rangeValue: 20, rangeStart: -10, rangeEnd: 10, color: "#AED9E6", opacity: 0.2330},
-  { id: 5, rangeValue: 37, rangeStart: 13, rangeEnd: 50, color: "#CC2100", opacity: 0.1364},
-  { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784},
-  { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190},
+  { id: 4, rangeValue: 20, rangeStart: -10, rangeEnd: 10, color: "#AED9E6", opacity: 0.2330 },
+  { id: 5, rangeValue: 37, rangeStart: 13, rangeEnd: 50, color: "#CC2100", opacity: 0.1364 },
+  { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784 },
+  { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190 },
   { id: 8, rangeValue: 2300, rangeStart: 700, rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
-  { id: 9, rangeValue: 100, rangeStart: 3000, rangeEnd: 3100, color: "#FFFFFF", opacity: 1.0 },
-]; 
+  { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
+];
 
 
 const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
@@ -44,84 +44,84 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   if (userRole === "/radio_tech") {
     return null;
   }
- 
-  const updateStepRanges = () => { 
+
+  const updateStepRanges = () => {
     return steps.map((step) => {
       return {
         ...step,
-    rangeEnd: step.rangeStart + step.rangeValue
-      }; 
+        rangeEnd: step.rangeStart + step.rangeValue
+      };
     });
   };
 
   const updatedSteps = updateStepRanges();
   // إرسال التحديثات للـ Parent Component
-  useEffect(() => { 
+  useEffect(() => {
     if (onTransferFunctionChange) {
       onTransferFunctionChange(updatedSteps);
     }
   }, [steps]);
 
- const MAX_RANGE = 3100; // الحد الأقصى للنطاق (مثلاً 3100 HU)
+  const MAX_RANGE = 3001; // Metal يبدأ من هنا
   const addStep = () => {
-  // ✅ احسب مباشرة من steps بدون استدعاء updateStepRanges
-  const lastStep = steps[steps.length - 1];
-  const rangeStart = lastStep 
-    ? lastStep.rangeStart + lastStep.rangeValue  // احسب الـ end مباشرة
-    : -1000;
+    // ✅ احسب مباشرة من steps بدون استدعاء updateStepRanges
+    const lastStep = steps[steps.length - 1];
+    const rangeStart = lastStep
+      ? lastStep.rangeStart + lastStep.rangeValue  // احسب الـ end مباشرة
+      : -1000;
 
-  const remainingRange = MAX_RANGE - rangeStart;
+    const remainingRange = MAX_RANGE - rangeStart;
 
-  if (remainingRange <= 0) {
-    alert("The range is already full!");
-    return;
-  }
+    if (remainingRange <= 0) {
+      alert("The range is already full!");
+      return;
+    }
 
-  const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+    const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
-  const newStep: Step = {
-    id: Date.now(),
-    rangeValue: Math.min(200, remainingRange),
-    rangeStart: rangeStart,
-    rangeEnd: Math.min(rangeStart + 200, MAX_RANGE),
-    color: randomColor,
-    opacity: 0.5,
+    const newStep: Step = {
+      id: Date.now(),
+      rangeValue: Math.min(200, remainingRange),
+      rangeStart: rangeStart,
+      rangeEnd: Math.min(rangeStart + 200, MAX_RANGE),
+      color: randomColor,
+      opacity: 0.5,
+    };
+
+    setSteps([...steps, newStep]);
   };
-
-  setSteps([...steps, newStep]);
-};
 
   const deleteStep = (id: number) => {
     setSteps(steps.filter(step => step.id !== id));
   };
 
   const updateStepRange = (id: number, newValue: string) => {
-  const newRangeValue = parseInt(newValue);
-  
-  setSteps(prev => {
-    const updatedSteps = [...prev];
-    const index = updatedSteps.findIndex(s => s.id === id);
-    if (index === -1) return prev;
+    const newRangeValue = parseInt(newValue);
 
-    updatedSteps[index] = {
-      ...updatedSteps[index],
-      rangeValue: newRangeValue,
-      rangeEnd: updatedSteps[index].rangeStart + newRangeValue,
-    };
+    setSteps(prev => {
+      const updatedSteps = [...prev];
+      const index = updatedSteps.findIndex(s => s.id === id);
+      if (index === -1) return prev;
 
-    for (let i = index + 1; i < updatedSteps.length; i++) {
-      const prevStep = updatedSteps[i - 1];
-      const newStart = prevStep.rangeStart + prevStep.rangeValue;
-      updatedSteps[i] = {
-        ...updatedSteps[i],
-        rangeStart: newStart,
-        rangeEnd: newStart + updatedSteps[i].rangeValue,
+      updatedSteps[index] = {
+        ...updatedSteps[index],
+        rangeValue: newRangeValue,
+        rangeEnd: updatedSteps[index].rangeStart + newRangeValue,
       };
-    }
 
-    return updatedSteps;
-  });
-};
+      for (let i = index + 1; i < updatedSteps.length; i++) {
+        const prevStep = updatedSteps[i - 1];
+        const newStart = prevStep.rangeStart + prevStep.rangeValue;
+        updatedSteps[i] = {
+          ...updatedSteps[i],
+          rangeStart: newStart,
+          rangeEnd: newStart + updatedSteps[i].rangeValue,
+        };
+      }
+
+      return updatedSteps;
+    });
+  };
 
   const updateStepColor = (id: number, newColor: string) => {
     setSteps(steps.map(step =>
@@ -160,7 +160,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
     setShowConfirmDialog(false);
   };
 
- 
+
 
   return (
     <>
@@ -227,7 +227,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
                   htmlFor={`step${step.id}`}
                   className="flex justify-between items-center px-3 py-2 cursor-pointer text-white text-sm bg-[#0D1A2D] border border-white/20 rounded-md"
                 >
-                   <span className="flex items-center gap-1 flex-wrap">
+                  <span className="flex items-center gap-1 flex-wrap">
                     <span>Step {index + 1}</span>
                     <button
                       type="button"
@@ -258,22 +258,22 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
                 >
                   <div className="space-y-1">
                     <span className="text-xs text-white/80">
-                      Range: {step.rangeStart} HU - {step.rangeEnd} HU
+                      Range: {step.rangeStart} HU - {index === updatedSteps.length - 1 ? "∞" : step.rangeEnd} HU
                     </span>
                   </div>
-
-                  <div className="space-y-1">
-                    <span className="text-xs text-white/80">Range Size: {step.rangeValue} HU</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max={step.rangeValue + (3100 - step.rangeEnd)}
-                      value={step.rangeValue}
-                      onChange={(e) => updateStepRange(step.id, e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-
+                  {index !== updatedSteps.length - 1 && (
+                    <div className="space-y-1">
+                      <span className="text-xs text-white/80">Range Size: {step.rangeValue} HU</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max={step.rangeValue + (3001 - step.rangeEnd)}
+                        value={step.rangeValue}
+                        onChange={(e) => updateStepRange(step.id, e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-white/80">Color</span>
                     <input
