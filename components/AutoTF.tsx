@@ -25,7 +25,7 @@ const defaultSteps: Step[] = [
   { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784},
   { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190},
   { id: 8, rangeValue: 2300, rangeStart: 700, rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
-  { id: 9, rangeValue: 100, rangeStart: 3000, rangeEnd: 3100, color: "#FFFFFF", opacity: 1.0 },
+  { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
 ]; 
 
 const presets = [
@@ -77,18 +77,15 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
 
  useEffect(() => {
   if (onTransferFunctionChange) {
-    if (activePresets.size === 0) {
-      onTransferFunctionChange(defaultSteps);
-    } else {
-      const finalSteps = defaultSteps.map(step => {
-        const isVisible = presets.some(
-          preset => activePresets.has(preset.key) && preset.filter(step)
-        );
-        return { ...step, opacity: isVisible ? step.opacity : 0.0 };
-      });
+    const finalSteps = defaultSteps.map(step => {
+      if (activePresets.size === 0) return { ...step };
+      const isVisible = presets.some(
+        preset => activePresets.has(preset.key) && preset.filter(step)
+      );
+      return { ...step, opacity: isVisible ? step.opacity : 0.0 };
+    });
 
-      onTransferFunctionChange(finalSteps);
-    }
+    onTransferFunctionChange(finalSteps);
   }
 }, [activePresets, onTransferFunctionChange]);
 
