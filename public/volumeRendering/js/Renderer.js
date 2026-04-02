@@ -893,59 +893,71 @@ function render() {
     //================================================================
 
 // =================== TRANSFER FUNCTION من React ===================
-let currentSteps = []; 
-window.addEventListener('message', (event) => {
- 
-  if (event.origin !== window.location.origin) return;
-  
-  if (event.data.type === 'UPDATE_TRANSFER_FUNCTION') {
-    currentSteps = event.data.steps;
-    console.log('Received steps from React:', currentSteps);
-    updateShaderUniforms();
-  }
-});
+let currentSteps = [];
 
-function updateShaderUniforms() {
-  gl.useProgram(final_program);
-  
-  
-  const numStepsLoc = gl.getUniformLocation(final_program, 'uNumSteps');
-  gl.uniform1i(numStepsLoc, currentSteps.length);
-  
-  // تحويل hex إلى RGB
-  const hexToRgb = (hex) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16) / 255,
-      g: parseInt(result[2], 16) / 255,
-      b: parseInt(result[3], 16) / 255
-    } : { r: 1, g: 1, b: 1 };
-  };
-  
-  // Update each steps
-  for (let i = 0; i < Math.min(currentSteps.length, 10); i++) {
-    const step = currentSteps[i];
-    
-    // Range Start
-    const rangeStartLoc = gl.getUniformLocation(final_program, `uTFRangeStarts[${i}]`);
-    gl.uniform1f(rangeStartLoc, step.rangeStart);
-    
-    // Range End
-    const rangeEndLoc = gl.getUniformLocation(final_program, `uTFRangeEnds[${i}]`);
-    gl.uniform1f(rangeEndLoc, step.rangeEnd);
-    
-    // Color
-    const rgb = hexToRgb(step.color);
-    const colorLoc = gl.getUniformLocation(final_program, `uTFColors[${i}]`);
-    gl.uniform3f(colorLoc, rgb.r, rgb.g, rgb.b);
-    
-    // Opacity
-    const opacityLoc = gl.getUniformLocation(final_program, `uTFOpacities[${i}]`);
-    gl.uniform1f(opacityLoc, step.opacity);
+  function updateShaderUniforms() {
+    gl.useProgram(final_program);
+
+
+    const numStepsLoc = gl.getUniformLocation(final_program, 'uNumSteps');
+    gl.uniform1i(numStepsLoc, currentSteps.length);
+
+    // تحويل hex إلى RGB
+    const hexToRgb = (hex) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16) / 255,
+        g: parseInt(result[2], 16) / 255,
+        b: parseInt(result[3], 16) / 255
+      } : { r: 1, g: 1, b: 1 };
+    };
+
+    // Update each steps
+    for (let i = 0; i < Math.min(currentSteps.length, 10); i++) {
+      const step = currentSteps[i];
+
+      // Range Start
+      const rangeStartLoc = gl.getUniformLocation(final_program, `uTFRangeStarts[${i}]`);
+      gl.uniform1f(rangeStartLoc, step.rangeStart);
+
+      // Range End
+      const rangeEndLoc = gl.getUniformLocation(final_program, `uTFRangeEnds[${i}]`);
+      gl.uniform1f(rangeEndLoc, step.rangeEnd);
+
+      // Color
+      const rgb = hexToRgb(step.color);
+      const colorLoc = gl.getUniformLocation(final_program, `uTFColors[${i}]`);
+      gl.uniform3f(colorLoc, rgb.r, rgb.g, rgb.b);
+
+      // Opacity
+      const opacityLoc = gl.getUniformLocation(final_program, `uTFOpacities[${i}]`);
+      gl.uniform1f(opacityLoc, step.opacity);
+    }
+
+    console.log('Shader uniforms updated!');
   }
-  
-  console.log('Shader uniforms updated!');
-}
+
+  currentSteps = [
+    { rangeStart: -1000, rangeEnd: -700, color: "#000000", opacity: 0.0 },
+    { rangeStart: -700,  rangeEnd: -600, color: "#999999", opacity: 0.0 },
+    { rangeStart: -120,  rangeEnd: -90,  color: "#FFE099", opacity: 0.1932 },
+    { rangeStart: -10,   rangeEnd: 10,   color: "#AED9E6", opacity: 0.2330 },
+    { rangeStart: 13,    rangeEnd: 50,   color: "#CC2100", opacity: 0.1364 },
+    { rangeStart: 35,    rangeEnd: 55,   color: "#C7A887", opacity: 0.2784 },
+    { rangeStart: 100,   rangeEnd: 300,  color: "#E8B4B0", opacity: 0.0190 },
+    { rangeStart: 700,   rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
+    { rangeStart: 3001,  rangeEnd: 0,    color: "#FFFFFF", opacity: 1.0 }
+  ];
+  updateShaderUniforms(); 
+
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data.type === 'UPDATE_TRANSFER_FUNCTION') {
+      currentSteps = event.data.steps;
+      updateShaderUniforms();
+    }
+  });
+
 
 window.parent.postMessage({ type: 'WEBGL_READY' }, window.location.origin);
 console.log('WebGL is ready and listening for transfer function updates');
