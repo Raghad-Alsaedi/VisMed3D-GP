@@ -5,78 +5,83 @@ import Image from "next/image";
 import LogOutButton from "@/components/LogOutButton";
 import { ID, Age, Gender, Phone } from "@/components/icons";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
-interface Patient {
+type Patient = {
   id: number;
-  first_name: string;
-  middle_name: string | null;
-  last_name: string;
-  national_id: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  nationalId: string;
   age: number;
   gender: "male" | "female";
   phone: string;
-  profile_picture: string | null;
-}
+  profilePicture: string | null;
+};
 
-interface Study {
+type Study = {
   number: number;
   id: number;
   date: string;
   doctorName: string;
   bodyPart: string;
   reportStatus: string;
-}
+};
+
+type InfoItem = {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+};
+
+const InfoList = ({ items }: { items: InfoItem[] }) => (
+  <div className="profile-info-list">
+    {items.map((item, i) => (
+      <div key={i} className="profile-info-row">
+        <span className="profile-info-icon">{item.icon}</span>
+        <span className="profile-info-label" style={{ fontSize: "14px" }}>{item.label}</span>
+        <span className="profile-info-value">{item.value}</span>
+      </div>
+    ))}
+  </div>
+);
 
 export default function Patients() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [studies, setStudies]  = useState<Study[]>([]);
+  const [loading, setLoading]  = useState(false);
+  const [error, setError]      = useState<string | null>(null);
+
+  const fetchPatientData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/patients/profile");
+      const data = await response.json();
+
+      if (data.status === "ok") {
+        setPatient(data.patient);
+        setStudies(data.studies);
+      } else {
+        setError(data.message || "Failed to load patient data");
+      }
+    } catch {
+      setError("Failed to load patient data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPatientData = async () => {
-      if (status === "loading") return;
-
-      if (status === "unauthenticated") {
-        router.push("/");
-        return;
-      }
-
-      if (!session?.user) {
-        setError("User session not found");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        const response = await fetch("/api/patients/profile");
-        const data = await response.json();
-
-        if (data.status === "ok") {
-          setPatient(data.patient);
-          setStudies(data.studies);
-        } else {
-          setError(data.message || "Failed to load patient data");
-        }
-      } catch (err) {
-        console.error("Error fetching patient data:", err);
-        setError("Failed to load patient data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    if (status === "loading") return;
+    if (status === "unauthenticated") { router.push("/"); return; }
     fetchPatientData();
-  }, [session, status, router]);
+  }, [status, fetchPatientData, router]);
 
-  if (status === "loading" || (loading && status === "authenticated")) {
+  if (status === "loading" || loading) {
     return (
       <section className="patients-page">
         <nav className="patients-nav">
@@ -86,7 +91,7 @@ export default function Patients() {
         </nav>
         <main className="patients-main">
           <div className="text-center text-white p-8">
-            <div className="border-4 border-gray-300 border-t-blue-600 rounded-full w-10 h-10 animate-spin mx-auto"></div>
+            <div className="border-4 border-gray-300 border-t-blue-600 rounded-full w-10 h-10 animate-spin mx-auto" />
             <p className="mt-4">Loading...</p>
           </div>
         </main>
@@ -114,9 +119,15 @@ export default function Patients() {
     );
   }
 
-  const fullName   = [patient.first_name, patient.middle_name, patient.last_name].filter(Boolean).join(" ");
-  const genderText = patient.gender === "male" ? "Male" : "Female";
-  const profileImg = patient.profile_picture || "/api/images/default";
+  const fullName  = [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(" ");
+  const profileImg = patient.profilePicture || "/api/images/default";
+
+  const infoItems: InfoItem[] = [
+    { icon: <ID />,     label: "National ID", value: patient.nationalId },
+    { icon: <Age />,    label: "Age",         value: String(patient.age) },
+    { icon: <Gender />, label: "Gender",      value: patient.gender === "male" ? "Male" : "Female" },
+    { icon: <Phone />,  label: "Phone",       value: patient.phone },
+  ];
 
   return (
     <section className="patients-page">
@@ -144,46 +155,21 @@ export default function Patients() {
                     unoptimized
                   />
                 </div>
-
                 <h1 className="[@media(min-width:600px)_and_(max-width:1023px)]:block hidden text-white font-semibold text-lg text-center">
                   {fullName}
                 </h1>
               </div>
 
               <div className="flex flex-col items-center md:items-start lg:items-center w-full md:w-auto mt-4 md:mt-0 lg:mt-0">
-
                 <h1 className="profile-name-desktop block [@media(min-width:600px)_and_(max-width:1023px)]:!hidden">
                   {fullName}
                 </h1>
-
-                <div className="profile-info-list">
-                  <div className="profile-info-row">
-                    <span className="profile-info-icon"><ID /></span>
-                    <span className="profile-info-label" style={{ fontSize: "14px" }}>National ID</span>
-                    <span className="profile-info-value">{patient.national_id}</span>
-                  </div>
-                  <div className="profile-info-row">
-                    <span className="profile-info-icon"><Age /></span>
-                    <span className="profile-info-label" style={{ fontSize: "14px" }}>Age</span>
-                    <span className="profile-info-value">{patient.age}</span>
-                  </div>
-                  <div className="profile-info-row">
-                    <span className="profile-info-icon"><Gender /></span>
-                    <span className="profile-info-label" style={{ fontSize: "14px" }}>Gender</span>
-                    <span className="profile-info-value">{genderText}</span>
-                  </div>
-                  <div className="profile-info-row">
-                    <span className="profile-info-icon"><Phone /></span>
-                    <span className="profile-info-label" style={{ fontSize: "14px" }}>Phone</span>
-                    <span className="profile-info-value">{patient.phone}</span>
-                  </div>
-                </div>
+                <InfoList items={infoItems} />
               </div>
 
             </div>
           </div>
 
-          
           <div className="patients-card-table">
             <h4 className="patients-table-title">My File</h4>
 
@@ -191,15 +177,18 @@ export default function Patients() {
               <table className="w-full text-white">
                 <thead className="table-head-row">
                   <tr>
-                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">#</th>
-                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Date</th>
-                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Doctor Name</th>
-                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Body Part</th>
-                    <th className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap">Report</th>
+                    {["#", "Date", "Doctor Name", "Body Part", "Report"].map((h) => (
+                      <th
+                        key={h}
+                        className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base font-medium text-center whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {studies && studies.length > 0 ? (
+                  {studies.length ? (
                     studies.map((study) => (
                       <tr key={study.id} className="table-row">
                         <td className="py-1 px-1 text-[11px] sm:py-3 sm:px-3 sm:text-sm lg:text-base text-center whitespace-nowrap">{study.number}</td>
@@ -212,9 +201,7 @@ export default function Patients() {
                               View Report
                             </Link>
                           ) : (
-                            <span className="text-gray-400 cursor-not-allowed select-none">
-                              Not available yet
-                            </span>
+                            <span className="text-gray-400 cursor-not-allowed select-none">Not available yet</span>
                           )}
                         </td>
                       </tr>
@@ -228,6 +215,7 @@ export default function Patients() {
               </table>
             </div>
           </div>
+
         </div>
       </main>
     </section>

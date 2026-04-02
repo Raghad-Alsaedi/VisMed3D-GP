@@ -11,7 +11,6 @@ export async function GET() {
     }
 
     const techId = (session.user as any).technician_id;
-
     if (!techId) {
       return NextResponse.json({ message: "Technician ID not found" }, { status: 400 });
     }
@@ -19,18 +18,15 @@ export async function GET() {
     const [rows]: any = await db.query(
       `
       SELECT
-        u.id,
-        u.technician_id,
-        u.username AS userName,
-        u.first_name AS firstName,
-        u.middle_name AS middleName,
-        u.last_name AS lastName,
+        u.technician_id     AS technicianId,
+        u.first_name        AS firstName,
+        u.middle_name       AS middleName,
+        u.last_name         AS lastName,
         u.gender,
         u.phone,
-        tp.technician_code,
-        tp.license_number,
-        tp.years_experience,
-        u.profile_picture
+        tp.technician_code  AS technicianCode,
+        tp.license_number   AS licenseNumber,
+        tp.years_experience AS yearsExperience
       FROM users u
       LEFT JOIN technician_profiles tp ON tp.technician_id = u.technician_id
       WHERE u.technician_id = ?
@@ -47,9 +43,6 @@ export async function GET() {
     return NextResponse.json({ tech });
   } catch (error) {
     console.error("Error in /api/technician/me:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

@@ -42,10 +42,11 @@ export async function GET(req) {
         [patients] = await db.query(
           `
           SELECT 
-            p.patient_id,
-            CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-            p.medical_record_number,
-            u.profile_picture
+            p.patient_id            AS patientId,
+            CONCAT(u.first_name, ' ',
+                   u.last_name)     AS fullName,
+            p.medical_record_number AS medicalRecordNumber,
+            u.profile_picture       AS profilePicture
           FROM doctor_patient_assignments dpa
           INNER JOIN patients p ON p.patient_id = dpa.patient_id
           INNER JOIN users u ON u.patient_id = p.patient_id
@@ -58,10 +59,11 @@ export async function GET(req) {
         [patients] = await db.query(
           `
           SELECT 
-            p.patient_id,
-            CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-            p.medical_record_number,
-            u.profile_picture
+            p.patient_id            AS patientId,
+            CONCAT(u.first_name, ' ',
+                   u.last_name)     AS fullName,
+            p.medical_record_number AS medicalRecordNumber,
+            u.profile_picture       AS profilePicture
           FROM technician_patient_assignments tpa
           INNER JOIN patients p ON p.patient_id = tpa.patient_id
           INNER JOIN users u ON u.patient_id = p.patient_id
@@ -79,10 +81,11 @@ export async function GET(req) {
           [patients] = await db.query(
             `
             SELECT 
-              p.patient_id,
-              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-              p.medical_record_number,
-              u.profile_picture
+              p.patient_id            AS patientId,
+              CONCAT(u.first_name, ' ',
+                     u.last_name)     AS fullName,
+              p.medical_record_number AS medicalRecordNumber,
+              u.profile_picture       AS profilePicture
             FROM doctor_patient_assignments dpa
             INNER JOIN patients p ON p.patient_id = dpa.patient_id
             INNER JOIN users u ON u.patient_id = p.patient_id
@@ -95,10 +98,11 @@ export async function GET(req) {
           [patients] = await db.query(
             `
             SELECT 
-              p.patient_id,
-              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-              p.medical_record_number,
-              u.profile_picture
+              p.patient_id            AS patientId,
+              CONCAT(u.first_name, ' ',
+                     u.last_name)     AS fullName,
+              p.medical_record_number AS medicalRecordNumber,
+              u.profile_picture       AS profilePicture
             FROM doctor_patient_assignments dpa
             INNER JOIN patients p ON p.patient_id = dpa.patient_id
             INNER JOIN users u ON u.patient_id = p.patient_id
@@ -113,10 +117,11 @@ export async function GET(req) {
           [patients] = await db.query(
             `
             SELECT 
-              p.patient_id,
-              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-              p.medical_record_number,
-              u.profile_picture
+              p.patient_id            AS patientId,
+              CONCAT(u.first_name, ' ',
+                     u.last_name)     AS fullName,
+              p.medical_record_number AS medicalRecordNumber,
+              u.profile_picture       AS profilePicture
             FROM technician_patient_assignments tpa
             INNER JOIN patients p ON p.patient_id = tpa.patient_id
             INNER JOIN users u ON u.patient_id = p.patient_id
@@ -129,10 +134,11 @@ export async function GET(req) {
           [patients] = await db.query(
             `
             SELECT 
-              p.patient_id,
-              CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-              p.medical_record_number,
-              u.profile_picture
+              p.patient_id            AS patientId,
+              CONCAT(u.first_name, ' ',
+                     u.last_name)     AS fullName,
+              p.medical_record_number AS medicalRecordNumber,
+              u.profile_picture       AS profilePicture
             FROM technician_patient_assignments tpa
             INNER JOIN patients p ON p.patient_id = tpa.patient_id
             INNER JOIN users u ON u.patient_id = p.patient_id
@@ -146,24 +152,19 @@ export async function GET(req) {
     }
 
     console.log(`get ${patients.length} patient`);
-    
+
     patients.forEach((patient, index) => {
       console.log(`patient ${index + 1}:`, {
-        id: patient.patient_id,
-        name: patient.full_name,
-        mrn: patient.medical_record_number,
-        picture: patient.profile_picture || " NULL"
+        id:      patient.patientId,
+        name:    patient.fullName,
+        mrn:     patient.medicalRecordNumber,
+        picture: patient.profilePicture || " NULL"
       });
     });
 
     return NextResponse.json({
       status: "ok",
-      patients: patients.map(p => ({
-        patient_id: p.patient_id,
-        full_name: p.full_name,
-        medical_record_number: p.medical_record_number,
-        profile_picture: p.profile_picture || "picture/profiles/default-avatar.png"
-      }))
+      patients,
     });
 
   } catch (err) {

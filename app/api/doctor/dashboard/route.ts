@@ -13,19 +13,18 @@ export async function GET(req: Request) {
     const [docRows]: any = await db.query(
       `
       SELECT
-        u.id AS user_id,
-        u.doctor_id,
-        u.first_name AS firstName,
-        u.middle_name AS middleName,
-        u.last_name AS lastName,
+        u.id                  AS userId,
+        u.doctor_id           AS doctorId,
+        u.first_name          AS firstName,
+        u.middle_name         AS middleName,
+        u.last_name           AS lastName,
         u.gender,
         u.phone,
-        dp.doctor_code,
-        dp.license_number,
-        dp.years_experience,
+        dp.doctor_code        AS doctorCode,
+        dp.license_number     AS licenseNumber,
+        dp.years_experience   AS yearsExperience,
         dp.specialty,
-        dp.profile_image_url,
-        dp.signature_path
+        dp.signature_path     AS signaturePath
       FROM users u
       JOIN doctor_profiles dp ON dp.doctor_id = u.doctor_id
       WHERE u.id = ? AND u.role = 'doctor'
@@ -39,22 +38,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
     }
 
-    doctor.signature_url = doctor.signature_path?.trim()
-      ? `/api/signatures/${doctor.signature_path}`
+    doctor.signatureUrl = doctor.signaturePath?.trim()
+      ? `/api/signatures/${doctor.signaturePath}`
       : null;
 
     const [patientRows]: any = await db.query(
       `
       SELECT
-        p.patient_id,
-        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS patient_name,
-        u.profile_picture AS profile_image_url,
-        a.accession_number AS accession,
-        p.medical_record_number AS mrn,
-        a.exam_date AS study_date,
-        a.accession_id AS accession_id,
-        r.body_part,
-        IFNULL(r.report_status, 'Draft') AS report_status
+        p.patient_id                                        AS patientId,
+        CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS patientName,
+        a.accession_number                                  AS accession,
+        p.medical_record_number                             AS mrn,
+        a.accession_id                                      AS accessionId,
+        IFNULL(r.report_status, 'Draft')                    AS reportStatus
       FROM doctor_patient_assignments dpa
       JOIN patients p ON p.patient_id = dpa.patient_id
       JOIN users u ON u.patient_id = p.patient_id

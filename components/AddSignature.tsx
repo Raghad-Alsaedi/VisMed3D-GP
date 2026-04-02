@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { UploadSignature } from '@/components/icons'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 const AddSignature = () => {
   const router = useRouter()
@@ -33,8 +34,8 @@ const AddSignature = () => {
         const response = await fetch(`/api/doctor/dashboard?doctorId=${doctorId}`)
         const data = await response.json()
         
-        if (data.doctor?.signature_url) {
-          setCurrentSignatureUrl(data.doctor.signature_url)
+        if (data.doctor?.signatureUrl) {
+          setCurrentSignatureUrl(data.doctor.signatureUrl)
         }
       } catch (error) {
         console.error('Error fetching signature:', error)
@@ -81,21 +82,6 @@ const AddSignature = () => {
     setErrorMessage('')
     
     setTimeout(() => {
-      const validTypes = ['image/png', 'image/jpeg', 'image/jpg']
-      if (!validTypes.includes(file.type)) {
-        setErrorMessage('Invalid file type. Only PNG, JPG, and JPEG are allowed')
-        setIsLoading(false)
-        if (fileInputRef.current) fileInputRef.current.value = ''
-        return
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        setErrorMessage('File size exceeds 5MB. Please select a smaller image')
-        setIsLoading(false)
-        if (fileInputRef.current) fileInputRef.current.value = ''
-        return
-      }
-
       setSelectedFile(file)
       
       const reader = new FileReader()
@@ -191,14 +177,7 @@ const AddSignature = () => {
   }
 
   if (loadingSignature) {
-    return (
-      <div className="bg-[#040A16] min-h-screen flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
-          <p className="text-white text-sm">Loading...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   const hasExistingSignature = currentSignatureUrl && !isEditMode

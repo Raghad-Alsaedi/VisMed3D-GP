@@ -7,40 +7,41 @@ import { useSession } from "next-auth/react";
 import { Search, Upload_Action, Img, Report, ChevronRight, Success, Error as ErrorIcon } from "@/components/icons";
 
 interface Patient {
-  patient_id: number;
-  full_name: string;
-  medical_record_number: string;
-  profile_picture: string | null;
+  patientId:           number;
+  fullName:            string;
+  medicalRecordNumber: string;
+  profilePicture:      string | null;
 }
 
 interface PatientDetails {
-  id: number;
-  full_name: string;
-  national_id: string;
-  mrn: string;
-  age: number;
-  gender: string;
-  phone: string;
+  id:         number;
+  fullName:   string;
+  nationalId: string;
+  mrn:        string;
+  age:        number;
+  gender:     string;
+  phone:      string;
 }
 
 interface Accession {
-  accession_id: number;
-  accession_number: string;
-  exam_date: string;
-  modality: string;
-  body_part: string;
-  report_content?: string;
-  report_status?: string;
-  volume_id: number | null;
+  accessionId:     number;
+  accessionNumber: string;
+  examDate:        string;
+  modality:        string;
+  bodyPart:        string;
+  reportContent?:  string;
+  reportStatus?:   string;
+  volumeId:        number | null;
 }
 
+//Search bar
 const applyFilter = (patients: Patient[], query: string): Patient[] => {
   if (!query.trim()) return patients;
   const q = query.toLowerCase().trim();
   return patients.filter(
     (p) =>
-      p.full_name.toLowerCase().includes(q) ||
-      p.medical_record_number.toLowerCase().includes(q)
+      p.fullName.toLowerCase().includes(q) ||
+      p.medicalRecordNumber.toLowerCase().includes(q)
   );
 };
 
@@ -50,14 +51,14 @@ const PatientList = () => {
   const searchParams = useSearchParams();
   const { status }   = useSession();
 
-  const [searchQuery, setSearchQuery]           = useState("");
-  const [allPatients, setAllPatients]           = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient]   = useState<PatientDetails | null>(null);
-  const [accessions, setAccessions]             = useState<Accession[]>([]);
-  const [showDetails, setShowDetails]           = useState(false);
+  const [searchQuery, setSearchQuery]             = useState("");
+  const [allPatients, setAllPatients]             = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients]   = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient]     = useState<PatientDetails | null>(null);
+  const [accessions, setAccessions]               = useState<Accession[]>([]);
+  const [showDetails, setShowDetails]             = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
-  const [savedToast, setSavedToast] = useState<"success" | "error" | null>(null);
+  const [savedToast, setSavedToast]               = useState<"success" | "error" | null>(null);
 
   const allPatientsRef = useRef<Patient[]>([]);
   const searchQueryRef = useRef<string>("");
@@ -95,7 +96,10 @@ const PatientList = () => {
         const res  = await fetch(`/api/search/patients?query=`);
         const data = await res.json();
         if (data.status === "ok") {
-          const patients: Patient[] = data.patients;
+          const patients: Patient[] = data.patients.map((p: Patient) => ({
+            ...p,
+            profilePicture: p.profilePicture || "picture/profiles/default-avatar.png",
+          }));
           setAllPatients(patients);
           setFilteredPatients(applyFilter(patients, searchQueryRef.current));
         }
@@ -106,6 +110,7 @@ const PatientList = () => {
     fetchAllPatients();
   }, [status]);
 
+  //The system refilters the patient list every time the search text changes
   useEffect(() => {
     setFilteredPatients(applyFilter(allPatientsRef.current, searchQuery));
   }, [searchQuery]);
@@ -123,8 +128,24 @@ const PatientList = () => {
       const res  = await fetch(`/api/patientsList/${patientId}`);
       const data = await res.json();
       if (data.status === "ok") {
-        setSelectedPatient(data.patient);
-        setAccessions(data.accessions);
+        const patient: PatientDetails = {
+          ...data.patient,
+          gender: data.patient.gender === "male" ? "Male" : "Female",
+        };
+        const accessions: Accession[] = data.accessions.map((acc: Accession) => ({
+          ...acc,
+          examDate:      new Date(acc.examDate).toLocaleDateString("en-GB", {
+            day:   "2-digit",
+            month: "short",
+            year:  "numeric",
+          }),
+          bodyPart:      acc.bodyPart      || "N/A",
+          reportContent: acc.reportContent || "",
+          reportStatus:  acc.reportStatus?.toLowerCase() === "completed" ? "completed" : "draft",
+          volumeId:      acc.volumeId ?? null,
+        }));
+        setSelectedPatient(patient);
+        setAccessions(accessions);
         setShowDetails(true);
         setSelectedPatientId(patientId);
       }
@@ -244,30 +265,30 @@ const PatientList = () => {
 
             {filteredPatients.map((patient) => (
               <div
-                key={patient.patient_id}
+                key={patient.patientId}
                 className="w-full max-w-full rounded-lg p-3 md:p-4 mb-3 md:mb-4 flex items-center cursor-pointer transition-all duration-200 hover:shadow-lg"
                 style={{
-                  border: selectedPatientId === patient.patient_id
+                  border: selectedPatientId === patient.patientId
                     ? "3px solid #303A46"
                     : "1.5px solid rgba(255, 255, 255, 0.3)",
                   backgroundColor: "#040A16",
                   boxSizing: "border-box",
                 }}
-                onClick={() => handlePatientClick(patient.patient_id)}
+                onClick={() => handlePatientClick(patient.patientId)}
               >
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 mr-3 md:mr-4 overflow-hidden flex-shrink-0">
                   <img
-                    src={patient.profile_picture ? `/${patient.profile_picture}` : "/api/images/default"}
-                    alt={patient.full_name}
+                    src={patient.profilePicture ? `/${patient.profilePicture}` : "/api/images/default"}
+                    alt={patient.fullName}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm md:text-base font-semibold text-white mb-1 truncate">
-                    {patient.full_name}
+                    {patient.fullName}
                   </div>
                   <div className="text-xs md:text-sm text-gray-200 truncate">
-                    {patient.medical_record_number}
+                    {patient.medicalRecordNumber}
                   </div>
                 </div>
                 <div className="text-white text-lg md:text-xl flex-shrink-0">
@@ -299,11 +320,11 @@ const PatientList = () => {
                   Basic Information
                 </h2>
                 {[
-                  { label: "National ID", value: selectedPatient.national_id },
-                  { label: "MRN",         value: selectedPatient.mrn         },
-                  { label: "Age",         value: selectedPatient.age         },
-                  { label: "Gender",      value: selectedPatient.gender      },
-                  { label: "Phone",       value: selectedPatient.phone       },
+                  { label: "National ID", value: selectedPatient.nationalId },
+                  { label: "MRN",         value: selectedPatient.mrn        },
+                  { label: "Age",         value: selectedPatient.age        },
+                  { label: "Gender",      value: selectedPatient.gender     },
+                  { label: "Phone",       value: selectedPatient.phone      },
                 ].map(({ label, value }, i, arr) => (
                   <div
                     key={label}
@@ -346,15 +367,15 @@ const PatientList = () => {
                     <tbody>
                       {accessions.length > 0 ? (
                         accessions.map((acc, idx) => {
-                          const reportStatus = isDoctor ? getReportStatusLabel(acc.report_status) : null;
+                          const reportStatus = isDoctor ? getReportStatusLabel(acc.reportStatus) : null;
                           return (
                             <tr
-                              key={`${acc.accession_id}-${idx}`}
+                              key={`${acc.accessionId}-${idx}`}
                               className="transition-colors bg-[#040A16] hover:bg-[#0D1A2D]"
                               style={{ borderBottom: "1.5px solid #303A46" }}
                             >
-                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.accession_number}</td>
-                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.exam_date}</td>
+                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.accessionNumber}</td>
+                              <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.examDate}</td>
                               {isTech && (
                                 <td className="py-1.5 px-1 md:py-2 md:px-1.5 lg:py-3 lg:px-3 text-[10px] md:text-[11px] lg:text-sm text-center table-cell-wrap">{acc.modality}</td>
                               )}
@@ -370,7 +391,7 @@ const PatientList = () => {
                                   <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
                                     <div className="relative group">
                                       <Link
-                                        href={`/radio_tech/dropfile?patientId=${selectedPatient.id}&accessionId=${acc.accession_id}`}
+                                        href={`/radio_tech/dropfile?patientId=${selectedPatient.id}&accessionId=${acc.accessionId}`}
                                         className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
                                       >
                                         <Upload_Action className="text-lg text-white" />
@@ -379,10 +400,10 @@ const PatientList = () => {
                                         Upload File
                                       </div>
                                     </div>
-                                    {acc.volume_id && (
+                                    {acc.volumeId && (
                                       <div className="relative group">
                                         <Link
-                                          href={`/viewimg?volumeId=${acc.volume_id}&accession_id=${acc.accession_id}`}
+                                          href={`/viewimg?volumeId=${acc.volumeId}&accession_id=${acc.accessionId}`}
                                           className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
                                         >
                                           <Img className="text-white text-lg" />
@@ -397,7 +418,7 @@ const PatientList = () => {
                                   <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 justify-center">
                                     <div className="relative group">
                                       <Link
-                                        href={`/doctor/writingReport?accession_id=${acc.accession_id}&from=patientlist&patientId=${selectedPatient.id}`}
+                                        href={`/doctor/writingReport?accession_id=${acc.accessionId}&from=patientlist&patientId=${selectedPatient.id}`}
                                         className="p-1.5 md:p-2 hover:bg-[#0D1A2D] transition rounded cursor-pointer block"
                                       >
                                         <Report className="text-white" style={{ fontSize: "1.5rem" }} />
