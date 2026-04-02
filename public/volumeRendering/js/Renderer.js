@@ -283,42 +283,78 @@ let volume;
 console.log("MAIN REACHED - ABOUT TO LOAD VOLUME");
 
 if (rawVolumeData) {
-  // ── DB volume: process raw bytes exactly like CThead ──────
   const { bytes, width, height, depth } = rawVolumeData;
 
-  const voxelsPerSlice  = width * height;
+  const voxelsPerSlice = width * height;
   const bytesPerSlice16 = voxelsPerSlice * 2;
-  const data            = new Uint8Array(voxelsPerSlice * depth);
+  const data = new Uint8Array(voxelsPerSlice * depth);
 
-  const low   = 0;
-  const high  = 1500;
-  const denom = high - low;
+  const isMRbrain = (depth === 109);
+
+  if (isMRbrain) {
+    console.log("Detected MRbrain dataset");
+  } else {
+    console.log("Detected CThead dataset");
+  }
 
   for (let z = 0; z < depth; z++) {
     const byteOffset = z * bytesPerSlice16;
-
-    // Read 16-bit Big-endian — same as CThead
     const slice16 = new Uint16Array(voxelsPerSlice);
+
     for (let p = 0; p < voxelsPerSlice; p++) {
-      slice16[p] = (bytes[byteOffset + 2*p] << 8) | bytes[byteOffset + 2*p + 1];
+      if (isMRbrain) {
+        // MRbrain = little-endian
+        slice16[p] = bytes[byteOffset + 2 * p] | (bytes[byteOffset + 2 * p + 1] << 8);
+      } else {
+        // CThead = big-endian
+        slice16[p] = (bytes[byteOffset + 2 * p] << 8) | bytes[byteOffset + 2 * p + 1];
+      }
     }
 
-    // Windowing + convert to 8-bit — same as CThead
-    for (let p = 0; p < voxelsPerSlice; p++) {
-      let v = slice16[p];
-      if (v < low)  v = low;
-      if (v > high) v = high;
-      data[z * voxelsPerSlice + p] = Math.round(((v - low) / denom) * 255);
+    if (isMRbrain) {
+      // MRbrain: auto-normalize each slice
+      let minV = 65535;
+      let maxV = 0;
+
+      for (let p = 0; p < voxelsPerSlice; p++) {
+        const v = slice16[p];
+        if (v < minV) minV = v;
+        if (v > maxV) maxV = v;
+      }
+
+      const denom = (maxV - minV) || 1;
+
+      for (let p = 0; p < voxelsPerSlice; p++) {
+        data[z * voxelsPerSlice + p] =
+          Math.round(((slice16[p] - minV) / denom) * 255);
+      }
+    } else {
+      // CThead: CT windowing
+      const low = 0;
+      const high = 1500;
+      const denom = (high - low) || 1;
+
+      for (let p = 0; p < voxelsPerSlice; p++) {
+        let v = slice16[p];
+        if (v < low) v = low;
+        if (v > high) v = high;
+        data[z * voxelsPerSlice + p] =
+          Math.round(((v - low) / denom) * 255);
+      }
     }
   }
 
-  volume = { data, width, height, depth };
+ volume = { data, width, height, depth };
 
 } else {
-  volume = await loadCTheadVolume();
+  if (dataset === "skull") {
+    volume = await loadSkullVolume();
+  } else {
+    volume = await loadCTheadVolume();
+  }
 }
 
-//const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   // غيري الاسم حسب ملفك
+//const volume = await loadVolume( "/volumeRendering/data/volume/foot183x255x125.row",   
  // 183, 255, 125);
 
   // =========================================

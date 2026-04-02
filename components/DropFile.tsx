@@ -77,13 +77,15 @@ const DropFile = () => {
     if (!h) return setErr("height");
     if (!d) return setErr("depth");
 
-    const expected = w * h * d * BYTES_PER_VOXEL;
-    if (expected !== file.size) {
-      setErrorMessage(
-        ` Size mismatch: expected ${expected} bytes (w*h*d*${BYTES_PER_VOXEL}) but file is ${file.size} bytes.`
-      );
-      return false;
-    }
+    const expected16 = w * h * d * 2;
+const expected8  = w * h * d * 1;
+
+if (file.size !== expected16 && file.size !== expected8) {
+   setErrorMessage(
+     `Size mismatch: expected ${expected16} (16-bit) or ${expected8} (8-bit) bytes but file is ${file.size}.`
+   );
+   return false;
+}
 
     return true;
 
