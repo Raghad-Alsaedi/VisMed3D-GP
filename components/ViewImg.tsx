@@ -5,6 +5,16 @@ import Img from "./Img";
 import Header from "./Header";
 import AutoTF from "./AutoTF";
 
+interface Step {
+  id: number;
+  rangeValue: number;
+  rangeStart: number;
+  rangeEnd: number;
+  color: string;
+  opacity: number;
+}
+
+
 const ViewImg = () => {
   const [fps, setFps] = useState<number>(0);
   
@@ -13,6 +23,12 @@ const ViewImg = () => {
   
   const requestRef = useRef<number | null>(null); 
 
+  const handleTransferFunctionChange = (steps: Step[]) => {
+    if ((window as any).sendStepsToWebGL) {
+      (window as any).sendStepsToWebGL(steps);
+    }
+  };
+  
   useEffect(() => {
     const loop = (now: number) => {
       frameCount.current++;
@@ -42,8 +58,8 @@ const ViewImg = () => {
         <Header />
       </div>
 
-      <div className="mt-4 flex-1 bg-[#0D1A2D] border border-white/10 rounded-xl flex items-center justify-center relative overflow-hidden group">
-        <Img />
+      <div className="mt-4 flex-1 bg-[#0D1A2D] border border-white/20 rounded-lg flex items-center justify-center relative min-h-0">
+        <Img onTransferFunctionChange={handleTransferFunctionChange} />
         
         <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
            <div className="flex items-center gap-2">
@@ -57,7 +73,7 @@ const ViewImg = () => {
           
 
         </div>
-         <AutoTF />
+         <AutoTF onTransferFunctionChange={handleTransferFunctionChange}/>
 
       </div>
 

@@ -60,68 +60,37 @@ bool is_empty_space(vec3 sample_pos)
 //=============================================================
 // Transfer Function 
 //=============================================================
-vec4 get_color_TF(float scalar)
-{
+vec4 get_color_TF(float scalar) {
+
     float hounsfield = scalar * 2000.0 - 1000.0;
 
-    if (uNumSteps == 0) {
-        vec3 color = vec3(0.0);
-        float alpha = 0.0;
+    vec3 finalColor = vec3(0.0);
+    float finalAlpha = 0.0;
+    float totalWeight = 0.0;
 
-        // هواء - أسود شفاف
-        if (hounsfield <= -800.0) {
-            color = vec3(0.0, 0.0, 0.0);
-            alpha = 0.0;
-
-        // دهون - أصفر فاتح
-        } else if (hounsfield > -150.0 && hounsfield <= -80.0) {
-            color = vec3(1.0, 0.87, 0.6);
-            alpha = 0.15;
-
-        // سائل نخاعي CSF - أزرق فاتح
-        } else if (hounsfield > 0.0 && hounsfield <= 20.0) {
-            color = vec3(0.68, 0.85, 0.90);
-            alpha = 0.20;
-
-        // المادة البيضاء White Matter - بيج فاتح
-        } else if (hounsfield > 20.0 && hounsfield <= 35.0) {
-            color = vec3(0.91, 0.84, 0.69);
-            alpha = 0.50;
-
-        // المادة الرمادية Gray Matter - بيج داكن
-        } else if (hounsfield > 35.0 && hounsfield <= 50.0) {
-            color = vec3(0.78, 0.66, 0.53);
-            alpha = 0.55;
-
-        // نزيف / دم طازج - أحمر
-        } else if (hounsfield > 50.0 && hounsfield <= 80.0) {
-            color = vec3(0.80, 0.13, 0.0);
-            alpha = 0.60;
-
-        // عظام الجمجمة - أبيض
-        } else if (hounsfield > 300.0 && hounsfield <= 1000.0) {
-            color = vec3(0.96, 0.96, 0.94);
-            alpha = 1.0;
-
-        } else {
-            alpha = 0.0;
-        }
-
-        return vec4(color, alpha);
-    }
-
-    // Manual Mode
     for (int i = 0; i < 10; i++) {
         if (i >= uNumSteps) break;
 
-        if (hounsfield >= uTFRangeStarts[i] && hounsfield <= uTFRangeEnds[i]) {
-            return vec4(uTFColors[i], uTFOpacities[i]);
+        bool inRange;
+        if (i == uNumSteps - 1) {
+            inRange = hounsfield >= uTFRangeStarts[i]; // Metal — مفتوح النهاية
+        } else {
+            inRange = hounsfield >= uTFRangeStarts[i] && hounsfield <= uTFRangeEnds[i];
+        }
+
+        if (inRange) {
+            float w = uTFOpacities[i];
+            finalColor += uTFColors[i] * w;
+            finalAlpha  = max(finalAlpha, w);
+            totalWeight += w;
         }
     }
 
-    return vec4(0.0, 0.0, 0.0, 0.0);
-}
+    if (totalWeight > 0.0)
+        finalColor /= totalWeight;
 
+    return vec4(finalColor, finalAlpha);
+}
 //=============================================================
 // Compute Normal from View Direction (faster method)
 //=============================================================
