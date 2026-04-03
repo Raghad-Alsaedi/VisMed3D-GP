@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
@@ -30,6 +30,8 @@ const defaultSteps: Step[] = [
 
 const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const volumeId = searchParams.get('volumeId');
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;
 
@@ -44,6 +46,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   const updatedSteps = updateStepRanges();
 
   useEffect(() => {
+    const updatedSteps = updateStepRanges();
     if (onTransferFunctionChange) {
       onTransferFunctionChange(updatedSteps);
     }
@@ -130,29 +133,34 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
     <>
       <button
         onClick={() => setIsPanelVisible(!isPanelVisible)}
-        className="absolute top-17 right-1 z-20 rounded border border-white/20 bg-[#0D1A2D] p-2 text-white hover:border-white/70 hover:opacity-90 transition"
+        className="absolute top-4 right-1 z-20 rounded border border-white/20 bg-[#0D1A2D] p-1 sm:p-1.5 lg:p-2 text-white hover:border-white/70 hover:opacity-90 transition"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path d={isPanelVisible ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
         </svg>
       </button>
 
       <div
-        className={`absolute top-17 right-12 bottom-6 flex w-56 flex-col gap-2 overflow-hidden rounded-lg border border-white/50 bg-[#040A16] p-2 transition-all duration-300 ${
+        className={`absolute top-4 right-8 sm:right-10 lg:right-12 bottom-6 flex w-36 sm:w-44 lg:w-56 flex-col gap-2 overflow-hidden rounded-lg border border-white/50 bg-[#040A16] p-1.5 sm:p-2 transition-all duration-300 ${
           !isPanelVisible ? "opacity-0 pointer-events-none translate-x-full" : ""
         }`}
       >
-        <div className="p-2 flex-shrink-0">
-          <span className="text-sm font-semibold text-white">Transfer Function Mode :</span>
-          <div className="flex flex-row justify-between mt-2">
-            <label className="flex cursor-pointer items-center gap-2 text-white" onClick={() => router.push("/viewimg")}>
+        <div className="p-1 sm:p-1.5 lg:p-2 flex-shrink-0">
+          <span className="text-[10px] sm:text-xs lg:text-sm font-semibold text-white">
+            Transfer Function Mode :
+          </span>
+          <div className="flex flex-row justify-between mt-1.5 sm:mt-2">
+            <label
+              className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs lg:text-sm text-white"
+              onClick={() => router.push(`/viewimg?volumeId=${volumeId}`)}
+            >
               <input type="radio" name="TFMode" className="peer hidden" />
-              <span className="h-4 w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
+              <span className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Auto
             </label>
-            <label className="flex cursor-pointer items-center gap-2 text-white">
+            <label className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs lg:text-sm text-white">
               <input type="radio" name="TFMode" className="peer hidden" defaultChecked />
-              <span className="h-4 w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
+              <span className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Manual
             </label>
           </div>
@@ -161,7 +169,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
         <div className="flex-1 min-h-0 overflow-y-auto px-2 flex flex-col gap-2">
           <div className="h-full overflow-y-auto">
             {updatedSteps.map((step, index) => (
-              <div key={step.id} className="step border border-white/20 rounded-md overflow-hidden">
+              <div key={step.id} className="step border border-white/20 rounded-md overflow-hidden mb-1">
                 <input
                   type="checkbox"
                   id={`step${step.id}`}
@@ -171,35 +179,35 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
                 />
                 <label
                   htmlFor={`step${step.id}`}
-                  className="flex justify-between items-center px-3 py-2 cursor-pointer text-white text-sm bg-[#0D1A2D] border border-white/20 rounded-md"
+                  className="flex justify-between items-center px-2 sm:px-3 py-1.5 sm:py-2 cursor-pointer text-white text-[10px] sm:text-xs lg:text-sm bg-[#0D1A2D] border border-white/20 rounded-md"
                 >
                   <span className="flex items-center gap-1 flex-wrap">
                     <span>Step {index + 1}</span>
                     <button
                       type="button"
                       onClick={(e) => { e.preventDefault(); deleteStep(step.id); }}
-                      className="rounded border border-white/20 px-1.5 py-0.5 text-xs hover:border-white hover:opacity-80 transition"
+                      className="rounded border border-white/20 px-1 sm:px-1.5 py-0.5 text-[10px] sm:text-xs hover:border-white hover:opacity-80 transition"
                     >
                       <span className="text-red-500 font-bold">&times;</span>
                     </button>
                   </span>
                   <svg
-                    className={`w-4 h-4 transition-transform duration-300 ${openSteps.has(step.id) ? "rotate-180" : ""}`}
+                    className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-300 ${openSteps.has(step.id) ? "rotate-180" : ""}`}
                     fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
                   >
                     <path d="M19 9l-7 7-7-7" />
                   </svg>
                 </label>
 
-                <div className={`transition-all duration-300 px-3 pb-3 space-y-2 bg-[#0D1A2D] ${openSteps.has(step.id) ? "max-h-96" : "max-h-0 overflow-hidden"}`}>
+                <div className={`transition-all duration-300 px-2 sm:px-3 pb-2 sm:pb-3 space-y-1.5 sm:space-y-2 bg-[#0D1A2D] ${openSteps.has(step.id) ? "max-h-96" : "max-h-0 overflow-hidden"}`}>
                   <div className="space-y-1">
-                    <span className="text-xs text-white/80">
+                    <span className="text-[10px] sm:text-xs text-white/80">
                       Range: {step.rangeStart} HU - {index === updatedSteps.length - 1 ? "∞" : step.rangeEnd} HU
                     </span>
                   </div>
                   {index !== updatedSteps.length - 1 && (
                     <div className="space-y-1">
-                      <span className="text-xs text-white/80">Range Size: {step.rangeValue} HU</span>
+                      <span className="text-[10px] sm:text-xs text-white/80">Range Size: {step.rangeValue} HU</span>
                       <input
                         type="range"
                         min="0"
@@ -211,16 +219,16 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-white/80">Color</span>
+                    <span className="text-[10px] sm:text-xs text-white/80">Color</span>
                     <input
                       type="color"
                       value={step.color}
                       onChange={(e) => updateStepColor(step.id, e.target.value)}
-                      className="w-8 h-6 rounded border border-white/30 cursor-pointer"
+                      className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-white/30 cursor-pointer"
                     />
                   </div>
                   <div>
-                    <span className="text-xs text-white/80">Opacity: {step.opacity.toFixed(4)}</span>
+                    <span className="text-[10px] sm:text-xs text-white/80">Opacity: {step.opacity.toFixed(4)}</span>
                     <input
                       type="range" min="0" max="1" step="0.0001"
                       value={step.opacity}
@@ -233,19 +241,19 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
             ))}
           </div>
 
-          <div className="p-2 flex flex-col gap-2 flex-shrink-0">
+          <div className="p-1 sm:p-1.5 lg:p-2 flex flex-col gap-1.5 sm:gap-2 flex-shrink-0">
             <button
               onClick={addStep}
-              className="w-full flex items-center justify-center gap-2 rounded border border-white/30 py-2 text-sm text-white hover:border-white transition bg-[#0D1A2D]"
+              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 rounded border border-white/30 py-1.5 sm:py-2 text-[10px] sm:text-xs lg:text-sm text-white hover:border-white transition bg-[#0D1A2D]"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               Add Step...
             </button>
             <button
               onClick={() => setShowConfirmDialog(true)}
-              className="w-full flex-1 text-sm rounded border border-white/30 py-1 text-white hover:border-white bg-[#0D1A2D]"
+              className="w-full flex-1 text-[10px] sm:text-xs lg:text-sm rounded border border-white/30 py-1 text-white hover:border-white bg-[#0D1A2D]"
             >
               Reset
             </button>

@@ -5,22 +5,8 @@ import Img from "./Img";
 import Header from "./Header";
 import Report from "./Report";
 import StatusBar from "@/components/Statusbar";
+import LoadingSpinner from "./LoadingSpinner";
 import { useRouter, useSearchParams } from "next/navigation";
-
-const PaneSpinner = ({ label }: { label: string }) => (
-  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0D1A2D] rounded-md pointer-events-none">
-    <div className="relative w-12 h-12">
-      <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#17387C] border-r-[#17387C] animate-spin" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-2 h-2 rounded-full bg-[#17387C] animate-pulse" />
-      </div>
-    </div>
-    <span className="mt-3 text-white/40 text-[10px] font-mono tracking-widest uppercase">
-      {label}
-    </span>
-  </div>
-);
 
 const WritingReport = () => {
   const router       = useRouter();
@@ -119,16 +105,16 @@ const WritingReport = () => {
             className={`flex-1 rounded-md flex items-start justify-center border border-white/20 hover:border-white/30 relative overflow-hidden bg-[var(--color-bg-primary)] ${volumeId ? "cursor-pointer" : "cursor-not-allowed"}`}
             onClick={volumeId ? navigateToViewer : undefined}
           >
-            {!volumeChecked && <PaneSpinner label="Checking scan..." />}
+            {!volumeChecked && <LoadingSpinner />}
             {volumeChecked && !volumeId && noScanPane()}
-            {volumeChecked && volumeId && imgLoading && <PaneSpinner label="Loading viewer..." />}
+            {volumeChecked && volumeId && imgLoading && <LoadingSpinner />}
             {volumeChecked && volumeId && <Img volumeId={volumeId} />}
             {volumeChecked && volumeId && <div className="absolute inset-0 z-10" />}
           </div>
 
           <div className="flex-1 rounded-md flex flex-col border border-white/20 bg-[var(--color-bg-secondary)] overflow-hidden">
             <div className="flex-1 overflow-hidden min-h-0 relative">
-              {reportLoading && <PaneSpinner label="Loading report..." />}
+              {reportLoading && <LoadingSpinner />}
               <Report onStatusChange={handleStatusChange} onDataLoaded={handleDataLoaded} />
             </div>
             <StatusBar message={lastEvent} lastSavedTime={lastTime} isUploading={isUploading} />
@@ -152,16 +138,16 @@ const WritingReport = () => {
             style={{ height: "220px" }}
             onClick={volumeId ? navigateToViewer : undefined}
           >
-            {!volumeChecked && <PaneSpinner label="Checking scan..." />}
+            {!volumeChecked && <LoadingSpinner />}
             {volumeChecked && !volumeId && noScanPane("220px")}
-            {volumeChecked && volumeId && imgLoading && <PaneSpinner label="Loading viewer..." />}
+            {volumeChecked && volumeId && imgLoading && <LoadingSpinner />}
             {volumeChecked && volumeId && <Img volumeId={volumeId} />}
             {volumeChecked && volumeId && <div className="absolute inset-0 z-10" />}
           </div>
 
           <div className="w-full rounded-[10px] border border-white/30 bg-[#0D1A2D] flex flex-col overflow-hidden min-w-0 min-h-[350px]">
             <div className="flex-1 overflow-hidden min-h-0 relative">
-              {reportLoading && <PaneSpinner label="Loading report..." />}
+              {reportLoading && <LoadingSpinner />}
               <Report onStatusChange={handleStatusChange} onDataLoaded={handleDataLoaded} />
             </div>
             <StatusBar message={lastEvent} lastSavedTime={lastTime} isUploading={isUploading} />

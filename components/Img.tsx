@@ -1,6 +1,7 @@
 "use client";
 import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { useSearchParams } from "next/navigation";
+import LoadingSpinner from "./LoadingSpinner";
 
 interface Step {
   id: number;
@@ -74,20 +75,7 @@ const Img = ({ onTransferFunctionChange, volumeId: propVolumeId }: ImgProps) => 
 
   return (
     <div className="viewer-container" style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {isLoading && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0D1A2D] rounded-md pointer-events-none">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#17387C] border-r-[#17387C] animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-[#17387C] animate-pulse" />
-            </div>
-          </div>
-          <span className="mt-3 text-white/40 text-[10px] font-mono tracking-widest uppercase">
-            Loading scan...
-          </span>
-        </div>
-      )}
+      {isLoading && <LoadingSpinner />}
       <div className="viewer-iframe-wrapper">
         <iframe
           ref={iframeRef}

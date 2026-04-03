@@ -56,6 +56,7 @@ export default function Patients() {
   const [loading, setLoading]  = useState(false);
   const [error, setError]      = useState<string | null>(null);
 
+  // Fetches the logged-in patient's profile and study{reports} list.
   const fetchPatientData = useCallback(async () => {
     try {
       setLoading(true);
@@ -75,6 +76,8 @@ export default function Patients() {
     }
   }, []);
 
+  // Redirects unauthenticated users to the login page (defensive layer )
+  // Otherwise fetch the data
   useEffect(() => {
     if (status === "loading") return;
     if (status === "unauthenticated") { router.push("/"); return; }
@@ -140,10 +143,8 @@ export default function Patients() {
 
       <main className="patients-main">
         <div className="patients-grid">
-
           <div className="patients-card-profile">
             <div className="flex flex-col md:flex-row lg:flex-col items-center md:justify-center md:gap-20 lg:gap-4">
-
               <div className="flex flex-col items-center gap-3 flex-shrink-0">
                 <div className="profile-photo">
                   <Image
@@ -159,20 +160,17 @@ export default function Patients() {
                   {fullName}
                 </h1>
               </div>
-
               <div className="flex flex-col items-center md:items-start lg:items-center w-full md:w-auto mt-4 md:mt-0 lg:mt-0">
                 <h1 className="profile-name-desktop block [@media(min-width:600px)_and_(max-width:1023px)]:!hidden">
                   {fullName}
                 </h1>
                 <InfoList items={infoItems} />
               </div>
-
             </div>
           </div>
 
           <div className="patients-card-table">
             <h4 className="patients-table-title">My File</h4>
-
             <div className="patients-table-wrapper" style={{ maxHeight: "300px", overflowY: "auto" }}>
               <table className="w-full text-white">
                 <thead className="table-head-row">
@@ -215,7 +213,6 @@ export default function Patients() {
               </table>
             </div>
           </div>
-
         </div>
       </main>
     </section>

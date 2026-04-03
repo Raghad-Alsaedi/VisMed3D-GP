@@ -34,7 +34,8 @@ interface Accession {
   volumeId:        number | null;
 }
 
-//Search bar
+// Filters the patient list by name or MRN.
+// Returns all patients if the query is empty.
 const applyFilter = (patients: Patient[], query: string): Patient[] => {
   if (!query.trim()) return patients;
   const q = query.toLowerCase().trim();
@@ -60,6 +61,7 @@ const PatientList = () => {
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [savedToast, setSavedToast]               = useState<"success" | "error" | null>(null);
 
+  // Refs keep the latest state values accessible
   const allPatientsRef = useRef<Patient[]>([]);
   const searchQueryRef = useRef<string>("");
 
@@ -69,6 +71,8 @@ const PatientList = () => {
   useEffect(() => { allPatientsRef.current = allPatients; }, [allPatients]);
   useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
 
+  // Checks if the drop-file page left a success/error flag in sessionStorage.
+  // If found, shows a toast notification and remove it.
   useEffect(() => {
     const checkToast = () => {
       const result = sessionStorage.getItem("upload_result");
@@ -82,6 +86,8 @@ const PatientList = () => {
     return () => window.removeEventListener("upload_result_set", checkToast);
   }, []);
 
+  // Saves the user role to localStorage so other pages (like drop-file or write-report)
+  // know which dashboard to return to after finishing their task.
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (isDoctor)    localStorage.setItem("userRole", "/doctor");
@@ -89,6 +95,7 @@ const PatientList = () => {
     }
   }, [isDoctor, isTech]);
 
+  // Fetches all patients from the API
   useEffect(() => {
     if (status === "loading") return;
     const fetchAllPatients = async () => {
@@ -110,11 +117,12 @@ const PatientList = () => {
     fetchAllPatients();
   }, [status]);
 
-  //The system refilters the patient list every time the search text changes
+  // Re-filters the patient list every time the search text changes
   useEffect(() => {
     setFilteredPatients(applyFilter(allPatientsRef.current, searchQuery));
   }, [searchQuery]);
 
+  // When the user selects a patient, it loads patient's details automatically.
   useEffect(() => {
     const patientIdFromUrl = searchParams.get("patientId");
     if (patientIdFromUrl) {
@@ -123,6 +131,8 @@ const PatientList = () => {
     }
   }, [searchParams]);
 
+  // Fetches the full details and accessions for a single patient.
+  // Saves the selected patient id to sessionStorage so it can be restored on back navigation.
   const fetchPatient = async (patientId: number) => {
     try {
       const res  = await fetch(`/api/patientsList/${patientId}`);
@@ -154,10 +164,13 @@ const PatientList = () => {
     }
   };
 
+  // Updates the search query state on every keystroke.
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
+  // If the same patient is clicked again, collapses the detail panel and clears the URL.
+  // If a different patient is clicked, it updates the URL with the new patientId.
   const handlePatientClick = (patientId: number) => {
     if (selectedPatientId === patientId) {
       setSelectedPatient(null);
@@ -170,6 +183,8 @@ const PatientList = () => {
     router.replace(`${pathname}?patientId=${patientId}`);
   };
 
+  // Maps a reportStatus string to a display label.
+  // Anything other than "completed" is treated as a draft.
   const getReportStatusLabel = (reportStatus: string | undefined) => {
     if (reportStatus === "completed") return { label: "Completed" };
     return { label: "Draft" };

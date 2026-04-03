@@ -289,61 +289,75 @@ if (rawVolumeData) {
     volume = { data: bytes, width, height, depth };
   } else {
     const voxelsPerSlice = width * height;
-    const bytesPerSlice16 = voxelsPerSlice * 2;
-    const data = new Uint8Array(voxelsPerSlice * depth);
+    const totalVoxels = voxelsPerSlice * depth;
 
-    const isMRbrain = (depth === 109);
+    const is8Bit  = (bytes.length === totalVoxels);
+    const is16Bit = (bytes.length === totalVoxels * 2);
 
-    if (isMRbrain) {
-      console.log("Detected MRbrain dataset");
-    } else {
-      console.log("Detected CThead dataset");
-    }
+    if (is8Bit) {
+      console.log("Detected 8-bit dataset");
+      volume = { data: bytes, width, height, depth };
 
-    for (let z = 0; z < depth; z++) {
-      const byteOffset = z * bytesPerSlice16;
-      const slice16 = new Uint16Array(voxelsPerSlice);
+    } else if (is16Bit) {
+      const bytesPerSlice16 = voxelsPerSlice * 2;
+      const data = new Uint8Array(totalVoxels);
 
-      for (let p = 0; p < voxelsPerSlice; p++) {
-        if (isMRbrain) {
-          slice16[p] = bytes[byteOffset + 2 * p] | (bytes[byteOffset + 2 * p + 1] << 8);
-        } else {
-          slice16[p] = (bytes[byteOffset + 2 * p] << 8) | bytes[byteOffset + 2 * p + 1];
-        }
-      }
+      const isMRbrain = (depth === 109);
 
       if (isMRbrain) {
-        let minV = 65535;
-        let maxV = 0;
-
-        for (let p = 0; p < voxelsPerSlice; p++) {
-          const v = slice16[p];
-          if (v < minV) minV = v;
-          if (v > maxV) maxV = v;
-        }
-
-        const denom = (maxV - minV) || 1;
-
-        for (let p = 0; p < voxelsPerSlice; p++) {
-          data[z * voxelsPerSlice + p] =
-            Math.round(((slice16[p] - minV) / denom) * 255);
-        }
+        console.log("Detected MRbrain dataset");
       } else {
-        const low = 0;
-        const high = 1500;
-        const denom = (high - low) || 1;
+        console.log("Detected CThead dataset");
+      }
+
+      for (let z = 0; z < depth; z++) {
+        const byteOffset = z * bytesPerSlice16;
+        const slice16 = new Uint16Array(voxelsPerSlice);
 
         for (let p = 0; p < voxelsPerSlice; p++) {
-          let v = slice16[p];
-          if (v < low) v = low;
-          if (v > high) v = high;
-          data[z * voxelsPerSlice + p] =
-            Math.round(((v - low) / denom) * 255);
+          if (isMRbrain) {
+            slice16[p] = bytes[byteOffset + 2 * p] | (bytes[byteOffset + 2 * p + 1] << 8);
+          } else {
+            slice16[p] = (bytes[byteOffset + 2 * p] << 8) | bytes[byteOffset + 2 * p + 1];
+          }
+        }
+
+        if (isMRbrain) {
+          let minV = 65535;
+          let maxV = 0;
+
+          for (let p = 0; p < voxelsPerSlice; p++) {
+            const v = slice16[p];
+            if (v < minV) minV = v;
+            if (v > maxV) maxV = v;
+          }
+
+          const denom = (maxV - minV) || 1;
+
+          for (let p = 0; p < voxelsPerSlice; p++) {
+            data[z * voxelsPerSlice + p] =
+              Math.round(((slice16[p] - minV) / denom) * 255);
+          }
+        } else {
+          const low = 0;
+          const high = 1500;
+          const denom = (high - low) || 1;
+
+          for (let p = 0; p < voxelsPerSlice; p++) {
+            let v = slice16[p];
+            if (v < low) v = low;
+            if (v > high) v = high;
+            data[z * voxelsPerSlice + p] =
+              Math.round(((v - low) / denom) * 255);
+          }
         }
       }
-    }
 
-    volume = { data, width, height, depth };
+      volume = { data, width, height, depth };
+
+    } else {
+      throw new Error(`Volume size mismatch: bytes=${bytes.length}, expected 8-bit=${totalVoxels} or 16-bit=${totalVoxels * 2}`);
+    }
   }
 
 } else {

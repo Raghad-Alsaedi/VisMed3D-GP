@@ -9,6 +9,7 @@ const Header = () => {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
 
+  // Get the logged-in user's role from the session token
   const { data: session } = useSession();
   const tokenRole = (session?.user as any)?.role as string | undefined;
 
@@ -20,8 +21,10 @@ const Header = () => {
   const [patientName, setPatientName]           = useState<string>("");
   const [accessionNumber, setAccessionNumber]   = useState<string>("");
   const [canSaveProcessed, setCanSaveProcessed] = useState(false);
+  // Holds the resolve function of the save promise so the iframe message can complete it
   const saveResolverRef = useRef<((path: string) => void) | null>(null);
 
+  // Flags that tell which page the user is currently on
   const isReport    = pathname.includes("/writingReport");
   const isViewImage = pathname.includes("/viewimg") || pathname === "/manualTF";
   const isManualTF  = pathname === "/manualTF";
@@ -31,10 +34,12 @@ const Header = () => {
   const patientId   = searchParams.get("patientId");
   const urlAccessionId = searchParams.get("accessionId");
 
+  // Wait until the component is on the browser before reading client-only values
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Watch for messages from the iframe to track when the volume is ready or done saving
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -60,6 +65,7 @@ const Header = () => {
       ? sessionStorage.getItem("viewimg_accession_id")
       : null);
 
+  // Fetch the patient name and accession number, using sessionStorage as a local cache to avoid repeated server calls
   useEffect(() => {
     if (!resolvedAccessionId) return;
     if (!isReport && !isViewImage && !isDropFile) return;
@@ -102,6 +108,7 @@ const Header = () => {
 
       let processedPath: string | null = null;
 
+      // If the volume is processed and ready, ask the iframe to save it and wait for the file path
       if (canSaveProcessed) {
         processedPath = await new Promise<string>((resolve) => {
           saveResolverRef.current = resolve;
@@ -113,6 +120,7 @@ const Header = () => {
         });
       }
 
+      // Send the processed image path and volume ID to the server to complete the save
       const response = await fetch(`/api/volumes/${volumeId}/save`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,6 +129,7 @@ const Header = () => {
 
       const data = await response.json();
 
+      // Remove temp data and send the user to the right page
       if (data.success) {
         localStorage.removeItem("lastVolumeId");
         sessionStorage.removeItem("userRole");
@@ -142,6 +151,7 @@ const Header = () => {
     }
   };
 
+  // When the user clicks Cancel, tell the server to delete the volume and go back to the drop file page
   const handleCancel = async () => {
     try {
       const volumeId = localStorage.getItem("lastVolumeId");
@@ -161,6 +171,7 @@ const Header = () => {
     }
   };
 
+  // Decide whether to show the back arrow based on the current page and user state
   const showBackArrow = () => {
     if (!mounted)    return false;
     if (isManualTF)  return false;
@@ -170,6 +181,7 @@ const Header = () => {
     return false;
   };
 
+  // Navigate back to the right page depending on the user's role and where they came from
   const handleBack = () => {
     if (isViewImage && isDoctor) {
       const id   = resolvedAccessionId;
@@ -185,6 +197,7 @@ const Header = () => {
     router.back();
   };
 
+  // Save/Cancel show for technician after upload — Reset shows on viewer and report pages
   const showSaveCancelButtons = mounted && isTech && isViewImage && fromUpload;
   const showResetButton       = isViewImage || isReport;
   const showName              = !!patientName;
@@ -220,7 +233,8 @@ const Header = () => {
         )}
       </div>
 
-      <div className="flex-1 flex justify-end gap-1.5 sm:gap-2 md:gap-3 items-center flex-wrap">
+      {/* All buttons always in one row */}
+      <div className="flex-1 flex justify-end gap-1.5 sm:gap-2 md:gap-3 items-center">
 
         {showSaveCancelButtons && (
           <>
@@ -246,7 +260,12 @@ const Header = () => {
                          hover:border-white/60 disabled:opacity-50
                          cursor-pointer disabled:cursor-not-allowed"
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <span className="text-white/40 font-mono tracking-widest uppercase text-[10px]">Saving</span>
+                </div>
+              ) : "Save"}
             </button>
           </>
         )}

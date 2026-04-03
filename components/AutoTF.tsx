@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Bone } from "./icons";
@@ -21,10 +21,10 @@ const defaultSteps: Step[] = [
   { id: 1, rangeValue: 300, rangeStart: -1000, rangeEnd: -700, color: "#000000", opacity: 0.0 },
   { id: 2, rangeValue: 100, rangeStart: -700, rangeEnd: -600, color: "#999999", opacity: 0.0 },
   { id: 3, rangeValue: 30, rangeStart: -120, rangeEnd: -90, color: "#FFE099", opacity: 0.1932 },
-  { id: 4, rangeValue: 20, rangeStart: -10, rangeEnd: 10, color: "#AED9E6", opacity: 0.2330},
-  { id: 5, rangeValue: 37, rangeStart: 13, rangeEnd: 50, color: "#CC2100", opacity: 0.1364},
-  { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784},
-  { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190},
+  { id: 4, rangeValue: 20, rangeStart: -10, rangeEnd: 10, color: "#AED9E6", opacity: 0.2330 },
+  { id: 5, rangeValue: 37, rangeStart: 13, rangeEnd: 50, color: "#CC2100", opacity: 0.1364 },
+  { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784 },
+  { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190 },
   { id: 8, rangeValue: 2300, rangeStart: 700, rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
   { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
 ];
@@ -40,6 +40,8 @@ const presets = [
 
 const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const volumeId = searchParams.get('volumeId');
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;
 
@@ -87,10 +89,10 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
     <>
       <button
         onClick={() => setIsPanelVisible(!isPanelVisible)}
-        className="absolute top-17 right-1 z-20 rounded border border-white/20 bg-[#0D1A2D] p-2 text-white hover:border-white/70 hover:opacity-90 transition"
+        className="absolute top-2 right-1 z-20 rounded border border-white/20 bg-[#0D1A2D] p-1 sm:p-2 text-white hover:border-white/70 hover:opacity-90 transition"
       >
         <svg
-          className="w-5 h-5"
+          className="w-4 h-4 sm:w-5 sm:h-5"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -101,52 +103,52 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
       </button>
 
       <div
-        className={`absolute top-17 right-12 flex w-56 flex-col gap-2 overflow-hidden rounded-lg border border-white/50 bg-[#040A16] p-2 transition-all duration-300 ${
+        className={`absolute top-2 right-10 sm:right-12 flex w-44 sm:w-56 flex-col gap-2 overflow-hidden rounded-lg border border-white/50 bg-[#040A16] p-1.5 sm:p-2 transition-all duration-300 ${
           !isPanelVisible ? "opacity-0 pointer-events-none translate-x-full" : ""
         }`}
       >
-        <div className="p-2 flex-shrink-0">
-          <span className="text-sm font-semibold text-white">
+        <div className="p-1.5 sm:p-2 flex-shrink-0">
+          <span className="text-xs sm:text-sm font-semibold text-white">
             Transfer Function Mode :
           </span>
-          <div className="flex flex-row justify-between mt-2">
-            <label className="flex cursor-pointer items-center gap-2 text-white">
+          <div className="flex flex-row justify-between mt-1.5 sm:mt-2">
+            <label className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white">
               <input type="radio" name="TFMode" className="peer hidden" defaultChecked />
-              <span className="h-4 w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
+              <span className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Auto
             </label>
             <label
-              className="flex cursor-pointer items-center gap-2 text-white"
-              onClick={() => router.push("/manualTF")}
+              className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white"
+              onClick={() => router.push(`/manualTF?volumeId=${volumeId}`)}
             >
               <input type="radio" name="TFMode" className="peer hidden" />
-              <span className="h-4 w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
+              <span className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Manual
             </label>
           </div>
         </div>
 
-        <div className="px-2 pb-2 flex flex-col gap-2 flex-shrink-0">
+        <div className="px-1.5 sm:px-2 pb-1.5 sm:pb-2 flex flex-col gap-2 flex-shrink-0">
           {presets.map(preset => {
             const Icon = preset.icon;
             return (
               <div
                 key={preset.key}
-                className="flex items-center justify-between bg-[#0D1A2D] border border-white/20 rounded-md px-3 py-2"
+                className="flex items-center justify-between bg-[#0D1A2D] border border-white/20 rounded-md px-2 sm:px-3 py-1.5 sm:py-2"
               >
-                <span className="flex items-center gap-2 text-xs text-white/80">
-                  <Icon size={16} strokeWidth={1.5} />
+                <span className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-white/80">
+                  <Icon size={14} strokeWidth={1.5} />
                   {preset.label}
                 </span>
                 <button
                   onClick={() => handleToggle(preset.key)}
-                  className={`relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none ${
+                  className={`relative w-9 h-5 sm:w-11 sm:h-6 rounded-full transition-colors duration-300 focus:outline-none ${
                     activePresets.has(preset.key) ? "bg-[#1F9C3E]" : "bg-gray-600"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${
-                      activePresets.has(preset.key) ? "translate-x-5" : "translate-x-0"
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full shadow transition-transform duration-300 ${
+                      activePresets.has(preset.key) ? "translate-x-4 sm:translate-x-5" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -155,10 +157,10 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
           })}
         </div>
 
-        <div className="px-2 pb-2">
+        <div className="px-1.5 sm:px-2 pb-1.5 sm:pb-2">
           <button
             onClick={() => setShowConfirmDialog(true)}
-            className="w-full flex-1 text-sm rounded border border-white/30 py-1 text-white hover:border-white bg-[#0D1A2D]"
+            className="w-full flex-1 text-[10px] sm:text-sm rounded border border-white/30 py-1 text-white hover:border-white bg-[#0D1A2D]"
           >
             Reset
           </button>

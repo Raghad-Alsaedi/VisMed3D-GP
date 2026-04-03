@@ -1,5 +1,6 @@
 "use client";
-import React, {useEffect, Suspense, useState } from 'react';
+import React, { Suspense, useState } from 'react';
+import { useSearchParams } from "next/navigation";
 import Header from './Header';
 import Img from './Img';
 import ManualTF from './ManualTF';
@@ -15,6 +16,8 @@ interface Step {
 }
 
 const TF = () => {
+  const searchParams = useSearchParams();
+  const volumeId = searchParams.get('volumeId');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
   const handleTransferFunctionChange = (steps: Step[]) => {
@@ -24,7 +27,7 @@ const TF = () => {
   };
 
   return (
-   <div className="h-screen bg-[#040A16] flex flex-col p-4">
+    <div className="h-screen bg-[#040A16] flex flex-col p-4">
       <div className="flex-shrink-0">
         <Header />
       </div>
@@ -36,14 +39,14 @@ const TF = () => {
           }`}
         >
           <Suspense fallback={<div>Loading...</div>}>
-            <Img onTransferFunctionChange={handleTransferFunctionChange} />
+            <Img
+              onTransferFunctionChange={handleTransferFunctionChange}
+              volumeId={volumeId ? Number(volumeId) : null}
+            />
           </Suspense>
         </div>
 
-        <ManualTF
-          onTransferFunctionChange={handleTransferFunctionChange}
-        
-        />
+        <ManualTF onTransferFunctionChange={handleTransferFunctionChange} />
       </div>
 
       <div className="flex-shrink-0">
