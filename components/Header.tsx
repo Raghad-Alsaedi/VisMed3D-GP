@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { ArrowL } from "./icons";
 
@@ -15,10 +15,12 @@ const Header = () => {
   const isTech   = tokenRole === "technician";
   const isDoctor = tokenRole === "doctor";
 
-  const [isSaving, setIsSaving]               = useState(false);
-  const [mounted, setMounted]                 = useState(false);
-  const [patientName, setPatientName]         = useState<string>("");
-  const [accessionNumber, setAccessionNumber] = useState<string>("");
+  const [isSaving, setIsSaving]                 = useState(false);
+  const [mounted, setMounted]                   = useState(false);
+  const [patientName, setPatientName]           = useState<string>("");
+  const [accessionNumber, setAccessionNumber]   = useState<string>("");
+  const [canSaveProcessed, setCanSaveProcessed] = useState(false);
+  const saveResolverRef = useRef<((path: string) => void) | null>(null);
 
   const isReport    = pathname.includes("/writingReport");
   const isViewImage = pathname.includes("/viewimg") || pathname === "/manualTF";
@@ -31,6 +33,25 @@ const Header = () => {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data.type === 'VOLUME_READY_TO_SAVE') {
+        setCanSaveProcessed(true);
+      }
+      if (event.data.type === 'PROCESSED_SAVED') {
+        saveResolverRef.current?.(event.data.processedPath);
+      }
+      if (event.data.type === 'PROCESSED_SAVE_ERROR') {
+        saveResolverRef.current?.('');
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
   }, []);
 
   const resolvedAccessionId =
@@ -75,17 +96,34 @@ const Header = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const volumeId = localStorage.getItem("lastVolumeId");
-      if (!volumeId) { alert("No volume to save"); return; }
+      const volumeId    = localStorage.getItem("lastVolumeId");
       const accessionId = searchParams.get("accessionId");
+      if (!volumeId) { alert("No volume to save"); return; }
+
+      let processedPath: string | null = null;
+
+      if (canSaveProcessed) {
+        processedPath = await new Promise<string>((resolve) => {
+          saveResolverRef.current = resolve;
+          const iframe = document.querySelector('iframe') as HTMLIFrameElement;
+          iframe?.contentWindow?.postMessage(
+            { type: 'REQUEST_SAVE_PROCESSED' },
+            window.location.origin
+          );
+        });
+      }
+
       const response = await fetch(`/api/volumes/${volumeId}/save`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessionId }),
+        body: JSON.stringify({ accessionId, processedPath: processedPath || null }),
       });
+
       const data = await response.json();
+
       if (data.success) {
         localStorage.removeItem("lastVolumeId");
+        sessionStorage.removeItem("userRole");
         sessionStorage.setItem("upload_result", "success");
         window.dispatchEvent(new Event("upload_result_set"));
         router.push(`/radio_tech/uploadFile?patientId=${patientId}`);
@@ -114,9 +152,11 @@ const Header = () => {
         });
         localStorage.removeItem("lastVolumeId");
       }
+      sessionStorage.removeItem("userRole");
       router.push(`/radio_tech/dropfile?patientId=${patientId}&accessionId=${urlAccessionId}`);
     } catch (error) {
       console.error("Cancel error:", error);
+      sessionStorage.removeItem("userRole");
       router.push(`/radio_tech/dropfile?patientId=${patientId}&accessionId=${urlAccessionId}`);
     }
   };

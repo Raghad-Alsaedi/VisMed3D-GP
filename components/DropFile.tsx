@@ -4,44 +4,50 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import Footer from "./Footer";
-import ProgressBar from "../components/ProgressBar";
+import ProgressBar from "@/components/ProgressBar";
 import { Upload, ArrowL, Error as ErrorIcon, Success } from "./icons";
 
 type DimField = "width" | "height" | "depth";
 
-function parsePositiveInt(v: string | null) {
-  if (!v) return null;
-  const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return Math.floor(n);
+interface Dims {
+  width:  string;
+  height: string;
+  depth:  string;
 }
 
-const BYTES_PER_VOXEL = 2;
+interface PrepareResponse {
+  success:   boolean;
+  signedUrl: string;
+  volumeId:  number;
+  error?:    string;
+}
+
+function parsePositiveInt(value: string | null): number | null {
+  if (!value) return null;
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return Math.floor(num);
+}
 
 const DropFile = () => {
-  const router = useRouter();
+  const router       = useRouter();
   const searchParams = useSearchParams();
 
-  const patientId = useMemo(() => parsePositiveInt(searchParams.get("patientId")), [searchParams]);
+  const patientId   = useMemo(() => parsePositiveInt(searchParams.get("patientId")),   [searchParams]);
   const accessionId = useMemo(() => parsePositiveInt(searchParams.get("accessionId")), [searchParams]);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [dims, setDims] = useState<Dims>({ width: "", height: "", depth: "" });
+
+  const [selectedFile,   setSelectedFile]   = useState<File | null>(null);
+  const [isUploading,    setIsUploading]     = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [estimatedTime,  setEstimatedTime]  = useState<number | null>(null);
+  const [errorMessage,   setErrorMessage]   = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDragging,     setIsDragging]     = useState(false);
 
   const uploadStartTime = useRef<number>(0);
-
-  const [dims, setDims] = useState<{ width: string; height: string; depth: string }>({
-    width: "",
-    height: "",
-    depth: "",
-  });
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef    = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!patientId || !accessionId) {
@@ -50,6 +56,9 @@ const DropFile = () => {
       setErrorMessage(null);
     }
   }, [patientId, accessionId]);
+
+  const onDimChange = (field: DimField) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDims((prev) => ({ ...prev, [field]: e.target.value }));
 
   const validateFile = (file: File): boolean => {
     setErrorMessage(null);
@@ -70,29 +79,25 @@ const DropFile = () => {
       return false;
     }
 
-    const w = parsePositiveInt(dims.width);
-    const h = parsePositiveInt(dims.height);
-    const d = parsePositiveInt(dims.depth);
-    if (!w) return setErr("width");
-    if (!h) return setErr("height");
-    if (!d) return setErr("depth");
+    const parsedWidth  = parsePositiveInt(dims.width);
+    const parsedHeight = parsePositiveInt(dims.height);
+    const parsedDepth  = parsePositiveInt(dims.depth);
 
-    const expected16 = w * h * d * 2;
-const expected8  = w * h * d * 1;
+    if (!parsedWidth)  { setErrorMessage("Invalid width. Please enter a positive number.");  return false; }
+    if (!parsedHeight) { setErrorMessage("Invalid height. Please enter a positive number."); return false; }
+    if (!parsedDepth)  { setErrorMessage("Invalid depth. Please enter a positive number.");  return false; }
 
-if (file.size !== expected16 && file.size !== expected8) {
-   setErrorMessage(
-     `Size mismatch: expected ${expected16} (16-bit) or ${expected8} (8-bit) bytes but file is ${file.size}.`
-   );
-   return false;
-}
+    const expected16Bit = parsedWidth * parsedHeight * parsedDepth * 2;
+    const expected8Bit  = parsedWidth * parsedHeight * parsedDepth * 1;
 
-    return true;
-
-    function setErr(field: DimField) {
-      setErrorMessage(`Invalid ${field}. Please enter a positive number.`);
+    if (file.size !== expected16Bit && file.size !== expected8Bit) {
+      setErrorMessage(
+        `Size mismatch: expected ${expected16Bit} (16-bit) or ${expected8Bit} (8-bit) bytes but file is ${file.size}.`
+      );
       return false;
     }
+
+    return true;
   };
 
   const uploadFile = async (file: File) => {
@@ -101,10 +106,11 @@ if (file.size !== expected16 && file.size !== expected8) {
       return;
     }
 
-    const w = parsePositiveInt(dims.width);
-    const h = parsePositiveInt(dims.height);
-    const d = parsePositiveInt(dims.depth);
-    if (!w || !h || !d) {
+    const parsedWidth  = parsePositiveInt(dims.width);
+    const parsedHeight = parsePositiveInt(dims.height);
+    const parsedDepth  = parsePositiveInt(dims.depth);
+
+    if (!parsedWidth || !parsedHeight || !parsedDepth) {
       setErrorMessage("Please enter valid dimensions first.");
       return;
     }
@@ -120,12 +126,12 @@ if (file.size !== expected16 && file.size !== expected8) {
       const prepareForm = new FormData();
       prepareForm.append("patientId",   String(patientId));
       prepareForm.append("accessionId", String(accessionId));
-      prepareForm.append("width",       String(w));
-      prepareForm.append("height",      String(h));
-      prepareForm.append("depth",       String(d));
+      prepareForm.append("width",       String(parsedWidth));
+      prepareForm.append("height",      String(parsedHeight));
+      prepareForm.append("depth",       String(parsedDepth));
       prepareForm.append("fileName",    file.name);
 
-      const prepareRes = await axios.post("/api/upload/prepare", prepareForm);
+      const prepareRes = await axios.post<PrepareResponse>("/api/upload/prepare", prepareForm);
 
       if (!prepareRes.data?.success) {
         throw new Error(prepareRes.data?.error || "Failed to prepare upload");
@@ -137,13 +143,12 @@ if (file.size !== expected16 && file.size !== expected8) {
         headers: { "Content-Type": "application/octet-stream" },
         onUploadProgress: (evt) => {
           if (evt.total && evt.loaded > 0) {
-            const progress = Math.round((evt.loaded * 100) / evt.total);
-            setUploadProgress(progress);
+            const progress       = Math.round((evt.loaded * 100) / evt.total);
+            const elapsedMs      = Date.now() - uploadStartTime.current;
+            const bytesPerMs     = evt.loaded / elapsedMs;
+            const remainingSec   = Math.round((evt.total - evt.loaded) / (bytesPerMs * 1000));
 
-            const elapsedMs = Date.now() - uploadStartTime.current;
-            const bytesPerMs = evt.loaded / elapsedMs;
-            const remainingBytes = evt.total - evt.loaded;
-            const remainingSec = Math.round(remainingBytes / (bytesPerMs * 1000));
+            setUploadProgress(progress);
             setEstimatedTime(remainingSec > 0 ? remainingSec : 0);
           }
         },
@@ -159,19 +164,17 @@ if (file.size !== expected16 && file.size !== expected8) {
       setSuccessMessage("File uploaded successfully");
 
       localStorage.setItem("lastVolumeId", String(volumeId));
-      localStorage.setItem("userRole", "/radio_tech");
-
+sessionStorage.setItem("userRole", "/radio_tech");
       setTimeout(() => {
-        router.push(`/viewimg?volumeId=${volumeId}&fromUpload=true&patientId=${patientId}&accessionId=${accessionId}`);
+        router.push(
+          `/viewimg?volumeId=${volumeId}&fromUpload=true&patientId=${patientId}&accessionId=${accessionId}`
+        );
       }, 800);
 
-    } catch (err: any) {
-      console.error("Upload error:", err);
-
+    } catch (err: unknown) {
       const msg =
-        err?.response?.data?.error ||
-        err?.message ||
-        "An error occurred while uploading the file";
+        (err as any)?.response?.data?.error ||
+        (err instanceof Error ? err.message : "An error occurred while uploading the file");
 
       setErrorMessage(msg);
       setIsUploading(false);
@@ -183,52 +186,37 @@ if (file.size !== expected16 && file.size !== expected8) {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setSelectedFile(file);
-
     if (validateFile(file)) {
       setSuccessMessage("File validated successfully");
       setTimeout(() => uploadFile(file), 200);
     }
-  };
-
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragging(true);
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
-
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
-
     setSelectedFile(file);
-
     if (validateFile(file)) {
       setSuccessMessage("File validated successfully");
       setTimeout(() => uploadFile(file), 200);
     }
   };
 
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleClick = () => {
-    if (!isUploading) fileInputRef.current?.click();
-  };
-
-  const onDimChange = (k: DimField) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDims((prev) => ({ ...prev, [k]: e.target.value }));
-  };
+  const handleDragOver  = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(true);  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(false); };
+  const handleClick     = () => { if (!isUploading) fileInputRef.current?.click(); };
 
   return (
     <div className="page-container">
+
       <header className="header-wrapper">
-        <button className="btn-back" onClick={() => router.push(`/radio_tech/uploadFile?patientId=${patientId}`)}>
+        <button
+          className="btn-back"
+          onClick={() => router.push(`/radio_tech/uploadFile?patientId=${patientId}`)}
+        >
           <ArrowL />
         </button>
 
@@ -243,55 +231,38 @@ if (file.size !== expected16 && file.size !== expected8) {
       </header>
 
       <div className="content-area">
+
         <div className="card-dark" style={{ padding: "14px", marginBottom: "12px" }}>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: 12, opacity: 0.85 }}>Width</label>
-              <input
-                value={dims.width}
-                onChange={onDimChange("width")}
-                inputMode="numeric"
-                placeholder="e.g. 256"
-                className="patient-list-search-input patient-list-search-border"
-                style={{ width: 140 }}
-              />
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: 12, opacity: 0.85 }}>Height</label>
-              <input
-                value={dims.height}
-                onChange={onDimChange("height")}
-                inputMode="numeric"
-                placeholder="e.g. 256"
-                className="patient-list-search-input patient-list-search-border"
-                style={{ width: 140 }}
-              />
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: 12, opacity: 0.85 }}>Depth</label>
-              <input
-                value={dims.depth}
-                onChange={onDimChange("depth")}
-                inputMode="numeric"
-                placeholder="e.g. 128"
-                className="patient-list-search-input patient-list-search-border"
-                style={{ width: 140 }}
-              />
-            </div>
+            {(["width", "height", "depth"] as DimField[]).map((field) => (
+              <div key={field} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: 12, opacity: 0.85, textTransform: "capitalize" }}>
+                  {field}
+                </label>
+                <input
+                  value={dims[field]}
+                  onChange={onDimChange(field)}
+                  inputMode="numeric"
+                  placeholder={field === "depth" ? "e.g. 128" : "e.g. 256"}
+                  className="patient-list-search-input patient-list-search-border"
+                  style={{ width: 140 }}
+                />
+              </div>
+            ))}
           </div>
 
           <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-            RAW has no header, so you must provide dimensions. File size must match w*h*d*2 (16-bit).
+            RAW has no header, so you must provide dimensions.
+            File size must match w×h×d×2 (16-bit) or w×h×d×1 (8-bit).
           </div>
         </div>
 
         {!isUploading ? (
           <div
-            className={`card-dark card-dropzone ${
+            className={`card-dark card-dropzone mb-2 ${
               isDragging ? "border-cyan-400 bg-bg-secondary/80" : "border-[#FFFFFF]/30"
             }`}
+            style={{ maxHeight: "calc(100vh - 320px)", overflow: "hidden" }}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onDragLeave={handleDragLeave}
@@ -299,7 +270,9 @@ if (file.size !== expected16 && file.size !== expected8) {
           >
             <Upload className={`icon-upload ${isDragging ? "scale-110" : ""}`} />
             <h1 className="text-dropzone-title">Drop File Here</h1>
-            <h3 className="text-dropzone-subtitle">Drag & Drop your .raw file here or click to browse</h3>
+            <h3 className="text-dropzone-subtitle">
+              Drag &amp; Drop your .raw file here or click to browse
+            </h3>
 
             <input
               ref={fileInputRef}
@@ -309,9 +282,9 @@ if (file.size !== expected16 && file.size !== expected8) {
               className="hidden"
             />
           </div>
-        ) : (
-          <div className="card-dark card-upload-progress">
 
+        ) : (
+<div className="card-dark card-upload-progress" style={{ marginBottom: "8px" }}>
             <h1
               style={{
                 fontSize: "2.6rem",
@@ -353,8 +326,8 @@ if (file.size !== expected16 && file.size !== expected8) {
                   lineHeight: "1.8",
                 }}
               >
-                <p>file name:  {selectedFile.name.replace(/\.[^.]+$/, "")}</p>
-                <p>size:  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                <p>file name: {selectedFile.name.replace(/\.[^.]+$/, "")}</p>
+                <p>size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             )}
 
@@ -383,6 +356,7 @@ if (file.size !== expected16 && file.size !== expected8) {
       <div className="footer-wrapper">
         <Footer />
       </div>
+
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { buildMinMaxOctree, uploadMinMaxOctreeToGPU } from './buildMinMaxOctree.
 // ============================================================
 import { loadVolumeFromDB } from './RawDataDB.js';
 
-// ── Fetch raw data before main() and store in global variable ──
+// Fetch raw data before main() and store in global variable
 let rawVolumeData = null;
 const params   = new URLSearchParams(window.location.search);
 const volumeId = params.get("volumeId");
@@ -283,68 +283,68 @@ let volume;
 console.log("MAIN REACHED - ABOUT TO LOAD VOLUME");
 
 if (rawVolumeData) {
-  const { bytes, width, height, depth } = rawVolumeData;
+  const { bytes, width, height, depth, isReady } = rawVolumeData;
 
-  const voxelsPerSlice = width * height;
-  const bytesPerSlice16 = voxelsPerSlice * 2;
-  const data = new Uint8Array(voxelsPerSlice * depth);
-
-  const isMRbrain = (depth === 109);
-
-  if (isMRbrain) {
-    console.log("Detected MRbrain dataset");
+  if (isReady) {
+    volume = { data: bytes, width, height, depth };
   } else {
-    console.log("Detected CThead dataset");
-  }
+    const voxelsPerSlice = width * height;
+    const bytesPerSlice16 = voxelsPerSlice * 2;
+    const data = new Uint8Array(voxelsPerSlice * depth);
 
-  for (let z = 0; z < depth; z++) {
-    const byteOffset = z * bytesPerSlice16;
-    const slice16 = new Uint16Array(voxelsPerSlice);
-
-    for (let p = 0; p < voxelsPerSlice; p++) {
-      if (isMRbrain) {
-        // MRbrain = little-endian
-        slice16[p] = bytes[byteOffset + 2 * p] | (bytes[byteOffset + 2 * p + 1] << 8);
-      } else {
-        // CThead = big-endian
-        slice16[p] = (bytes[byteOffset + 2 * p] << 8) | bytes[byteOffset + 2 * p + 1];
-      }
-    }
+    const isMRbrain = (depth === 109);
 
     if (isMRbrain) {
-      // MRbrain: auto-normalize each slice
-      let minV = 65535;
-      let maxV = 0;
-
-      for (let p = 0; p < voxelsPerSlice; p++) {
-        const v = slice16[p];
-        if (v < minV) minV = v;
-        if (v > maxV) maxV = v;
-      }
-
-      const denom = (maxV - minV) || 1;
-
-      for (let p = 0; p < voxelsPerSlice; p++) {
-        data[z * voxelsPerSlice + p] =
-          Math.round(((slice16[p] - minV) / denom) * 255);
-      }
+      console.log("Detected MRbrain dataset");
     } else {
-      // CThead: CT windowing
-      const low = 0;
-      const high = 1500;
-      const denom = (high - low) || 1;
+      console.log("Detected CThead dataset");
+    }
+
+    for (let z = 0; z < depth; z++) {
+      const byteOffset = z * bytesPerSlice16;
+      const slice16 = new Uint16Array(voxelsPerSlice);
 
       for (let p = 0; p < voxelsPerSlice; p++) {
-        let v = slice16[p];
-        if (v < low) v = low;
-        if (v > high) v = high;
-        data[z * voxelsPerSlice + p] =
-          Math.round(((v - low) / denom) * 255);
+        if (isMRbrain) {
+          slice16[p] = bytes[byteOffset + 2 * p] | (bytes[byteOffset + 2 * p + 1] << 8);
+        } else {
+          slice16[p] = (bytes[byteOffset + 2 * p] << 8) | bytes[byteOffset + 2 * p + 1];
+        }
+      }
+
+      if (isMRbrain) {
+        let minV = 65535;
+        let maxV = 0;
+
+        for (let p = 0; p < voxelsPerSlice; p++) {
+          const v = slice16[p];
+          if (v < minV) minV = v;
+          if (v > maxV) maxV = v;
+        }
+
+        const denom = (maxV - minV) || 1;
+
+        for (let p = 0; p < voxelsPerSlice; p++) {
+          data[z * voxelsPerSlice + p] =
+            Math.round(((slice16[p] - minV) / denom) * 255);
+        }
+      } else {
+        const low = 0;
+        const high = 1500;
+        const denom = (high - low) || 1;
+
+        for (let p = 0; p < voxelsPerSlice; p++) {
+          let v = slice16[p];
+          if (v < low) v = low;
+          if (v > high) v = high;
+          data[z * voxelsPerSlice + p] =
+            Math.round(((v - low) / denom) * 255);
+        }
       }
     }
-  }
 
- volume = { data, width, height, depth };
+    volume = { data, width, height, depth };
+  }
 
 } else {
   if (dataset === "skull") {
@@ -796,6 +796,46 @@ window.triggerScreenshot = async function(accessionId) {
 };
 
 console.log('window.triggerScreenshot() registered successfully');
+
+/**
+ * DATA FLOW:
+ * 1. Initial: Fetch 16-bit raw data - Process to 8-bit in browser.
+ * 2. Cached: Fetch pre-processed 8-bit data directly from Supabase.
+ * 3. Save: Upload 8-bit data & return storage path to parent window.
+ */
+if (rawVolumeData && !rawVolumeData.isReady) {
+  window.addEventListener('message', async (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data.type !== 'REQUEST_SAVE_PROCESSED') return;
+
+    try {
+      const prepRes = await fetch(`/api/volumes/${volumeId}/prepare-processed`, {
+        method: 'POST'
+      });
+      const { signedUrl: uploadUrl, processedPath } = await prepRes.json();
+
+      const blob = new Blob([volume.data], { type: 'application/octet-stream' });
+      await fetch(uploadUrl, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body:    blob,
+      });
+
+      window.parent.postMessage({
+        type: 'PROCESSED_SAVED',
+        processedPath,
+      }, window.location.origin);
+
+    } catch (err) {
+      window.parent.postMessage({
+        type:  'PROCESSED_SAVE_ERROR',
+        error: err.message,
+      }, window.location.origin);
+    }
+  });
+
+  window.parent.postMessage({ type: 'VOLUME_READY_TO_SAVE' }, window.location.origin);
+}
 console.log('Running in iframe:', window !== window.parent);
 // ============================================================
 // Render Function - حلقة الرسم الرئيسية

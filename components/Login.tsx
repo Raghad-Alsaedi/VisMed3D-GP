@@ -7,7 +7,6 @@ import { z } from "zod";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff, Arrowlist } from "@/components/icons";
-import Link from "next/link";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -87,9 +86,7 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      <Link href={"/viewimg"} className="absolute top-0 left-0 m-2">
-        go to Image
-      </Link> 
+      
       
 
       <main className="login-card">

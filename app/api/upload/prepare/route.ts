@@ -1,30 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
+import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { db } from "@/database/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import supabaseAdmin from "@/database/supabaseAdmin";
 import { v4 as uuidv4 } from "uuid";
 
-function toInt(v: FormDataEntryValue | null, field: string) {
+interface PatientRow extends RowDataPacket {
+  patient_id: number;
+}
+
+interface AccessionRow extends RowDataPacket {
+  accession_id: number;
+  accession_number: string;
+  patient_id: number;
+}
+
+function toInt(v: FormDataEntryValue | null, field: string): number {
   const n = Number(v);
   if (!Number.isFinite(n) || n <= 0) throw new Error(`Invalid ${field}`);
   return Math.floor(n);
 }
 
 export async function POST(request: NextRequest) {
-  let conn: any;
+  let conn: any = null;
 
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
     }
 
-    const uploadedBy = (session.user as any).technician_id;
+    const uploadedBy: number | undefined = (session.user as any).technician_id;
 
     if (!uploadedBy) {
-      return NextResponse.json({ success: false, error: "Only technicians can upload files" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Only technicians can upload files" },
+        { status: 403 }
+      );
     }
 
     const formData = await request.formData();
@@ -38,20 +55,20 @@ export async function POST(request: NextRequest) {
 
     conn = await (db as any).getConnection();
 
-    const [pRows]: any = await conn.query(
+    const [pRows] = await conn.query(
       `SELECT patient_id FROM patients WHERE patient_id = ? LIMIT 1`,
       [patientId]
-    );
-    if (!pRows?.length) throw new Error("Patient not found");
+    ) as [PatientRow[], any];
+    if (!pRows.length) throw new Error("Patient not found");
 
-    const [aRows]: any = await conn.query(
+    const [aRows] = await conn.query(
       `SELECT accession_id, accession_number, patient_id
        FROM accession
        WHERE accession_id = ?
        LIMIT 1`,
       [accessionId]
-    );
-    if (!aRows?.length) throw new Error("Accession not found");
+    ) as [AccessionRow[], any];
+    if (!aRows.length) throw new Error("Accession not found");
 
     if (Number(aRows[0].patient_id) !== Number(patientId)) {
       throw new Error("Accession does not belong to this patient");
@@ -62,14 +79,16 @@ export async function POST(request: NextRequest) {
 
     const { data: signedData, error: signedError } = await supabaseAdmin
       .storage
-     .from("patient-volumes")
+      .from("patient-volumes")
       .createSignedUploadUrl(storagePath);
 
     if (signedError || !signedData) {
-      throw new Error(`Failed to create signed upload URL: ${signedError?.message}`);
+      throw new Error(
+        `Failed to create signed upload URL: ${signedError?.message}`
+      );
     }
 
-    const [vRes]: any = await conn.query(
+    const [vRes] = await conn.query(
       `INSERT INTO volumes
         (accession_id, dataset_name, modality, file_format,
          width, height, depth,
@@ -93,9 +112,9 @@ export async function POST(request: NextRequest) {
         depth,
         uploadedBy,
       ]
-    );
+    ) as [ResultSetHeader, any];
 
-    const volumeId = vRes.insertId as number;
+    const volumeId: number = vRes.insertId;
 
     conn.release();
 
@@ -107,16 +126,18 @@ export async function POST(request: NextRequest) {
       token:       signedData.token,
     });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     try { if (conn) conn.release(); } catch {}
-    console.error("Upload prepare error:", err);
 
-    const msg          = String(err?.message || "Prepare failed");
+    const msg = err instanceof Error ? err.message : "Prepare failed";
+
     const isBadRequest =
-      msg.startsWith("Invalid ") ||
-      msg === "Patient not found" ||
-      msg === "Accession not found" ||
+      msg.startsWith("Invalid ")                        ||
+      msg === "Patient not found"                        ||
+      msg === "Accession not found"                      ||
       msg === "Accession does not belong to this patient";
+
+    console.error("Upload prepare error:", msg);
 
     return NextResponse.json(
       { success: false, error: msg },

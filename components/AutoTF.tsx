@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Bone } from "./icons";
 
 interface Step {
@@ -26,7 +27,7 @@ const defaultSteps: Step[] = [
   { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190},
   { id: 8, rangeValue: 2300, rangeStart: 700, rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
   { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
-]; 
+];
 
 const presets = [
   {
@@ -39,19 +40,27 @@ const presets = [
 
 const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
   const router = useRouter();
-  const [isPanelVisible, setIsPanelVisible] = useState(true);
-  const [activePresets, setActivePresets] = useState<Set<string>>(new Set());
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role as string | undefined;
 
+  const [isPanelVisible, setIsPanelVisible]       = useState(true);
+  const [activePresets, setActivePresets]         = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  let userRole = null;
-  if (typeof window !== "undefined") {
-    userRole = localStorage.getItem("userRole");
-  }
+  useEffect(() => {
+    if (onTransferFunctionChange) {
+      const finalSteps = defaultSteps.map(step => {
+        if (activePresets.size === 0) return { ...step };
+        const isVisible = presets.some(
+          preset => activePresets.has(preset.key) && preset.filter(step)
+        );
+        return { ...step, opacity: isVisible ? step.opacity : 0.0 };
+      });
+      onTransferFunctionChange(finalSteps);
+    }
+  }, [activePresets, onTransferFunctionChange]);
 
-  if (userRole === "/radio_tech") {
-    return null;
-  }
+  if (role === "technician") return null;
 
   const handleToggle = (key: string) => {
     setActivePresets(prev => {
@@ -65,7 +74,6 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
     });
   };
 
-  // ✅ Reset: close all toggles
   const confirmReset = () => {
     setActivePresets(new Set());
     setShowConfirmDialog(false);
@@ -74,20 +82,6 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
   const cancelReset = () => {
     setShowConfirmDialog(false);
   };
-
- useEffect(() => {
-  if (onTransferFunctionChange) {
-    const finalSteps = defaultSteps.map(step => {
-      if (activePresets.size === 0) return { ...step };
-      const isVisible = presets.some(
-        preset => activePresets.has(preset.key) && preset.filter(step)
-      );
-      return { ...step, opacity: isVisible ? step.opacity : 0.0 };
-    });
-
-    onTransferFunctionChange(finalSteps);
-  }
-}, [activePresets, onTransferFunctionChange]);
 
   return (
     <>
@@ -111,11 +105,10 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
           !isPanelVisible ? "opacity-0 pointer-events-none translate-x-full" : ""
         }`}
       >
-        {/* Transfer Function Mode */}
         <div className="p-2 flex-shrink-0">
           <span className="text-sm font-semibold text-white">
             Transfer Function Mode :
-          </span> 
+          </span>
           <div className="flex flex-row justify-between mt-2">
             <label className="flex cursor-pointer items-center gap-2 text-white">
               <input type="radio" name="TFMode" className="peer hidden" defaultChecked />
@@ -133,7 +126,6 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
           </div>
         </div>
 
-        {/* Preset Toggles */}
         <div className="px-2 pb-2 flex flex-col gap-2 flex-shrink-0">
           {presets.map(preset => {
             const Icon = preset.icon;
@@ -146,7 +138,6 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
                   <Icon size={16} strokeWidth={1.5} />
                   {preset.label}
                 </span>
-
                 <button
                   onClick={() => handleToggle(preset.key)}
                   className={`relative w-11 h-6 rounded-full transition-colors duration-300 focus:outline-none ${
@@ -164,18 +155,16 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
           })}
         </div>
 
-        {/* ✅ Reset Button */}
         <div className="px-2 pb-2">
           <button
             onClick={() => setShowConfirmDialog(true)}
             className="w-full flex-1 text-sm rounded border border-white/30 py-1 text-white hover:border-white bg-[#0D1A2D]"
-            >
+          >
             Reset
           </button>
         </div>
       </div>
 
-      {/* ✅ Confirm Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-[#0D1A2D] border border-white/30 rounded-lg p-6 max-w-sm w-full mx-4">
