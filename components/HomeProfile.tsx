@@ -94,6 +94,8 @@ const HomeProfile = () => {
   const [allPatients, setAllPatients] = useState<PatientRow[]>([]);
   const [loading, setLoading]         = useState(true);
 
+  // Fetches the doctor's profile and patient list.
+  // On any HTTP or JSON error, redirects to /login (layer of defense).
   const fetchData = useCallback(async (doctorId: string) => {
     setLoading(true);
     fetch(`/api/doctor/dashboard?doctorId=${doctorId}`)
@@ -114,6 +116,8 @@ const HomeProfile = () => {
       .finally(() => setLoading(false));
   }, [router]);
 
+  
+  // If the session is missing or the doctor_id is not found, redirect to login.
   useEffect(() => {
     if (!isDoctor) { setLoading(false); return; }
     if (status === "loading") return;
@@ -174,7 +178,6 @@ const HomeProfile = () => {
       }}
     >
       <div className="w-full max-w-full mx-auto py-2 box-border">
-
         <div
           className="w-full rounded-[10px] border border-white/30 bg-[#040A16] shadow-sm mt-0 md:mt-6 mb-4 md:mb-6 lg:mb-4 overflow-hidden box-border flex items-center justify-center"
           style={{ padding: "clamp(12px, 3vw, 24px) clamp(10px, 2.5vw, 24px)" }}
@@ -186,7 +189,7 @@ const HomeProfile = () => {
             @media (min-width: 901px) { .tablet-card { display: none !important; } }
           `}</style>
 
-          {/* الجوال */}
+          {/* Mobile layout */}
           <div className="mobile-card flex flex-col items-center w-full" style={{ gap: "clamp(6px, 2vw, 12px)" }}>
             <div
               className="rounded-[8px] bg-gray-600 overflow-hidden flex-shrink-0"
@@ -205,7 +208,7 @@ const HomeProfile = () => {
             <div style={{ height: "clamp(4px, 1.5vw, 8px)" }} />
           </div>
 
-          {/* الايباد */}
+          {/* Tablet layout */}
           <div className="tablet-card text-white w-full" style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "16px", alignItems: "start" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "90px", height: "90px", borderRadius: "8px", overflow: "hidden", background: "#4b5563" }}>
@@ -229,7 +232,7 @@ const HomeProfile = () => {
             </div>
           </div>
 
-          {/* كمبويتر */}
+          {/* Desktop layout */}
           <div className="desktop-card text-white w-full" style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "32px", alignItems: "start" }}>
             <div className="flex flex-col items-center space-y-2 md:space-y-3">
               <div className="w-[120px] h-[120px] lg:w-[140px] lg:h-[140px] rounded-[8px] bg-gray-600 overflow-hidden">
@@ -244,7 +247,7 @@ const HomeProfile = () => {
           </div>
         </div>
 
-        {/* جدول */}
+        {/* Patients table */}
         <div className="w-full rounded-[10px] border border-white/30 bg-[#040A16] mb-4 md:mb-6 lg:mb-8 box-border py-3 px-2 md:py-5 md:px-6">
           <h3
             className="text-white font-semibold"
@@ -252,7 +255,6 @@ const HomeProfile = () => {
           >
             My Patients
           </h3>
-
           <div
             className="overflow-x-auto border border-white/30 rounded-lg"
             style={{ maxHeight: "40vh", minHeight: "120px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
@@ -265,7 +267,6 @@ const HomeProfile = () => {
                 <col style={{ width: "22%" }} />
                 <col style={{ width: "16%" }} />
               </colgroup>
-
               <thead className="border-b border-white/20 sticky top-0 bg-[#040A16] z-10">
                 <tr>
                   {["#", "Patient Name", "Accession", "MRN", "Report"].map((h) => (
@@ -284,7 +285,6 @@ const HomeProfile = () => {
                   ))}
                 </tr>
               </thead>
-
               <tbody>
                 {allPatients.length ? (
                   allPatients.map((p, index) => (
@@ -332,7 +332,6 @@ const HomeProfile = () => {
             </table>
           </div>
         </div>
-
       </div>
     </section>
   );

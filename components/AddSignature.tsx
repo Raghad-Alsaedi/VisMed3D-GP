@@ -22,6 +22,7 @@ const AddSignature = () => {
   const [saveMessage, setSaveMessage] = useState('')
   const [loadingSignature, setLoadingSignature] = useState(true)
 
+  // Fetch the doctor's existing signature 
   useEffect(() => {
     const fetchCurrentSignature = async () => {
       try {
@@ -49,6 +50,7 @@ const AddSignature = () => {
     }
   }, [session])
 
+  // Show a success message for 2 seconds after a file is selected
   useEffect(() => {
     if (selectedFile && !isLoading && !errorMessage) {
       setShowSuccess(true)
@@ -59,6 +61,7 @@ const AddSignature = () => {
     }
   }, [selectedFile, isLoading, errorMessage])
 
+  // Automatically clear the error message after 2 seconds
   useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
@@ -68,6 +71,7 @@ const AddSignature = () => {
     }
   }, [errorMessage])
 
+  // Redirect to doctor home page, 1 second after a successful save
   useEffect(() => {
     if (saveMessage && saveMessage.includes('successfully')) {
       const timer = setTimeout(() => {
@@ -77,6 +81,7 @@ const AddSignature = () => {
     }
   }, [saveMessage, router])
 
+  // Convert the selected file to a base64 URL so it can be previewed on screen before uploading (on server)
   const handleFileSelect = (file: File) => {
     setIsLoading(true)
     setErrorMessage('')
@@ -93,6 +98,7 @@ const AddSignature = () => {
     }, 1000)
   }
 
+// Open the image selection window(upload area) when there is no existing signature, or when editing without a new image selected
   const handleClick = () => {
     if (!currentSignatureUrl || (isEditMode && !previewUrl)) {
       fileInputRef.current?.click()
@@ -108,6 +114,7 @@ const AddSignature = () => {
     e.preventDefault()
   }
 
+  // Handle dropped files the same way as clicked files
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (!currentSignatureUrl || (isEditMode && !previewUrl)) {
@@ -116,6 +123,7 @@ const AddSignature = () => {
     }
   }
 
+  // Remove the selected image and reset the upload area when the X button is clicked
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation()
     setSelectedFile(null)
@@ -131,6 +139,7 @@ const AddSignature = () => {
     setIsEditMode(true)
   }
 
+  // If cancel button cliced:Cancel edit mode and restore the previous signature, or go back if no signature exists
   const handleCancel = () => {
     if (currentSignatureUrl && isEditMode) {
       setIsEditMode(false)
@@ -146,6 +155,7 @@ const AddSignature = () => {
     }
   }
 
+  // Upload the selected signature image to the server
   const handleConfirm = async () => {
     if (!selectedFile) return
 
@@ -180,6 +190,7 @@ const AddSignature = () => {
     return <LoadingSpinner />
   }
 
+  // Set which UI section is visible: existing signature, new preview, or the empty upload area
   const hasExistingSignature = currentSignatureUrl && !isEditMode
   const showNewPreview = previewUrl
   const showUploadArea = !hasExistingSignature && !showNewPreview
@@ -204,6 +215,7 @@ const AddSignature = () => {
           {hasExistingSignature ? 'Your Signature' : isEditMode ? 'Edit Signature' : 'Signature Upload'}
         </h1>
         
+        {/* Hidden file input that gets triggered by click or drag-and-drop */}
         <input
           ref={fileInputRef}
           type="file"
@@ -252,6 +264,7 @@ const AddSignature = () => {
             (showUploadArea || (isEditMode && !previewUrl)) ? 'cursor-pointer hover:border-white/50' : ''
           } relative`}
         >
+          {/* Display the saved signature from the server */}
           {hasExistingSignature && (
             <img
               src={currentSignatureUrl}
@@ -260,6 +273,7 @@ const AddSignature = () => {
             />
           )}
 
+          {/* Show the local preview with a remove button before saving */}
           {showNewPreview && (
             <>
               <button
@@ -278,6 +292,7 @@ const AddSignature = () => {
             </>
           )}
 
+          {/* Show the upload area when no signature has been selected yet */}
           {showUploadArea && (
             <>
               <div className="mb-3 sm:mb-4">
@@ -307,6 +322,7 @@ const AddSignature = () => {
             </>
           )}
 
+          {/* Show the upload area in edit mode before a new file is chosen */}
           {isEditMode && !previewUrl && !showUploadArea && (
             <>
               <div className="mb-3 sm:mb-4">

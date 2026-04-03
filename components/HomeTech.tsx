@@ -6,7 +6,6 @@ import { ID, License_Number, Years_of_Experience, Gender, Phone } from "@/compon
 import Image from "next/image";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-
 type Tech = {
   technicianId: number | null;
   firstName: string;
@@ -34,7 +33,7 @@ type InfoItem = {
   value: string;
 };
 
-
+//If a photo is available, it will appear. If not, the system will show the default-avatar 
 const ProfileImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   const [useFallback, setUseFallback] = useState(false);
 
@@ -105,7 +104,6 @@ const InfoList = ({ items }: { items: InfoItem[] }) => (
   </div>
 );
 
-
 const HomeTech = () => {
 
   const { status } = useSession();
@@ -113,6 +111,8 @@ const HomeTech = () => {
   const [allUploads, setAllUploads] = useState<UploadRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetches technician profile and recent uploads in parallel.
+  // Throws if either request fails so both succeed or neither does.
   const fetchData = useCallback(async () => {
     try {
       const [meRes, upRes] = await Promise.all([
@@ -137,13 +137,13 @@ const HomeTech = () => {
     }
   }, []);
 
+  // Waits for the session to finish loading before calling fetchData.
   useEffect(() => {
     if (status === "loading") return;
     fetchData();
   }, [status, fetchData]);
 
   if (loading) return <LoadingSpinner />;
-
 
   const fullName     = [tech?.firstName, tech?.middleName, tech?.lastName].filter(Boolean).join(" ") || "Technician";
   const imgSrc       = tech?.technicianId ? `/api/images/tech_${tech.technicianId}` : "/api/images/default";
@@ -161,7 +161,6 @@ const HomeTech = () => {
     { icon: <Phone className="w-4 h-4 text-gray-400" />,               label: "Phone",               value: phoneValue },
   ];
 
-
   return (
     <section
       className="bg-[#0D1A2D] w-full overflow-y-auto overflow-x-hidden p-4 md:pl-[266px] md:pt-4 lg:pl-[290px] lg:pt-2"
@@ -171,7 +170,6 @@ const HomeTech = () => {
       }}
     >
       <div className="w-full max-w-full mx-auto py-2 box-border">
-
         <div
           className="w-full rounded-[10px] border border-white/30 bg-[#040A16] shadow-sm mt-0 md:mt-6 mb-4 md:mb-6 lg:mb-4 overflow-hidden box-border flex items-center justify-center"
           style={{ padding: "clamp(12px, 3vw, 24px) clamp(10px, 2.5vw, 24px)" }}
@@ -183,7 +181,7 @@ const HomeTech = () => {
             @media (min-width: 901px) { .tablet-card { display: none !important; } }
           `}</style>
 
-          {/*الجوال */}
+          {/* Mobile layout */}
           <div className="mobile-card flex flex-col items-center w-full" style={{ gap: "clamp(6px, 2vw, 12px)" }}>
             <div
               className="rounded-[8px] bg-gray-600 overflow-hidden flex-shrink-0 relative"
@@ -202,7 +200,7 @@ const HomeTech = () => {
             <div style={{ height: "clamp(4px, 1.5vw, 8px)" }} />
           </div>
 
-          {/* الايباد */}
+          {/* Tablet layout */}
           <div className="tablet-card text-white w-full" style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "16px", alignItems: "start" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "90px", height: "90px", borderRadius: "8px", overflow: "hidden", background: "#4b5563", position: "relative" }}>
@@ -226,7 +224,7 @@ const HomeTech = () => {
             </div>
           </div>
 
-          {/* كمبويتر */}
+          {/* Desktop layout */}
           <div className="desktop-card text-white w-full" style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "32px", alignItems: "start" }}>
             <div className="flex flex-col items-center space-y-2 md:space-y-3">
               <div className="w-[120px] h-[120px] lg:w-[140px] lg:h-[140px] rounded-[8px] bg-gray-600 overflow-hidden relative">
@@ -241,7 +239,7 @@ const HomeTech = () => {
           </div>
         </div>
 
-        {/* جدول */}
+        {/* Recent uploads table */}
         <div className="w-full rounded-[10px] border border-white/30 bg-[#040A16] mb-4 md:mb-6 lg:mb-8 box-border py-3 px-2 md:py-5 md:px-6">
           <h3
             className="text-white font-semibold"
@@ -249,7 +247,6 @@ const HomeTech = () => {
           >
             Recent Upload File
           </h3>
-
           <div
             className="overflow-x-auto border border-white/30 rounded-lg"
             style={{ maxHeight: "40vh", minHeight: "120px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
@@ -262,7 +259,6 @@ const HomeTech = () => {
                 <col style={{ width: "20%" }} />
                 <col style={{ width: "22%" }} />
               </colgroup>
-
               <thead className="border-b border-white/20 sticky top-0 bg-[#040A16] z-10">
                 <tr>
                   {["#", "Patient Name", "Accession", "MRN", "Modality"].map((h) => (
@@ -281,7 +277,6 @@ const HomeTech = () => {
                   ))}
                 </tr>
               </thead>
-
               <tbody>
                 {allUploads.length ? (
                   allUploads.map((row, index) => (
@@ -323,7 +318,6 @@ const HomeTech = () => {
             </table>
           </div>
         </div>
-
       </div>
     </section>
   );
