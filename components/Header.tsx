@@ -39,6 +39,16 @@ const Header = () => {
     setMounted(true);
   }, []);
 
+  // reset
+  const resetView = () => {
+    const iframe = document.querySelector('iframe') as HTMLIFrameElement;
+
+    iframe?.contentWindow?.postMessage(
+      { type: 'RESET_VIEW' },
+      '*'
+    );
+  };
+
   // Watch for messages from the iframe to track when the volume is ready or done saving
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -197,7 +207,6 @@ const Header = () => {
     router.back();
   };
 
-  // Save/Cancel show for technician after upload — Reset shows on viewer and report pages
   const showSaveCancelButtons = mounted && isTech && isViewImage && fromUpload;
   const showResetButton       = isViewImage || isReport;
   const showName              = !!patientName;
@@ -233,45 +242,11 @@ const Header = () => {
         )}
       </div>
 
-      {/* All buttons always in one row */}
       <div className="flex-1 flex justify-end gap-1.5 sm:gap-2 md:gap-3 items-center">
-
-        {showSaveCancelButtons && (
-          <>
-            <button
-              onClick={handleCancel}
-              disabled={isSaving}
-              className="text-white rounded-xl md:rounded-2xl border border-white/30 transition-all
-                         flex items-center gap-1 sm:gap-2 font-semibold bg-[#0D1A2D]
-                         px-2 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-4
-                         text-[10px] sm:text-sm md:text-base
-                         hover:border-white/60 disabled:opacity-50
-                         cursor-pointer disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="text-white rounded-xl md:rounded-2xl border border-white/30 transition-all
-                         flex items-center gap-1 sm:gap-2 font-semibold bg-[#0D1A2D]
-                         px-2 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-4
-                         text-[10px] sm:text-sm md:text-base
-                         hover:border-white/60 disabled:opacity-50
-                         cursor-pointer disabled:cursor-not-allowed"
-            >
-              {isSaving ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  <span className="text-white/40 font-mono tracking-widest uppercase text-[10px]">Saving</span>
-                </div>
-              ) : "Save"}
-            </button>
-          </>
-        )}
 
         {showResetButton && (
           <button
+            onClick={resetView} 
             className="text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30
                        transition-all font-semibold bg-[#0D1A2D]
                        px-2 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-4
