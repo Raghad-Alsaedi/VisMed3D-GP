@@ -21,7 +21,21 @@ export class Camera {
         this.at  = vec3(0.5, 0.5, 0.5);
         this.up  = vec3(0.0, 1.0, 0.0);
 
+        //  حفظ الوضع الأصلي
+        this.initialState = {
+            rotationX: this.rotationX,
+            rotationY: this.rotationY,
+            zoom: this.zoom
+        };
+
         this.setupEvents();
+
+        // استقبال أمر الريست من الزر
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'RESET_VIEW') {
+                this.resetView();
+            }
+        });
     }
 
     //  نحفظ الحالة
@@ -31,6 +45,15 @@ export class Camera {
             rotationY: this.rotationY,
             zoom: this.zoom
         }));
+    }
+
+    //  دالة الريست
+    resetView() {
+     this.rotationX = -90;   // وجهه قدام
+     this.rotationY = 0;
+     this.zoom      = -1.5;
+
+        this.saveState(); // نحفظ بعد الريست
     }
 
     applyZoom(amount) {
@@ -124,4 +147,4 @@ export class Camera {
     getProjectionMatrix() {
         return perspective(70.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
     }
-} 
+}
