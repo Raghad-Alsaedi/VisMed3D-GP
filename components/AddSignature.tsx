@@ -1,220 +1,247 @@
-'use client'
+"use client";
 
-import { useRef, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
-import { UploadSignature } from '@/components/icons'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import {
+  UploadSignature,
+  Error as ErrorIcon,
+  Success,
+} from "@/components/icons";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const AddSignature = () => {
-  const router = useRouter()
-  const { data: session } = useSession()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  const [currentSignatureUrl, setCurrentSignatureUrl] = useState<string | null>(null)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState('')
-  const [loadingSignature, setLoadingSignature] = useState(true)
+  const router = useRouter();
+  const { data: session } = useSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch the doctor's existing signature 
+  const [currentSignatureUrl, setCurrentSignatureUrl] = useState<string | null>(
+    null,
+  );
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [loadingSignature, setLoadingSignature] = useState(true);
+
+  useEffect(() => {
+    if (!saveMessage) return;
+    const timer = setTimeout(() => setSaveMessage(""), 2000);
+    return () => clearTimeout(timer);
+  }, [saveMessage]);
+
+  // Fetch the doctor's existing signature
   useEffect(() => {
     const fetchCurrentSignature = async () => {
       try {
-        const doctorId = (session as any)?.user?.id
+        const doctorId = (session as any)?.user?.id;
         if (!doctorId) {
-          setLoadingSignature(false)
-          return
+          setLoadingSignature(false);
+          return;
         }
 
-        const response = await fetch(`/api/doctor/dashboard?doctorId=${doctorId}`)
-        const data = await response.json()
-        
+        const response = await fetch(
+          `/api/doctor/dashboard?doctorId=${doctorId}`,
+        );
+        const data = await response.json();
+
         if (data.doctor?.signatureUrl) {
-          setCurrentSignatureUrl(data.doctor.signatureUrl)
+          setCurrentSignatureUrl(data.doctor.signatureUrl);
         }
       } catch (error) {
-        console.error('Error fetching signature:', error)
+        console.error("Error fetching signature:", error);
       } finally {
-        setLoadingSignature(false)
+        setLoadingSignature(false);
       }
-    }
+    };
 
     if (session) {
-      fetchCurrentSignature()
+      fetchCurrentSignature();
     }
-  }, [session])
+  }, [session]);
 
   // Show a success message for 2 seconds after a file is selected
   useEffect(() => {
     if (selectedFile && !isLoading && !errorMessage) {
-      setShowSuccess(true)
+      setShowSuccess(true);
       const timer = setTimeout(() => {
-        setShowSuccess(false)
-      }, 2000)
-      return () => clearTimeout(timer)
+        setShowSuccess(false);
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [selectedFile, isLoading, errorMessage])
+  }, [selectedFile, isLoading, errorMessage]);
 
   // Automatically clear the error message after 2 seconds
   useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
-        setErrorMessage('')
-      }, 2000)
-      return () => clearTimeout(timer)
+        setErrorMessage("");
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [errorMessage])
+  }, [errorMessage]);
 
   // Redirect to doctor home page, 1 second after a successful save
   useEffect(() => {
-    if (saveMessage && saveMessage.includes('successfully')) {
+    if (saveMessage && saveMessage.includes("successfully")) {
       const timer = setTimeout(() => {
-        router.push('/doctor')
-      }, 1000)
-      return () => clearTimeout(timer)
+        router.push("/doctor");
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [saveMessage, router])
+  }, [saveMessage, router]);
 
   // Convert the selected file to a base64 URL so it can be previewed on screen before uploading (on server)
   const handleFileSelect = (file: File) => {
-    setIsLoading(true)
-    setErrorMessage('')
-    
-    setTimeout(() => {
-      setSelectedFile(file)
-      
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string)
-        setIsLoading(false)
-      }
-      reader.readAsDataURL(file)
-    }, 1000)
-  }
+    setIsLoading(true);
+    setErrorMessage("");
 
-// Open the image selection window(upload area) when there is no existing signature, or when editing without a new image selected
+    setTimeout(() => {
+      setSelectedFile(file);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+        setIsLoading(false);
+      };
+      reader.readAsDataURL(file);
+    }, 1000);
+  };
+
+  // Open the image selection window(upload area) when there is no existing signature, or when editing without a new image selected
   const handleClick = () => {
     if (!currentSignatureUrl || (isEditMode && !previewUrl)) {
-      fileInputRef.current?.click()
+      fileInputRef.current?.click();
     }
-  }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleFileSelect(file)
-  }
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-  }
+    e.preventDefault();
+  };
 
   // Handle dropped files the same way as clicked files
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!currentSignatureUrl || (isEditMode && !previewUrl)) {
-      const file = e.dataTransfer.files?.[0]
-      if (file) handleFileSelect(file)
+      const file = e.dataTransfer.files?.[0];
+      if (file) handleFileSelect(file);
     }
-  }
+  };
 
   // Remove the selected image and reset the upload area when the X button is clicked
   const handleRemove = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setSelectedFile(null)
-    setPreviewUrl(null)
-    setShowSuccess(false)
-    setIsLoading(false)
-    setErrorMessage('')
-    setSaveMessage('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+    e.stopPropagation();
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setShowSuccess(false);
+    setIsLoading(false);
+    setErrorMessage("");
+    setSaveMessage("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleEditClick = () => {
-    setIsEditMode(true)
-  }
+    setIsEditMode(true);
+  };
 
   // If cancel button cliced:Cancel edit mode and restore the previous signature, or go back if no signature exists
   const handleCancel = () => {
     if (currentSignatureUrl && isEditMode) {
-      setIsEditMode(false)
-      setSelectedFile(null)
-      setPreviewUrl(null)
-      setShowSuccess(false)
-      setIsLoading(false)
-      setErrorMessage('')
-      setSaveMessage('')
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      setIsEditMode(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setShowSuccess(false);
+      setIsLoading(false);
+      setErrorMessage("");
+      setSaveMessage("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } else {
-      router.back()
+      router.back();
     }
-  }
+  };
 
   // Upload the selected signature image to the server
   const handleConfirm = async () => {
-    if (!selectedFile) return
+    if (!selectedFile) return;
 
-    setIsSaving(true)
-    setSaveMessage('')
+    setIsSaving(true);
+    setSaveMessage("");
 
     try {
-      const formData = new FormData()
-      formData.append('signature', selectedFile)
+      const formData = new FormData();
+      formData.append("signature", selectedFile);
 
-      const response = await fetch('/api/doctor/upload-signature', {
-        method: 'POST',
+      const response = await fetch("/api/doctor/upload-signature", {
+        method: "POST",
         body: formData,
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
-        setSaveMessage('Signature saved successfully!')
+        setSaveMessage("Signature saved successfully!");
       } else {
-        setSaveMessage(data.error || 'Failed to save signature')
+        setSaveMessage(data.error || "Failed to save signature");
       }
     } catch (error) {
-      console.error('Error uploading signature:', error)
-      setSaveMessage('Network error. Please try again')
+      console.error("Error uploading signature:", error);
+      setSaveMessage("Network error. Please try again");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   if (loadingSignature) {
-    return <LoadingSpinner />
+    return <LoadingSpinner />;
   }
 
   // Set which UI section is visible: existing signature, new preview, or the empty upload area
-  const hasExistingSignature = currentSignatureUrl && !isEditMode
-  const showNewPreview = previewUrl
-  const showUploadArea = !hasExistingSignature && !showNewPreview
+  const hasExistingSignature = currentSignatureUrl && !isEditMode;
+  const showNewPreview = previewUrl;
+  const showUploadArea = !hasExistingSignature && !showNewPreview;
 
   return (
     <div className="bg-[#040A16] min-h-screen flex items-center justify-center p-4">
       <div className="bg-[#0D1A2D] w-full max-w-[400px] border border-white/30 rounded-[20px] px-6 sm:px-10 md:px-12 py-6 sm:py-8 relative">
-        
         {hasExistingSignature && (
           <button
             onClick={handleEditClick}
             className="absolute top-4 right-4 bg-[#17387C] hover:bg-[#1e4a9a] text-white rounded-full p-2 z-10 transition-colors cursor-pointer"
             title="Edit Signature"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
             </svg>
           </button>
         )}
 
         <h1 className="text-white text-lg sm:text-xl md:text-[24px] font-semibold text-center mb-4 sm:mb-6">
-          {hasExistingSignature ? 'Your Signature' : isEditMode ? 'Edit Signature' : 'Signature Upload'}
+          {hasExistingSignature
+            ? "Your Signature"
+            : isEditMode
+              ? "Edit Signature"
+              : "Signature Upload"}
         </h1>
-        
+
         {/* Hidden file input that gets triggered by click or drag-and-drop */}
         <input
           ref={fileInputRef}
@@ -223,45 +250,77 @@ const AddSignature = () => {
           onChange={handleFileChange}
           className="hidden"
         />
-        
+
         {errorMessage && (
-          <p className="text-red-500 text-xs sm:text-sm text-center mb-2 font-medium">
-            {errorMessage}
-          </p>
+          <div className="alert-error">
+            <div className="alert-icon-wrapper">
+              <ErrorIcon className="icon-svg-sm" />
+              <span className="font-semibold">{errorMessage}</span>
+            </div>
+          </div>
         )}
-        
+
         {saveMessage && (
-          <p className={`text-xs sm:text-sm text-center mb-2 font-medium ${
-            saveMessage.includes('successfully') ? 'text-[#1F9C3E]' : 'text-red-500'
-          }`}>
-            {saveMessage}
-          </p>
+          <div
+            className={
+              saveMessage.includes("successfully")
+                ? "alert-success"
+                : "alert-error"
+            }
+          >
+            <div className="alert-icon-wrapper">
+              <Success className="icon-svg-sm" />
+              <span className="font-semibold">{saveMessage}</span>
+            </div>
+          </div>
         )}
-        
-        {isLoading && !errorMessage && !saveMessage && (
-          <p className="text-white/50 text-xs sm:text-sm text-center mb-2 font-medium">
-            Loading image...
-          </p>
+
+        {isLoading && !errorMessage && (
+          <div
+            className="alert-success"
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              borderColor: "rgba(255,255,255,0.3)",
+            }}
+          >
+            <div className="alert-icon-wrapper">
+              <span className="font-semibold">Loading image...</span>
+            </div>
+          </div>
         )}
-        
+
         {isSaving && (
-          <p className="text-white/50 text-xs sm:text-sm text-center mb-2 font-medium">
-            Saving signature...
-          </p>
+          <div
+            className="alert-success"
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              borderColor: "rgba(255,255,255,0.3)",
+            }}
+          >
+            <div className="alert-icon-wrapper">
+              <span className="font-semibold">Saving signature...</span>
+            </div>
+          </div>
         )}
-        
+
         {showSuccess && !isLoading && !errorMessage && !saveMessage && (
-          <p className="text-[#1F9C3E] text-xs sm:text-sm text-center mb-2 font-medium">
-            Image selected successfully!
-          </p>
+          <div className="alert-success">
+            <div className="alert-icon-wrapper">
+              <Success className="icon-svg-sm" />
+              <span className="font-semibold">
+                Image selected successfully!
+              </span>
+            </div>
+          </div>
         )}
-        
         <div
           onClick={handleClick}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           className={`border-2 border-dashed border-white/30 rounded-[8px] p-5 sm:p-6 md:p-8 mb-4 sm:mb-6 text-center ${
-            (showUploadArea || (isEditMode && !previewUrl)) ? 'cursor-pointer hover:border-white/50' : ''
+            showUploadArea || (isEditMode && !previewUrl)
+              ? "cursor-pointer hover:border-white/50"
+              : ""
           } relative`}
         >
           {/* Display the saved signature from the server */}
@@ -280,8 +339,18 @@ const AddSignature = () => {
                 onClick={handleRemove}
                 className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 z-10 cursor-pointer transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
               <img
@@ -340,11 +409,11 @@ const AddSignature = () => {
             </>
           )}
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           {hasExistingSignature ? (
             <button
-              onClick={() => router.push('/doctor')}
+              onClick={() => router.push("/doctor")}
               className="w-full bg-[#17387C] hover:bg-[#1e4a9a] border border-white/30 rounded-[12px] py-2.5 sm:py-3 text-sm sm:text-base text-white cursor-pointer transition-colors"
             >
               Back to Profile
@@ -363,14 +432,14 @@ const AddSignature = () => {
                 disabled={!selectedFile || isSaving}
                 className="w-full sm:flex-1 bg-[#17387C] hover:bg-[#1e4a9a] border border-white/30 rounded-[12px] py-2.5 sm:py-3 text-sm sm:text-base text-white cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSaving ? 'Saving...' : 'Yes, confirm'}
+                {isSaving ? "Saving..." : "Yes, confirm"}
               </button>
             </>
           )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AddSignature
+export default AddSignature;

@@ -5,34 +5,40 @@ import { DataTable, Column } from "@/components/DataTable";
 import AdminUserView, { AnyUser } from "@/components/AdminUserView";
 import AddUserPage from "@/components/AddUser";
 
+// ── Types ──────────────────────────────────────────────────────────────────
+
 interface Doctor {
   id: number;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   gender: string;
-  is_active: number;
+  isActive: number;
   specialty: string;
-  doctor_code: string;
-  license_number: string;
-  years_experience: number;
+  doctorCode: string;
+  licenseNumber: string;
+  yearsExperience: number;
   username: string;
   email: string;
   phone: string;
-  profile_picture?: string;
-  created_at: string;
-  updated_at?: string;
+  profilePicture?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
+// ── Table column definitions ───────────────────────────────────────────────
+
 const columns: Column[] = [
-  { key: "doctor_code",      label: "Doctor ID" },
-  { key: "first_name",       label: "First Name" },
-  { key: "last_name",        label: "Last Name" },
-  { key: "gender",           label: "Gender" },
-  { key: "specialty",        label: "Specialty" },
-  { key: "years_experience", label: "Experience" },
-  { key: "is_active",        label: "Status" },
+  { key: "doctorCode",      label: "Doctor ID"  },
+  { key: "firstName",       label: "First Name" },
+  { key: "lastName",        label: "Last Name"  },
+  { key: "gender",          label: "Gender"     },
+  { key: "specialty",       label: "Specialty"  },
+  { key: "yearsExperience", label: "Experience" },
+  { key: "isActive",        label: "Status"     },
 ];
+
+// ── AdminDoctorList — displays the full list of doctors ───────────────────
 
 export default function AdminDoctorList() {
   const [doctors,      setDoctors]      = useState<Doctor[]>([]);
@@ -40,6 +46,7 @@ export default function AdminDoctorList() {
   const [showAdd,      setShowAdd]      = useState(false);
   const [successMsg,   setSuccessMsg]   = useState<string | null>(null);
 
+  // Fetch all doctors from the API and update local state
   const fetchDoctors = useCallback(async () => {
     try {
       const res  = await fetch("/api/admin/users?role=doctor");
@@ -49,33 +56,39 @@ export default function AdminDoctorList() {
   }, []);
 
   useEffect(() => { fetchDoctors(); }, [fetchDoctors]);
+
+  // Auto-clear the success banner after 4 seconds
   useEffect(() => {
     if (!successMsg) return;
     const t = setTimeout(() => setSuccessMsg(null), 4000);
     return () => clearTimeout(t);
   }, [successMsg]);
 
+  // Send a DELETE request and remove the doctor from local state on success
   const handleDelete = async (id: number) => {
     const res  = await fetch(`/api/admin/users?id=${id}`, { method: "DELETE" });
     const data = await res.json();
     if (data.status === "ok") setDoctors((d) => d.filter((u) => u.id !== id));
   };
 
+  // Render custom cell content for specific columns (status badge, gender, experience)
   const renderCell = (col: Column, row: Doctor) => {
-   if (col.key === "is_active")
+    if (col.key === "isActive")
       return (
-        <span className={`px-1 md:px-2 py-px md:py-0.5 rounded-full text-[8px] md:text-xs font-medium ${row.is_active ? "bg-[#1F9C3E]" : "bg-[#6E6E6E]"} text-white`}>
-          {row.is_active ? "Active" : "Inactive"}
+        <span className={`px-1 md:px-2 py-px md:py-0.5 rounded-full text-[8px] md:text-xs font-medium ${row.isActive ? "bg-[#1F9C3E]" : "bg-[#6E6E6E]"} text-white`}>
+          {row.isActive ? "Active" : "Inactive"}
         </span>
       );
     if (col.key === "gender") return <span className="capitalize">{row.gender}</span>;
-    if (col.key === "years_experience") return <span>{row.years_experience} yrs</span>;
+    if (col.key === "yearsExperience") return <span>{row.yearsExperience} yrs</span>;
     return String((row as unknown as Record<string, unknown>)[col.key] ?? "—");
   };
 
+  // Show the detail view if a doctor row is selected
   if (selectedUser)
     return <AdminUserView user={selectedUser} onClose={() => setSelectedUser(null)} />;
 
+  // Show the add form if the add button was clicked
   if (showAdd)
     return (
       <AddUserPage
@@ -100,7 +113,7 @@ export default function AdminDoctorList() {
           <DataTable
             data={doctors}
             columns={columns}
-            searchKeys={["first_name", "last_name", "doctor_code"]}
+            searchKeys={["firstName", "lastName", "doctorCode"]}
             onDelete={handleDelete}
             onView={(row) => setSelectedUser({ ...row, role: "doctor" } as AnyUser)}
             onAdd={() => setShowAdd(true)}
@@ -111,9 +124,9 @@ export default function AdminDoctorList() {
             hideSort={true}
             filterConfig={{
               genderKey:     "gender",
-              statusKey:     "is_active",
+              statusKey:     "isActive",
               specialtyKey:  "specialty",
-              experienceKey: "years_experience",
+              experienceKey: "yearsExperience",
             }}
           />
         </div>

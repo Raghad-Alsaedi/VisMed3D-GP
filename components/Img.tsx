@@ -16,9 +16,10 @@ interface Step {
 interface ImgProps {
   onTransferFunctionChange?: (steps: Step[]) => void;
   volumeId?: number | null;
+  savedSteps?: any[] | null;
 }
 
-const Img = ({ onTransferFunctionChange, volumeId: propVolumeId }: ImgProps) => {
+const Img = ({ onTransferFunctionChange, volumeId: propVolumeId, savedSteps }: ImgProps) => {
   const searchParams = useSearchParams();
   const urlVolumeId  = searchParams.get('volumeId');
 
@@ -57,6 +58,15 @@ const Img = ({ onTransferFunctionChange, volumeId: propVolumeId }: ImgProps) => 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  //save maunalTF
+  useEffect(() => {
+    if (!savedSteps || !isWebGLReady.current || !iframeRef.current) return;
+    iframeRef.current.contentWindow?.postMessage(
+      { type: 'UPDATE_TRANSFER_FUNCTION', steps: savedSteps },
+      window.location.origin
+    );
+  }, [savedSteps]);
 
   useEffect(() => {
     if (onTransferFunctionChange) {

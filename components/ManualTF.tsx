@@ -32,6 +32,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const volumeId = searchParams.get('volumeId');
+  const accessionId = searchParams.get('accession_id');
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;
 
@@ -39,6 +40,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   const [steps, setSteps]                         = useState<Step[]>(defaultSteps);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [openSteps, setOpenSteps]                 = useState<Set<number>>(new Set([1]));
+  const [isSaving, setIsSaving]                   = useState(false);
 
   const updateStepRanges = () =>
     steps.map((step) => ({ ...step, rangeEnd: step.rangeStart + step.rangeValue }));
@@ -127,6 +129,24 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
 
   const cancelReset = () => {
     setShowConfirmDialog(false);
+  };
+
+  // Sends the current updatedSteps to the API 
+  // updatedSteps is used because it holds the final computed rangeEnd values.
+  const handleSave = async () => {
+    if (!accessionId || isSaving) return;
+    setIsSaving(true);
+    try {
+      await fetch("/api/manual-tf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessionId: Number(accessionId), steps: updatedSteps }),
+      });
+    } catch (err) {
+      console.error("Failed to save manual TF steps:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -250,6 +270,14 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
                 <path d="M12 5v14M5 12h14" />
               </svg>
               Add Step...
+            </button>
+            {/* Save button label switches to "Saving..." while the request send to API */}
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full flex-1 text-[10px] sm:text-xs lg:text-sm rounded border border-white/30 py-1 text-white hover:border-white bg-[#0D1A2D] disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : "Save"}
             </button>
             <button
               onClick={() => setShowConfirmDialog(true)}

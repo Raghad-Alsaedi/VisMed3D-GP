@@ -119,8 +119,10 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
             </label>
             <label
               className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white"
-              onClick={() => router.push(`/manualTF?volumeId=${volumeId}`)}
-            >
+onClick={() => {
+  const accessionId = sessionStorage.getItem("viewimg_accession_id");
+  router.push(`/manualTF?volumeId=${volumeId}${accessionId ? `&accession_id=${accessionId}` : ""}`);
+}}            >
               <input type="radio" name="TFMode" className="peer hidden" />
               <span className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Manual

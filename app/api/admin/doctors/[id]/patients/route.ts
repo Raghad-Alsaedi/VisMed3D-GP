@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { db } from "@/database/db";
 
@@ -12,18 +11,18 @@ export async function GET(
     const [rows]: any = await db.query(
       `SELECT
          u.id,
-         u.first_name,
-         u.middle_name,
-         u.last_name,
+         u.first_name          AS firstName,
+         u.middle_name         AS middleName,
+         u.last_name           AS lastName,
          u.gender,
-         u.is_active,
+         u.is_active           AS isActive,
          u.email,
          u.phone,
-         u.profile_picture,
+         u.profile_picture     AS profilePicture,
          p.medical_record_number AS mrn,
-         p.national_id,
-         p.date_of_birth,
-         dpa.created_at          AS assigned_at
+         p.national_id         AS nationalId,
+         p.date_of_birth       AS dateOfBirth,
+         dpa.created_at        AS assignedAt
        FROM users doc_user
        INNER JOIN doctors d
                ON doc_user.doctor_id = d.doctor_id
@@ -49,6 +48,8 @@ export async function GET(
     );
   }
 }
+
+//  DELETE  unassign a patient from a doctor
 
 export async function DELETE(
   req: Request,

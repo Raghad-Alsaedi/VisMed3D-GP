@@ -8,7 +8,6 @@ import PatientView from "@/components/PatientView";
 import ReportHeader from "@/components/ReportHeader";
 import ReportEditorSection from "@/components/ReportEditorSection";
 
-
 declare global {
   interface Window {
     triggerScreenshot?: (accessionId: string) => void;
@@ -41,13 +40,17 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
   const searchParams = useSearchParams();
   const accessionId  = searchParams.get("accession_id");
 
+  // Tracks what was last saved to the database
   const [lastSavedData, setLastSavedData] = useState<ReportData>({
     body_part: "", clinical_indication: "", technique: "", finding: "", impression: "",
   });
 
-  const isSavingRef      = useRef(false);
+  const isSavingRef    = useRef(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  // We store each field's value in a ref in addition to state, so the auto-save
+  // interval always reads the latest value. Without refs, the interval would
+  // capture a stale copy of the value from when it was first registered.
   const bodyPartRef           = useRef(bodyPart);
   const clinicalIndicationRef = useRef(clinicalIndication);
   const techniqueRef          = useRef(technique);
@@ -68,10 +71,12 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
   useEffect(() => { isDataLoadedRef.current       = isDataLoaded;       }, [isDataLoaded]);
   useEffect(() => { lastSavedTimeRef.current      = lastSavedTime;      }, [lastSavedTime]);
 
+  // If the URL is the patient report page, show the read-only view instead of the editor
   const isPatientView = pathname === "/patients/reportPatients";
 
   const getStorageKey = (id: string) => `statusBar_${id}`;
 
+  // Updates the status bar message and persists it so it survives a page refresh
   const showStatusMessage = useCallback((msg: string) => {
     const time = lastSavedTimeRef.current;
     setStatusBarMessage(msg);
@@ -83,6 +88,7 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     onStatusChange?.(msg, time, false);
   }, [onStatusChange, accessionId]);
 
+  // Records the current time as the "last saved at" timestamp shown in the status bar
   const updateSavedTime = useCallback(() => {
     const now  = new Date();
     const hh   = String(now.getHours()).padStart(2, "0");
@@ -93,6 +99,7 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     onStatusChange?.("", time, false);
   }, [onStatusChange]);
 
+  // Saves the current content as a draft — skips if nothing has changed since the last save
   const saveAsDraft = useCallback(async (triggeredByBlur = false) => {
     if (isSavingRef.current || !accessionId) return;
     const currentData: ReportData = {
@@ -130,6 +137,7 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     finally { isSavingRef.current = false; }
   }, [accessionId, showStatusMessage, updateSavedTime]);
 
+  // A last-resort save triggered when the doctor closes the tab or navigates away. 
   const sendBeaconSave = useCallback(() => {
     if (!isDataLoadedRef.current || !accessionId) return;
     const currentData: ReportData = {
@@ -157,58 +165,62 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     );
   }, [accessionId]);
 
+  // We create one editor instance per report section.
+  // Body Part is plain text only, while the remaining sections support rich formatting
+  // (rich formatting = bold, italic, bullet lists, font size changes, etc.)
   const bodyPartEditor = useCustomEditor({
-    content: bodyPart,
-    placeholder: "",
+    content: bodyPart, placeholder: "",
     onUpdate: setBodyPart,
     onBlur: () => isDataLoaded && saveAsDraft(true),
     minHeight: "24px", maxHeight: "48px", isPlainText: true,
   });
   const clinicalIndicationEditor = useCustomEditor({
-    content: clinicalIndication,
-    placeholder: "",
+    content: clinicalIndication, placeholder: "",
     onUpdate: setClinicalIndication,
     onFocus: setActiveEditor,
     onBlur: () => isDataLoaded && saveAsDraft(true),
     minHeight: "40px",
   });
   const techniqueEditor = useCustomEditor({
-    content: technique,
-    placeholder: "",
+    content: technique, placeholder: "",
     onUpdate: setTechnique,
     onFocus: setActiveEditor,
     onBlur: () => isDataLoaded && saveAsDraft(true),
     minHeight: "40px",
   });
   const findingEditor = useCustomEditor({
-    content: finding,
-    placeholder: "",
+    content: finding, placeholder: "",
     onUpdate: setFinding,
     onFocus: setActiveEditor,
     onBlur: () => isDataLoaded && saveAsDraft(true),
     minHeight: "60px",
   });
   const impressionEditor = useCustomEditor({
-    content: impression,
-    placeholder: "",
+    content: impression, placeholder: "",
     onUpdate: setImpression,
     onFocus: setActiveEditor,
     onBlur: () => isDataLoaded && saveAsDraft(true),
     minHeight: "40px",
   });
 
+  // The toolbar always targets whichever section the doctor is currently typing in.
+  // When the doctor moves to a different field, the toolbar switches to control that field.
   const editor = activeEditor || clinicalIndicationEditor;
 
   useEffect(() => {
     if (clinicalIndicationEditor && !activeEditor) setActiveEditor(clinicalIndicationEditor);
   }, [clinicalIndicationEditor, activeEditor]);
 
+  // Listens for events fired by the 3D viewer iframe once it finishes
+  // capturing and uploading a screenshot of the scan image.
   useEffect(() => {
     const handleSuccess = async (event: any) => {
       if ((window as any).screenshotUploadTimeout) clearTimeout((window as any).screenshotUploadTimeout);
       setUploadingImage(false);
       setCapturedImageUrl(event.detail.imageUrl);
       showStatusMessage("Image attached successfully");
+      // Re-fetch the report to get the latest scan screenshot URL saved by the server,
+      // since the URL is generated server-side and not available locally.
       try {
         const response = await fetch(`/api/reports?accession_id=${accessionId}`);
         const data = await response.json();
@@ -233,6 +245,8 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     };
   }, [accessionId, showStatusMessage]);
 
+  // Fetches the report from the database when the page first loads
+  // and fills all editor fields with the saved content.
   useEffect(() => {
     const loadReport = async () => {
       if (!accessionId) return;
@@ -247,28 +261,23 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
             body_part: data.bodyPart, clinical_indication: data.clinicalIndication,
             technique: data.technique, finding: data.finding, impression: data.impression,
           });
-
+          // Restore the last status bar message and timestamp from local storage
           try {
             const stored = localStorage.getItem(getStorageKey(accessionId));
             if (stored) {
               const { event, time } = JSON.parse(stored);
-              if (time) {
-                setLastSavedTime(time);
-                lastSavedTimeRef.current = time;
-              }
+              if (time) { setLastSavedTime(time); lastSavedTimeRef.current = time; }
               onStatusChange?.(event || "", time || "", false);
             }
           } catch (e) { /* ignore */ }
         }
       } catch (error) { console.error("Error fetching report:", error); }
-      finally {
-        setIsDataLoaded(true);
-        onDataLoaded?.();
-      }
+      finally { setIsDataLoaded(true); onDataLoaded?.(); }
     };
     loadReport();
   }, [accessionId]);
 
+  // Once data is loaded, push it into the Tiptap editors so the content appears
   useEffect(() => {
     if (!isDataLoaded) return;
     bodyPartEditor?.commands.setContent(bodyPart);
@@ -278,12 +287,17 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     impressionEditor?.commands.setContent(impression);
   }, [isDataLoaded]);
 
+  // Auto-saves the report every 10 seconds to prevent losing unsaved changes
+  // if the doctor forgets to save manually or loses their connection.
   useEffect(() => {
     if (!isDataLoaded) return;
     const intervalId = setInterval(() => saveAsDraft(false), 10000);
     return () => clearInterval(intervalId);
   }, [isDataLoaded, saveAsDraft]);
 
+  // Attaches the sendBeacon save to tab-close and page-hide events,
+  // so any unsaved changes are sent to the server even if the doctor
+  // closes the tab or navigates away without saving.
   useEffect(() => {
     if (!isDataLoaded || !accessionId) return;
     const handleUnload = () => sendBeaconSave();
@@ -300,10 +314,12 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     };
   }, [isDataLoaded, accessionId, sendBeaconSave]);
 
+  // Save button is disabled until all five sections have content
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").trim();
   const canSave = stripHtml(bodyPart) !== "" && stripHtml(clinicalIndication) !== "" &&
     stripHtml(technique) !== "" && stripHtml(finding) !== "" && stripHtml(impression) !== "";
 
+  // Saves the report as "completed" after the doctor confirms the PDF preview
   const handleConfirmSave = async () => {
     if (!accessionId || isSaving || !canSave) return;
     setIsSaving(true);
@@ -320,6 +336,8 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
         });
         updateSavedTime();
         showStatusMessage("Report saved successfully");
+        // Flags the patient list page to reload its data so the updated
+        // report status (completed) appears without a manual page refresh.
         sessionStorage.setItem("patientList_shouldRefresh", "true");
       } else {
         showStatusMessage("Save failed — please try again");
@@ -332,6 +350,10 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     }
   };
 
+  // Asks the 3D viewer iframe to capture a screenshot of the current scan.
+  // A 30-second timeout is set because the operation has two steps:
+  // capturing the image inside the iframe, then uploading it to the server.
+  // If both steps don't complete within 30 seconds, we treat it as a failure.
   const handleAttachImage = () => {
     if (!accessionId) { showStatusMessage("Accession ID not found"); return; }
     const iframe = document.querySelector('iframe[title="3D Volume Rendering"]') as HTMLIFrameElement;
@@ -358,6 +380,7 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
     }
   };
 
+  // If this page is opened by a patient, show a read-only version of the report
   if (isPatientView) {
     return (
       <PatientView
@@ -383,8 +406,8 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
       />
 
       <div className="flex-1 overflow-y-auto bg-[#0D1A2D]">
-
-        <div className="sticky top-0 z-40 px-4 pt-2  bg-[#0D1A2D]">
+        {/* Toolbar stays pinned at the top and always controls the focused editor section */}
+        <div className="sticky top-0 z-40 px-4 pt-2 bg-[#0D1A2D]">
           <Toolbar editor={editor} />
         </div>
 
@@ -399,7 +422,6 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
             </div>
           </div>
         </div>
-
       </div>
 
       <style jsx global>{`
@@ -435,7 +457,6 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
         .tiptap-editor ul { list-style-type: disc; }
         .tiptap-editor ol { list-style-type: decimal; }
         .editor-section-wrapper { background: #0d1a2d; }
-        /* Ensure ProseMirror content stretches full width */
         .ProseMirror { width: 100%; box-sizing: border-box; }
       `}</style>
     </div>

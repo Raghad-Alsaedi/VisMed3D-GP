@@ -5,35 +5,41 @@ import { DataTable, Column } from "@/components/DataTable";
 import AdminUserView, { AnyUser } from "@/components/AdminUserView";
 import AddUserPage from "@/components/AddUser";
 
+// ── Types ──────────────────────────────────────────────────────────────────
+
 interface Patient {
   id: number;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   gender: string;
-  is_active: number;
+  isActive: number;
   mrn: string;
-  national_id: string;
-  date_of_birth: string;
-  created_at: string;
-  updated_at?: string;
+  nationalId: string;
+  dateOfBirth: string;
+  createdAt: string;
+  updatedAt?: string;
   username: string;
   email: string;
   phone: string;
-  profile_picture?: string;
-  doctor_name: string;
-  tech_name: string;
+  profilePicture?: string;
+  doctorName: string;
+  techName: string;
 }
 
+// ── Table column definitions ───────────────────────────────────────────────
+
 const columns: Column[] = [
-  { key: "mrn",         label: "MRN" },
-  { key: "first_name",  label: "First Name" },
-  { key: "last_name",   label: "Last Name" },
-  { key: "gender",      label: "Gender" },
-  { key: "doctor_name", label: "Doctor" },
-  { key: "tech_name",   label: "Technician" },
-  { key: "is_active",   label: "Status" },
+  { key: "mrn",        label: "MRN"        },
+  { key: "firstName",  label: "First Name" },
+  { key: "lastName",   label: "Last Name"  },
+  { key: "gender",     label: "Gender"     },
+  { key: "doctorName", label: "Doctor"     },
+  { key: "techName",   label: "Technician" },
+  { key: "isActive",   label: "Status"     },
 ];
+
+// ── AdminPatientList — displays the full list of patients ─────────────────
 
 export default function AdminPatientList() {
   const [patients,     setPatients]     = useState<Patient[]>([]);
@@ -41,6 +47,7 @@ export default function AdminPatientList() {
   const [showAdd,      setShowAdd]      = useState(false);
   const [successMsg,   setSuccessMsg]   = useState<string | null>(null);
 
+  // Fetch all patients from the API and update local state
   const fetchPatients = useCallback(async () => {
     try {
       const res  = await fetch("/api/admin/users?role=patient");
@@ -50,23 +57,27 @@ export default function AdminPatientList() {
   }, []);
 
   useEffect(() => { fetchPatients(); }, [fetchPatients]);
+
+  // Auto-clear the success banner after 4 seconds
   useEffect(() => {
     if (!successMsg) return;
     const t = setTimeout(() => setSuccessMsg(null), 4000);
     return () => clearTimeout(t);
   }, [successMsg]);
 
+  // Send a DELETE request and remove the patient from local state on success
   const handleDelete = async (id: number) => {
     const res  = await fetch(`/api/admin/users?id=${id}`, { method: "DELETE" });
     const data = await res.json();
     if (data.status === "ok") setPatients((p) => p.filter((u) => u.id !== id));
   };
 
+  // Render custom cell content for status and gender columns
   const renderCell = (col: Column, row: Patient) => {
-    if (col.key === "is_active")
+    if (col.key === "isActive")
       return (
-        <span className={`px-1 md:px-2 py-px md:py-0.5 rounded-full text-[8px] md:text-xs font-medium ${row.is_active ? "bg-[#1F9C3E]" : "bg-[#6E6E6E]"} text-white`}>
-          {row.is_active ? "Active" : "Inactive"}
+        <span className={`px-1 md:px-2 py-px md:py-0.5 rounded-full text-[8px] md:text-xs font-medium ${row.isActive ? "bg-[#1F9C3E]" : "bg-[#6E6E6E]"} text-white`}>
+          {row.isActive ? "Active" : "Inactive"}
         </span>
       );
     if (col.key === "gender") return <span className="capitalize">{row.gender}</span>;
@@ -100,7 +111,7 @@ export default function AdminPatientList() {
           <DataTable
             data={patients}
             columns={columns}
-            searchKeys={["first_name", "last_name", "mrn"]}
+            searchKeys={["firstName", "lastName", "mrn"]}
             onDelete={handleDelete}
             onView={(row) => setSelectedUser({ ...row, role: "patient" } as AnyUser)}
             onAdd={() => setShowAdd(true)}
@@ -111,9 +122,9 @@ export default function AdminPatientList() {
             hideSort={true}
             filterConfig={{
               genderKey: "gender",
-              statusKey: "is_active",
-              doctorKey: "doctor_name",
-              techKey:   "tech_name",
+              statusKey: "isActive",
+              doctorKey: "doctorName",
+              techKey:   "techName",
             }}
           />
         </div>

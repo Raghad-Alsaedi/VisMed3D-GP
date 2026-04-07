@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { db } from "@/database/db";
 
@@ -23,20 +22,20 @@ export async function GET(
 
     const [rows] = await db.query(
       `SELECT
-         r.report_id,
-         a.accession_number,
-         COALESCE(r.body_part, '')  AS body_part,
-         r.doctor_name,
+         r.report_id            AS reportId,
+         a.accession_number     AS accessionNumber,
+         COALESCE(r.body_part, '') AS bodyPart,
+         r.doctor_name          AS doctorName,
          CONCAT_WS(' ',
            pu.first_name,
            pu.middle_name,
            pu.last_name
-         )                          AS patient_name,
+         )                      AS patientName,
          a.modality,
-         a.exam_date,
-         r.report_status,
-         r.created_at,
-         r.signed_at
+         a.exam_date            AS examDate,
+         r.report_status        AS reportStatus,
+         r.created_at           AS createdAt,
+         r.signed_at            AS signedAt
        FROM reports r
        JOIN accession a  ON a.accession_id = r.accession_id
        JOIN patients  p  ON p.patient_id   = a.patient_id

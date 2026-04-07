@@ -7,6 +7,7 @@ import { ID, Age, Gender, Phone } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import LoadingSpinner from "./LoadingSpinner";
 
 type Patient = {
   id: number;
@@ -93,10 +94,9 @@ export default function Patients() {
           </div>
         </nav>
         <main className="patients-main">
-          <div className="text-center text-white p-8">
-            <div className="border-4 border-gray-300 border-t-blue-600 rounded-full w-10 h-10 animate-spin mx-auto" />
-            <p className="mt-4">Loading...</p>
-          </div>
+         <div className="relative min-h-[200px]">
+  <LoadingSpinner />
+</div>
         </main>
       </section>
     );

@@ -7,24 +7,25 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
+
     const [rows]: any = await db.query(
       `SELECT
          u.id,
-         u.first_name,
-         u.middle_name,
-         u.last_name,
+         u.first_name          AS firstName,
+         u.middle_name         AS middleName,
+         u.last_name           AS lastName,
          u.gender,
-         u.is_active,
+         u.is_active           AS isActive,
          u.username,
          u.email,
          u.phone,
-         u.profile_picture,
-         u.created_at,
-         u.updated_at,
-         COALESCE(tp.technician_code,  '') AS technician_code,
+         u.profile_picture     AS profilePicture,
+         u.created_at          AS createdAt,
+         u.updated_at          AS updatedAt,
+         COALESCE(tp.technician_code,  '') AS technicianCode,
          COALESCE(tp.specialty,        '') AS specialty,
-         COALESCE(tp.license_number,   '') AS license_number,
-         COALESCE(tp.years_experience,  0) AS years_experience
+         COALESCE(tp.license_number,   '') AS licenseNumber,
+         COALESCE(tp.years_experience,  0) AS yearsExperience
        FROM users u
        LEFT JOIN technicians t          ON u.technician_id = t.technician_id
        LEFT JOIN technician_profiles tp ON t.technician_id = tp.technician_id

@@ -217,7 +217,8 @@
 }
 
 .card-upload-progress {
-  @apply h-full border border-white/30 p-20;
+  @apply h-full border border-white/30 justify-center;
+  padding: clamp(1rem, 4vh, 5rem) 2rem;
   background: var(--color-bg-secondary);
 }
 

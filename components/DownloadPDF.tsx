@@ -10,6 +10,8 @@ import {
   Font,
 } from "@react-pdf/renderer";
 
+// Register the Amiri font so Arabic text in the PDF header renders correctly.
+// We load both regular and bold weights from Google Fonts CDN.
 Font.register({
   family: 'Amiri',
   fonts: [
@@ -24,6 +26,8 @@ Font.register({
   ]
 });
 
+// All PDF styles are defined once here and referenced throughout the document.
+// react-pdf uses its own layout engine (not CSS), so styles are written as JS objects.
 const styles = StyleSheet.create({
   page: {
     padding: 40,
@@ -280,6 +284,7 @@ const styles = StyleSheet.create({
   },
 });
 
+// Interfaces shared with other files that need to pass doctor/patient data to the PDF.
 export interface ReportData {
   bodyPart: string;
   clinicalIndication: string;
@@ -305,9 +310,13 @@ export interface DoctorInfo {
   signaturePath: string | null;
 }
 
+// Converts the HTML saved by the Tiptap editor into react-pdf elements.
+// react-pdf cannot render HTML directly, so we parse it manually:
+// ordered lists, unordered lists, and paragraphs with bold/italic inline styles.
 const parseHtmlToReactPdf = (html: string) => {
   if (!html) return null;
 
+  // Decode common HTML entities back to plain characters before processing.
   let cleanHtml = html
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
@@ -319,6 +328,8 @@ const parseHtmlToReactPdf = (html: string) => {
   const elements: React.ReactElement[] = [];
   let key = 0;
 
+  // Extract ordered lists (<ol>) first and replace them with placeholders,
+  // so they don't get picked up again during paragraph parsing below.
   const olRegex = /<ol[^>]*>([\s\S]*?)<\/ol>/gi;
   let olMatch;
   while ((olMatch = olRegex.exec(cleanHtml)) !== null) {
@@ -344,6 +355,7 @@ const parseHtmlToReactPdf = (html: string) => {
     cleanHtml = cleanHtml.replace(olMatch[0], `%%OL_PLACEHOLDER_${key}%%`);
   }
 
+  // Extract unordered lists (<ul>) and replace them with placeholders as well.
   const ulRegex = /<ul[^>]*>([\s\S]*?)<\/ul>/gi;
   let ulMatch;
   while ((ulMatch = ulRegex.exec(cleanHtml)) !== null) {
@@ -368,6 +380,8 @@ const parseHtmlToReactPdf = (html: string) => {
     cleanHtml = cleanHtml.replace(ulMatch[0], `%%UL_PLACEHOLDER_${key}%%`);
   }
 
+  // Split the remaining HTML into paragraphs and process inline formatting
+  // (bold, italic) within each paragraph.
   const paragraphs = cleanHtml.split(/<\/p>|<br\s*\/?>/i).filter(p => p.trim());
   paragraphs.forEach((para, index) => {
     let content = para.replace(/<p[^>]*>/i, '').trim();
@@ -380,6 +394,7 @@ const parseHtmlToReactPdf = (html: string) => {
     let lastIndex = 0;
     let match;
 
+    // Recursively handles italic and underline styles that may be nested inside bold tags.
     const processText = (text: string, isBold = false, isItalic = false, isUnderline = false) => {
       if (!text) return;
       if (/<(em|i)[^>]*>/i.test(text)) {
@@ -456,6 +471,9 @@ const parseHtmlToReactPdf = (html: string) => {
   return elements.length > 0 ? <View>{elements}</View> : <Text style={styles.sectionContent}>{html}</Text>;
 };
 
+// The main PDF document component.
+// Renders the full A4 report: hospital header, patient/doctor info, all report sections,
+// the attached scan image (if any), doctor signature, and a page footer.
 export const MedicalReportDocument = ({
   reportData,
   patientInfo,
@@ -471,6 +489,8 @@ export const MedicalReportDocument = ({
     day: "numeric",
   });
 
+  // Build the full URL for the doctor's signature image.
+  // Handles three cases: already a full URL, a relative /api/ path, or just a filename.
   let signatureFullUrl: string | null = null;
   if (doctorInfo?.signaturePath) {
     const signaturePath = doctorInfo.signaturePath;
@@ -508,7 +528,7 @@ export const MedicalReportDocument = ({
           </View>
         </View>
 
-        {/* PATIENT INFORMATION */}
+        {/* PATIENT INFORMATION — only rendered if both patient and doctor data are available */}
         {patientInfo && doctorInfo && (
           <View style={styles.patientSection}>
             <View style={styles.patientInfoGrid}>
@@ -529,7 +549,7 @@ export const MedicalReportDocument = ({
           </View>
         )}
 
-        {/* REPORT CONTENT */}
+        {/* REPORT CONTENT — each section is only rendered if it has content */}
         {reportData.bodyPart && (
           <View>
             <Text style={styles.sectionTitle}>Body Part</Text>
@@ -561,14 +581,14 @@ export const MedicalReportDocument = ({
           </View>
         )}
 
-        {/* ATTACHED IMAGE */}
+        {/* ATTACHED SCAN IMAGE — only shown if the doctor captured a screenshot */}
         {reportData.imageUrl && (
           <View style={styles.imageContainer}>
             <Image src={reportData.imageUrl} style={styles.image} />
           </View>
         )}
 
-        {/* DOCTOR SIGNATURE */}
+        {/* DOCTOR SIGNATURE — shows the signature image if available, otherwise a placeholder */}
         {doctorInfo && (
           <View style={styles.footerSection}>
             <View style={styles.doctorInfo}>
@@ -590,7 +610,7 @@ export const MedicalReportDocument = ({
           </View>
         )}
 
-        {/* PAGE FOOTER */}
+        {/* PAGE FOOTER — fixed at the bottom of every page, shows contact info and page number */}
         <View style={styles.pageFooter} fixed>
           <Text style={styles.footerContact}>
             King Faisal Road, Al-Madinah Al-Munawwarah 42351, Saudi Arabia | Tel: +966 14 861 8888 | Email: info@taibahmed.sa | Website: www.taibahmed.edu.sa
@@ -606,6 +626,8 @@ export const MedicalReportDocument = ({
   );
 };
 
+// Generates the report as a downloadable PDF
+// Called when the patient clicks the download button in PDFPreview
 export async function generateMedicalReportPDF(
   reportData: ReportData,
   patientInfo: PatientInfo | null,

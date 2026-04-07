@@ -4,10 +4,14 @@ import dynamic from "next/dynamic";
 import { Attach_Image, Save } from "@/components/icons";
 import { DoctorInfo, PatientInfo } from "@/components/DownloadPDF";
 
+// Pre-load the PDF preview component in the background as soon as this page mounts,
+// so there is no delay when the doctor clicks Save for the first time.
 if (typeof window !== "undefined") {
   import("@/components/PDFPreview").catch(() => {});
 }
 
+// Load PDFPreview only on the client side — it uses browser-only APIs
+// that would crash if rendered on the server.
 const PDFPreviewModal = dynamic(() => import("@/components/PDFPreview"), { ssr: false });
 
 interface ReportHeaderProps {
@@ -46,6 +50,8 @@ const ReportHeader = ({
   const [warningShown, setWarningShown]     = useState(false);
   const [warningVisible, setWarningVisible] = useState(false);
 
+  // Fetches doctor and patient info in parallel, then opens the PDF preview modal.
+  // We also trigger the PDFPreview import here in case the background pre-load hasn't finished yet.
   const openPdfPreview = async () => {
     setGenerating(true);
     try {
@@ -76,18 +82,23 @@ const ReportHeader = ({
     }
   };
 
+  // Handles the Save button click.
+  // If no screenshot is attached, we show a warning and wait for a second click to confirm.
+  // On the second click (or if a screenshot exists), we proceed to open the PDF preview.
   const handleSaveClick = async () => {
     if (!canSave || isSaving || generating) return;
     if (!capturedImageUrl && !warningShown) {
       setWarningShown(true);
       setWarningVisible(true);
-      setTimeout(() => setWarningVisible(false), 3000);
+      setTimeout(() => setWarningVisible(false), 2000);
       return;
     }
     setWarningShown(false);
     await openPdfPreview();
   };
 
+  // Called when the doctor confirms the report in the PDF preview.
+  // Closes the modal, clears doctor/patient info from memory, then triggers the final save.
   const handleConfirm = () => {
     setShowPreview(false);
     setDoctorInfo(null);
@@ -95,14 +106,28 @@ const ReportHeader = ({
     onConfirmSave();
   };
 
-  const handleCancelPreview = () => {
-    setShowPreview(false);
-    setDoctorInfo(null);
-    setPatientInfo(null);
-  };
+  // Called when the doctor closes or cancels the PDF preview without saving.
+ const handleCancelPreview = () => {
+  setShowPreview(false);
+  setDoctorInfo(null);
+  setPatientInfo(null);
+  setWarningShown(false);
+};
 
   return (
     <>
+    {warningVisible && (
+      <div style={{
+        position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(80,80,80,0.95)', border: '2px solid rgba(255,255,255,0.3)',
+        borderRadius: 8, padding: '10px 24px', zIndex: 9999, whiteSpace: 'nowrap',
+      }}>
+        <span style={{ color: '#f3f4f6', fontSize: 13, fontFamily: 'monospace' }}>
+          No screenshot attached. Press Save again to continue without one.
+        </span>
+      </div>
+    )}
+      {/* Desktop header — hidden on mobile */}
       <header className="hidden md:flex sticky top-0 z-50 bg-[#0D1A2D] flex-shrink-0 px-4 pt-4 pb-3 justify-between items-center">
 
         <div className="flex items-center gap-3">
@@ -116,11 +141,7 @@ const ReportHeader = ({
         </div>
 
         <div className="flex gap-3 items-center">
-          {warningVisible && (
-            <span className="text-white/60 text-xs font-mono">
-              No screenshot attached. Press Save again to continue without one.
-            </span>
-          )}
+       
 
           <button
             onClick={() => onAttachImage()}
@@ -166,13 +187,9 @@ const ReportHeader = ({
         </div>
       </header>
 
+      {/* Mobile header — visible only on small screens */}
       <div className="md:hidden sticky top-0 z-50 bg-[#0D1A2D] w-full pb-2 pt-2 px-4">
-        {warningVisible && (
-          <p className="text-white/60 text-[9px] font-mono text-right mb-1 leading-tight">
-            No screenshot attached. Press Save again to continue.
-          </p>
-        )}
-
+        
         <div className="flex flex-row items-center justify-between gap-2">
           <div className="flex flex-row items-center gap-1 min-w-0 overflow-hidden">
             <div className={`rounded-[8px] flex items-center justify-center px-3 h-7 flex-shrink-0 ${
@@ -229,6 +246,7 @@ const ReportHeader = ({
         </div>
       </div>
 
+      {/* Render the PDF preview modal only when the doctor has clicked Save */}
       {showPreview && (
         <PDFPreviewModal
           reportData={{

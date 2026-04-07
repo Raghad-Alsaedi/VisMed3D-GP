@@ -11,14 +11,10 @@ interface PatientViewProps {
 }
 
 const PatientView = ({
-  reportText,
-  bodyPart,
-  clinicalIndication,
-  technique,
-  finding,
-  impression,
-  capturedImageUrl,
+  reportText, bodyPart, clinicalIndication,
+  technique, finding, impression, capturedImageUrl,
 }: PatientViewProps) => {
+  // If there's no report content at all, show a friendly empty state
   if (!reportText) {
     return (
       <div className="w-full flex-1 text-white p-4 sm:p-5 md:p-6 rounded-md border border-white/20 overflow-auto bg-[#040A16]">
@@ -28,6 +24,10 @@ const PatientView = ({
   }
 
   const sectionTitleClass = "font-semibold text-white mb-1 sm:mb-2 text-xs sm:text-sm md:text-base";
+
+  // We use dangerouslySetInnerHTML to render the formatted HTML produced by the Tiptap editor
+  // (bold, italic, bullet lists, etc.). This is safe here because the content comes exclusively
+  // from the editor — it is never taken directly from user input in a way that could inject scripts.
   const sectionTextClass  = "leading-relaxed text-white/90 text-xs sm:text-sm md:text-base";
 
   return (
@@ -37,6 +37,7 @@ const PatientView = ({
         {bodyPart && (
           <div>
             <h3 className={sectionTitleClass}>Body Part:</h3>
+            {/* Body Part is always plain text — no HTML to render */}
             <p className={sectionTextClass}>{bodyPart}</p>
           </div>
         )}
@@ -44,53 +45,38 @@ const PatientView = ({
         {clinicalIndication && (
           <div>
             <h3 className={sectionTitleClass}>Clinical Indication:</h3>
-            <div
-              className={`${sectionTextClass} prose-patient`}
-              dangerouslySetInnerHTML={{ __html: clinicalIndication }}
-            />
+            <div className={`${sectionTextClass} prose-patient`} dangerouslySetInnerHTML={{ __html: clinicalIndication }} />
           </div>
         )}
 
         {technique && (
           <div>
             <h3 className={sectionTitleClass}>Technique:</h3>
-            <div
-              className={`${sectionTextClass} prose-patient`}
-              dangerouslySetInnerHTML={{ __html: technique }}
-            />
+            <div className={`${sectionTextClass} prose-patient`} dangerouslySetInnerHTML={{ __html: technique }} />
           </div>
         )}
 
         {finding && (
           <div>
             <h3 className={sectionTitleClass}>Finding:</h3>
-            <div
-              className={`${sectionTextClass} prose-patient`}
-              dangerouslySetInnerHTML={{ __html: finding }}
-            />
+            <div className={`${sectionTextClass} prose-patient`} dangerouslySetInnerHTML={{ __html: finding }} />
           </div>
         )}
 
         {impression && (
           <div>
             <h3 className={sectionTitleClass}>Impression:</h3>
-            <div
-              className={`${sectionTextClass} prose-patient`}
-              dangerouslySetInnerHTML={{ __html: impression }}
-            />
+            <div className={`${sectionTextClass} prose-patient`} dangerouslySetInnerHTML={{ __html: impression }} />
           </div>
         )}
 
         {capturedImageUrl && (
           <div>
             <h3 className={sectionTitleClass}>Attached Image:</h3>
-            <img
-              src={capturedImageUrl}
-              alt="Report screenshot"
-              className="max-w-full h-auto rounded border border-white/20"
-            />
+            <img src={capturedImageUrl} alt="Report screenshot" className="max-w-full h-auto rounded border border-white/20" />
           </div>
         )}
+
       </div>
     </div>
   );

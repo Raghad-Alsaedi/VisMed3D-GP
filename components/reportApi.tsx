@@ -12,9 +12,9 @@ export interface SavedReportData extends ReportData {
   images?: any;
 }
 
+// Removes all HTML tags from a string - used when a field should show plain text only
 export const stripHtmlTags = (html: string): string => {
   if (!html) return "";
-  
   return html
     .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;/g, ' ')
@@ -26,6 +26,11 @@ export const stripHtmlTags = (html: string): string => {
     .trim();
 };
 
+// Fetches the report from the database using the accession ID.
+// We check autosave_text first because it holds the most recent structured
+// content saved automatically by the editor (stored as JSON).
+// If autosave_text is missing, we fall back to report_text which is an older
+// format that stored the entire report as one plain-text block.
 export const fetchReport = async (accessionId: string) => {
   console.log(' fetchReport called for accessionId:', accessionId);
   
@@ -70,16 +75,16 @@ export const fetchReport = async (accessionId: string) => {
 
   if (autosaveData) {
     console.log('Using autosave data');
-    bodyPartContent = autosaveData.body_part || "";
-    clinicalIndicationContent = autosaveData.clinical_indication || "";
-    techniqueContent = autosaveData.technique || "";
-    findingContent = autosaveData.finding || "";
-    impressionContent = autosaveData.impression || "";
-    
+    bodyPartContent            = autosaveData.body_part || "";
+    clinicalIndicationContent  = autosaveData.clinical_indication || "";
+    techniqueContent           = autosaveData.technique || "";
+    findingContent             = autosaveData.finding || "";
+    impressionContent          = autosaveData.impression || "";
     console.log('Body Part from autosave:', bodyPartContent);
     console.log('Clinical Indication from autosave:', clinicalIndicationContent);
   } 
   else if (report.reportText || report.report_text) {
+    // Older reports stored everything as one big text block - extract each section by name
     console.log('No autosave data, trying to extract from report_text');
     const reportText = report.reportText || report.report_text;
     
@@ -94,15 +99,16 @@ export const fetchReport = async (accessionId: string) => {
       return extracted;
     };
     
-    bodyPartContent = stripHtmlTags(extractSection("Body Part"));
-    clinicalIndicationContent = extractSection("Clinical Indication");
-    techniqueContent = extractSection("Technique");
-    findingContent = extractSection("Finding");
-    impressionContent = extractSection("Impression");
+    bodyPartContent            = stripHtmlTags(extractSection("Body Part"));
+    clinicalIndicationContent  = extractSection("Clinical Indication");
+    techniqueContent           = extractSection("Technique");
+    findingContent             = extractSection("Finding");
+    impressionContent          = extractSection("Impression");
   } else {
     console.log(' No reportText or autosave_text found');
   }
 
+  // If a scan screenshot was previously attached, load its URL
   if (report.images) {
     try {
       let imagesData;
@@ -111,7 +117,6 @@ export const fetchReport = async (accessionId: string) => {
       } else {
         imagesData = report.images;
       }
-      
       if (imagesData && imagesData.imageUrl) {
         imageUrl = imagesData.imageUrl;
         imageAlreadyCaptured = true;
@@ -138,13 +143,14 @@ export const fetchReport = async (accessionId: string) => {
   return result;
 };
 
+// Saves the current editor content as a draft - called automatically every 10 seconds
+// and whenever the doctor leaves a field
 export const saveDraft = async (
   accessionId: string,
   data: ReportData,
   currentStatus: string
 ) => {
   console.log('Saving draft...', { accessionId, data, currentStatus });
-  
   const response = await fetch("/api/reports/autosave-draft", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -158,15 +164,14 @@ export const saveDraft = async (
       current_status: currentStatus,
     }),
   });
-
   const result = await response.json();
   console.log('Draft save result:', result);
   return result;
 };
 
+// Saves the report as "completed" — called when the doctor confirms the PDF preview
 export const saveFinal = async (accessionId: string, data: ReportData) => {
   console.log('Saving final report...', { accessionId, data });
-  
   const response = await fetch("/api/reports/save-final", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -179,7 +184,6 @@ export const saveFinal = async (accessionId: string, data: ReportData) => {
       impression: data.impression,
     }),
   });
-
   const result = await response.json();
   console.log('Final save result:', result);
   return result;

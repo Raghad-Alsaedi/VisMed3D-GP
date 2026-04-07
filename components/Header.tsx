@@ -21,6 +21,7 @@ const Header = () => {
   const [patientName, setPatientName]           = useState<string>("");
   const [accessionNumber, setAccessionNumber]   = useState<string>("");
   const [canSaveProcessed, setCanSaveProcessed] = useState(false);
+  const [isManualMode, setIsManualMode]         = useState(false);
   // Holds the resolve function of the save promise so the iframe message can complete it
   const saveResolverRef = useRef<((path: string) => void) | null>(null);
 
@@ -38,6 +39,12 @@ const Header = () => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Detect if the viewer is currently in manual TF mode by checking the URL path
+  useEffect(() => {
+    if (!mounted) return;
+    setIsManualMode(pathname === "/manualTF");
+  }, [pathname, mounted]);
 
   // Watch for messages from the iframe to track when the volume is ready or done saving
   useEffect(() => {
@@ -174,7 +181,7 @@ const Header = () => {
   // Decide whether to show the back arrow based on the current page and user state
   const showBackArrow = () => {
     if (!mounted)    return false;
-    if (isManualTF)  return false;
+    if (isManualTF)  return true;
     if (isDropFile)  return true;
     if (isViewImage) return !fromUpload;
     if (isReport)    return true;
@@ -183,6 +190,13 @@ const Header = () => {
 
   // Navigate back to the right page depending on the user's role and where they came from
   const handleBack = () => {
+    // On manual TF mode, go directly to writingReport with the stored accession id
+    if (isManualTF) {
+      const id   = resolvedAccessionId;
+      const from = typeof window !== "undefined" ? sessionStorage.getItem("viewimg_from") ?? "" : "";
+      router.push(`/doctor/writingReport${id ? `?accession_id=${id}&from=${from}` : ""}`);
+      return;
+    }
     if (isViewImage && isDoctor) {
       const id   = resolvedAccessionId;
       const from = typeof window !== "undefined" ? sessionStorage.getItem("viewimg_from") ?? "" : "";
@@ -197,9 +211,9 @@ const Header = () => {
     router.back();
   };
 
-  // Save/Cancel show for technician after upload — Reset shows on viewer and report pages
+  // Save/Cancel show for technician after upload — Reset shows only on viewer page (not on report page)
   const showSaveCancelButtons = mounted && isTech && isViewImage && fromUpload;
-  const showResetButton       = isViewImage || isReport;
+  const showResetButton       = isViewImage && !isReport;
   const showName              = !!patientName;
 
   return (

@@ -11,18 +11,18 @@ export async function GET(
     const [rows]: any = await db.query(
       `SELECT
          u.id,
-         u.first_name,
-         u.middle_name,
-         u.last_name,
+         u.first_name            AS firstName,
+         u.middle_name           AS middleName,
+         u.last_name             AS lastName,
          u.gender,
-         u.is_active,
+         u.is_active             AS isActive,
          u.email,
          u.phone,
-         u.profile_picture,
+         u.profile_picture       AS profilePicture,
          p.medical_record_number AS mrn,
-         p.national_id,
-         p.date_of_birth,
-         tpa.created_at          AS assigned_at
+         p.national_id           AS nationalId,
+         p.date_of_birth         AS dateOfBirth,
+         tpa.created_at          AS assignedAt
        FROM users tech_user
        INNER JOIN technicians t
                ON tech_user.technician_id = t.technician_id
@@ -48,14 +48,15 @@ export async function GET(
   }
 }
 
+
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id }          = await params;
+    const { id }           = await params;
     const { searchParams } = new URL(req.url);
-    const patientUserId   = searchParams.get("patient_id");
+    const patientUserId    = searchParams.get("patient_id");
     if (!patientUserId)
       return NextResponse.json({ status: "error", message: "patient_id required" }, { status: 400 });
 

@@ -8,81 +8,81 @@ export type UserRole = "patient" | "doctor" | "technician";
 
 interface BaseUser {
   id: number;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   gender: string;
-  is_active: number;
+  isActive: number;
   username: string;
   email: string;
   phone: string;
-  profile_picture?: string;
-  created_at: string;
-  updated_at?: string;
+  profilePicture?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface PatientUser extends BaseUser {
   role: "patient";
   mrn: string;
-  national_id: string;
-  date_of_birth: string;
-  doctor_name?: string;
-  tech_name?: string;
+  nationalId: string;
+  dateOfBirth: string;
+  doctorName?: string;
+  techName?: string;
 }
 
 export interface DoctorUser extends BaseUser {
   role: "doctor";
-  doctor_code: string;
+  doctorCode: string;
   specialty: string;
-  license_number: string;
-  years_experience: number;
+  licenseNumber: string;
+  yearsExperience: number;
 }
 
 export interface TechnicianUser extends BaseUser {
   role: "technician";
-  technician_code: string;
+  technicianCode: string;
   specialty: string;
-  license_number: string;
-  years_experience: number;
+  licenseNumber: string;
+  yearsExperience: number;
 }
 
 export type AnyUser = PatientUser | DoctorUser | TechnicianUser;
 
 interface Report {
-  report_id: number;
-  accession_number: string;
-  body_part: string;
-  doctor_name: string;
+  reportId: number;
+  accessionNumber: string;
+  bodyPart: string;
+  doctorName: string;
   modality: string;
-  exam_date: string;
-  report_status: "Draft" | "completed";
-  created_at: string;
-  signed_at?: string;
+  examDate: string;
+  reportStatus: "Draft" | "completed";
+  createdAt: string;
+  signedAt?: string;
 }
 
 interface AssignedPatient {
   id: number;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   gender: string;
-  is_active: number;
+  isActive: number;
   email: string;
   phone: string;
-  profile_picture?: string;
+  profilePicture?: string;
   mrn: string;
-  national_id: string;
-  date_of_birth: string;
-  assigned_at: string;
+  nationalId: string;
+  dateOfBirth: string;
+  assignedAt: string;
 }
 
 interface Accession {
-  accession_id: number;
-  accession_number: string;
-  exam_date: string;
+  accessionId: number;
+  accessionNumber: string;
+  examDate: string;
   modality: string;
-  created_at: string;
-  volume_status: "READY" | "PROCESSING" | "REJECTED" | "NO VOLUME";
+  createdAt: string;
+  volumeStatus: "READY" | "PROCESSING" | "REJECTED" | "NO VOLUME";
 }
 
 interface AdminUserViewProps {
@@ -159,7 +159,6 @@ const tooltipStyles = `
     .auv-card           { padding: 0.65rem !important; }
     .auv-row-gap        { gap: 0.65rem !important; }
     .auv-grid-gap       { gap: 0.45rem !important; }
-    /* avatar أعرض تكة على mobile — width 108px */
     .auv-avatar-wrap    { width: 108px !important; min-width: 108px !important; flex-shrink: 0 !important; }
     .auv-avatar         { width: 100% !important; height: 130px !important; aspect-ratio: unset !important; }
     .auv-avatar-initials{ font-size: 1.2rem !important; }
@@ -258,8 +257,8 @@ const ReportStatusBadge = ({ status }: { status: "Draft" | "completed" }) => (
   </span>
 );
 
-const VolumeStatusBadge = ({ status }: { status: Accession["volume_status"] }) => {
-  const map: Record<Accession["volume_status"], { label: string; cls: string }> = {
+const VolumeStatusBadge = ({ status }: { status: Accession["volumeStatus"] }) => {
+  const map: Record<Accession["volumeStatus"], { label: string; cls: string }> = {
     READY:       { label: "Ready",      cls: "bg-green-600/80"  },
     PROCESSING:  { label: "Processing", cls: "bg-yellow-600/80" },
     REJECTED:    { label: "Rejected",   cls: "bg-red-600/80"    },
@@ -337,24 +336,24 @@ function AccessionTable({ userId }: { userId: number }) {
 
   const handleDeleteAccession = async (accessionId: number) => {
     try {
-      const res = await fetch(`/api/admin/patients/${userId}/accessions?accession_id=${accessionId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/patients/${userId}/accessions?accessionId=${accessionId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.status !== "ok") throw new Error(data.message || "Failed to delete");
-      setAccessions((prev) => prev.filter((a) => a.accession_id !== accessionId));
+      setAccessions((prev) => prev.filter((a) => a.accessionId !== accessionId));
     } catch (e: any) { setAddError(e.message); }
   };
 
   const filtered = accessions.filter((a) => {
     const q = search.toLowerCase();
-    return a.accession_number.toLowerCase().includes(q) || a.modality.toLowerCase().includes(q) || a.volume_status.toLowerCase().includes(q);
+    return a.accessionNumber.toLowerCase().includes(q) || a.modality.toLowerCase().includes(q) || a.volumeStatus.toLowerCase().includes(q);
   });
 
   const columns = [
-    { key: "accession_number", label: "Accession"     },
-    { key: "modality",         label: "Modality"      },
-    { key: "exam_date",        label: "Exam Date"     },
-    { key: "volume_status",    label: "Volume Status" },
-    { key: "created_at",       label: "Created At"    },
+    { key: "accessionNumber", label: "Accession"     },
+    { key: "modality",        label: "Modality"      },
+    { key: "examDate",        label: "Exam Date"     },
+    { key: "volumeStatus",    label: "Volume Status" },
+    { key: "createdAt",       label: "Created At"    },
   ];
 
   return (
@@ -413,15 +412,15 @@ function AccessionTable({ userId }: { userId: number }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={columns.length + 1} className="py-8 text-center text-gray-400 text-sm">{accessions.length === 0 ? "No accessions found." : "No results match your search."}</td></tr>
               ) : filtered.map((a) => (
-                <tr key={a.accession_id} className={trCls}>
-                  <td className={`${tdCls} text-white font-medium`}>{a.accession_number}</td>
+                <tr key={a.accessionId} className={trCls}>
+                  <td className={`${tdCls} text-white font-medium`}>{a.accessionNumber}</td>
                   <td className={`${tdCls} text-white`}>{a.modality}</td>
-                  <td className={`${tdCls} text-white md:whitespace-nowrap`}>{formatDate(a.exam_date)}</td>
-                  <td className={tdCls}><VolumeStatusBadge status={a.volume_status} /></td>
-                  <td className={`${tdCls} text-gray-400 md:whitespace-nowrap`}>{formatDate(a.created_at)}</td>
+                  <td className={`${tdCls} text-white md:whitespace-nowrap`}>{formatDate(a.examDate)}</td>
+                  <td className={tdCls}><VolumeStatusBadge status={a.volumeStatus} /></td>
+                  <td className={`${tdCls} text-gray-400 md:whitespace-nowrap`}>{formatDate(a.createdAt)}</td>
                   <td className={`${tdCls} text-center w-px`}>
                     <div className="relative dt-group inline-flex">
-                      <button onClick={() => handleDeleteAccession(a.accession_id)} className="p-1 rounded hover:bg-[#1a2a3a] transition-colors text-gray-400 hover:text-red-400 cursor-pointer">
+                      <button onClick={() => handleDeleteAccession(a.accessionId)} className="p-1 rounded hover:bg-[#1a2a3a] transition-colors text-gray-400 hover:text-red-400 cursor-pointer">
                         <Delete size={12} className="md:w-[18px] md:h-[18px] w-3 h-3" />
                       </button>
                       <span className="dt-tooltip">Delete Accession</span>
@@ -460,32 +459,32 @@ function ReportsTable({ userId, role }: { userId: number; role: "patient" | "doc
       const res = await fetch(`/api/admin/reports/${reportId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.status !== "ok") throw new Error(data.message || "Failed to delete");
-      setReports((prev) => prev.filter((r) => r.report_id !== reportId));
+      setReports((prev) => prev.filter((r) => r.reportId !== reportId));
     } catch (e: any) { setDeleteError(e.message); }
   };
 
   const filtered = reports.filter((r) => {
     const q = search.toLowerCase();
     return (
-      r.accession_number.toLowerCase().includes(q) ||
-      (r.body_part ?? "").toLowerCase().includes(q) ||
-      r.doctor_name.toLowerCase().includes(q) ||
+      r.accessionNumber.toLowerCase().includes(q) ||
+      (r.bodyPart ?? "").toLowerCase().includes(q) ||
+      r.doctorName.toLowerCase().includes(q) ||
       r.modality.toLowerCase().includes(q) ||
-      r.report_status.toLowerCase().includes(q) ||
-      ("patient_name" in r ? String((r as any).patient_name).toLowerCase().includes(q) : false)
+      r.reportStatus.toLowerCase().includes(q) ||
+      ("patientName" in r ? String((r as any).patientName).toLowerCase().includes(q) : false)
     );
   });
 
   const isDoctor = role === "doctor";
   const columns = [
-    { key: "accession_number", label: "Accession"  },
-    { key: "body_part",        label: "Body Part"  },
-    ...(isDoctor ? [{ key: "patient_name", label: "Patient" }] : [{ key: "doctor_name", label: "Doctor" }]),
+    { key: "accessionNumber", label: "Accession"  },
+    { key: "bodyPart",        label: "Body Part"  },
+    ...(isDoctor ? [{ key: "patientName", label: "Patient" }] : [{ key: "doctorName", label: "Doctor" }]),
     { key: "modality",      label: "Modality"   },
-    { key: "exam_date",     label: "Exam Date"  },
-    { key: "report_status", label: "Status"     },
-    { key: "created_at",    label: "Created At" },
-    { key: "signed_at",     label: "Signed At"  },
+    { key: "examDate",      label: "Exam Date"  },
+    { key: "reportStatus",  label: "Status"     },
+    { key: "createdAt",     label: "Created At" },
+    { key: "signedAt",      label: "Signed At"  },
   ];
 
   return (
@@ -531,21 +530,21 @@ function ReportsTable({ userId, role }: { userId: number; role: "patient" | "doc
               {filtered.length === 0 ? (
                 <tr><td colSpan={columns.length + 1} className="py-8 text-center text-gray-400 text-sm">{reports.length === 0 ? "No reports found." : "No results match your search."}</td></tr>
               ) : filtered.map((r) => (
-                <tr key={r.report_id} className={trCls}>
-                  <td className={`${tdCls} text-white font-medium`}>{r.accession_number}</td>
-                  <td className={`${tdCls} text-white`}>{r.body_part || "—"}</td>
+                <tr key={r.reportId} className={trCls}>
+                  <td className={`${tdCls} text-white font-medium`}>{r.accessionNumber}</td>
+                  <td className={`${tdCls} text-white`}>{r.bodyPart || "—"}</td>
                   {isDoctor
-                    ? <td className={`${tdCls} text-white md:whitespace-nowrap`}>{(r as any).patient_name || "—"}</td>
-                    : <td className={`${tdCls} text-white md:whitespace-nowrap`}>{r.doctor_name}</td>
+                    ? <td className={`${tdCls} text-white md:whitespace-nowrap`}>{(r as any).patientName || "—"}</td>
+                    : <td className={`${tdCls} text-white md:whitespace-nowrap`}>{r.doctorName}</td>
                   }
                   <td className={`${tdCls} text-white`}>{r.modality}</td>
-                  <td className={`${tdCls} text-white md:whitespace-nowrap`}>{formatDate(r.exam_date)}</td>
-                  <td className={tdCls}><ReportStatusBadge status={r.report_status} /></td>
-                  <td className={`${tdCls} text-gray-400 md:whitespace-nowrap`}>{formatDate(r.created_at)}</td>
-                  <td className={`${tdCls} text-gray-400 md:whitespace-nowrap`}>{formatDate(r.signed_at)}</td>
+                  <td className={`${tdCls} text-white md:whitespace-nowrap`}>{formatDate(r.examDate)}</td>
+                  <td className={tdCls}><ReportStatusBadge status={r.reportStatus} /></td>
+                  <td className={`${tdCls} text-gray-400 md:whitespace-nowrap`}>{formatDate(r.createdAt)}</td>
+                  <td className={`${tdCls} text-gray-400 md:whitespace-nowrap`}>{formatDate(r.signedAt)}</td>
                   <td className={`${tdCls} text-center w-px`}>
                     <div className="relative dt-group inline-flex">
-                      <button onClick={() => handleDeleteReport(r.report_id)} className="p-1 rounded hover:bg-[#1a2a3a] transition-colors text-gray-400 hover:text-red-400 cursor-pointer">
+                      <button onClick={() => handleDeleteReport(r.reportId)} className="p-1 rounded hover:bg-[#1a2a3a] transition-colors text-gray-400 hover:text-red-400 cursor-pointer">
                         <Delete size={12} className="md:w-[18px] md:h-[18px] w-3 h-3" />
                       </button>
                       <span className="dt-tooltip">Delete Report</span>
@@ -583,8 +582,8 @@ function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor
     setDeleteError(null);
     try {
       const url = role === "doctor"
-        ? `/api/admin/doctors/${userId}/patients?patient_id=${patientId}`
-        : `/api/admin/technicians/${userId}/patients?patient_id=${patientId}`;
+        ? `/api/admin/doctors/${userId}/patients?patientId=${patientId}`
+        : `/api/admin/technicians/${userId}/patients?patientId=${patientId}`;
       const res = await fetch(url, { method: "DELETE" });
       const data = await res.json();
       if (data.status !== "ok") throw new Error(data.message || "Failed to remove");
@@ -595,22 +594,22 @@ function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor
   const filtered = patients.filter((p) => {
     const q = search.toLowerCase();
     return (
-      `${p.first_name} ${p.middle_name ?? ""} ${p.last_name}`.toLowerCase().includes(q) ||
+      `${p.firstName} ${p.middleName ?? ""} ${p.lastName}`.toLowerCase().includes(q) ||
       (p.mrn ?? "").toLowerCase().includes(q) ||
-      (p.national_id ?? "").toLowerCase().includes(q) ||
+      (p.nationalId ?? "").toLowerCase().includes(q) ||
       (p.email ?? "").toLowerCase().includes(q)
     );
   });
 
   const columns = [
-    { key: "name",        label: "Name"         },
-    { key: "mrn",         label: "MRN"          },
-    { key: "national_id", label: "National ID"  },
-    { key: "dob",         label: "Date of Birth"},
-    { key: "gender",      label: "Gender"       },
-    { key: "phone",       label: "Phone"        },
-    { key: "status",      label: "Status"       },
-    { key: "assigned_at", label: "Assigned At"  },
+    { key: "name",        label: "Name"          },
+    { key: "mrn",         label: "MRN"           },
+    { key: "nationalId",  label: "National ID"   },
+    { key: "dob",         label: "Date of Birth" },
+    { key: "gender",      label: "Gender"        },
+    { key: "phone",       label: "Phone"         },
+    { key: "status",      label: "Status"        },
+    { key: "assignedAt",  label: "Assigned At"   },
   ];
 
   return (
@@ -657,14 +656,14 @@ function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor
                 <tr><td colSpan={columns.length + 1} className="py-8 text-center text-gray-400 text-sm">{patients.length === 0 ? "No patients assigned yet." : "No results match your search."}</td></tr>
               ) : filtered.map((p) => (
                 <tr key={p.id} className={trCls}>
-                  <td className={`${tdCls} text-white md:whitespace-nowrap`}>{[p.first_name, p.middle_name, p.last_name].filter(Boolean).join(" ")}</td>
+                  <td className={`${tdCls} text-white md:whitespace-nowrap`}>{[p.firstName, p.middleName, p.lastName].filter(Boolean).join(" ")}</td>
                   <td className={`${tdCls} text-white`}>{p.mrn || "—"}</td>
-                  <td className={`${tdCls} text-white`}>{p.national_id || "—"}</td>
-                  <td className={`${tdCls} text-white`}>{formatDate(p.date_of_birth)}</td>
+                  <td className={`${tdCls} text-white`}>{p.nationalId || "—"}</td>
+                  <td className={`${tdCls} text-white`}>{formatDate(p.dateOfBirth)}</td>
                   <td className={`${tdCls} text-white capitalize`}>{p.gender}</td>
                   <td className={`${tdCls} text-white`}>{p.phone || "—"}</td>
-                  <td className={tdCls}><StatusBadge active={p.is_active} /></td>
-                  <td className={`${tdCls} text-gray-400`}>{formatDate(p.assigned_at)}</td>
+                  <td className={tdCls}><StatusBadge active={p.isActive} /></td>
+                  <td className={`${tdCls} text-gray-400`}>{formatDate(p.assignedAt)}</td>
                   <td className={`${tdCls} text-center w-px`}>
                     <div className="relative dt-group inline-flex">
                       <button onClick={() => handleDeletePatient(p.id)} className="p-1 rounded hover:bg-[#1a2a3a] transition-colors text-gray-400 hover:text-red-400 cursor-pointer">
@@ -708,12 +707,14 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
   const saveAvatar = async () => {
     if (!imgFile) return;
     const fd = new FormData();
-    fd.append("id", String(user.id)); fd.append("role", user.role); fd.append("profile_picture", imgFile);
+    fd.append("id", String(user.id));
+    fd.append("role", user.role);
+    fd.append("profile_picture", imgFile); // FormData key stays snake_case for the API
     try {
       const res = await fetch("/api/admin/users/avatar", { method: "POST", body: fd });
       const data = await res.json();
       if (data.status !== "ok") throw new Error(data.message);
-      setUser((u) => ({ ...u, profile_picture: data.profile_picture }));
+      setUser((u) => ({ ...u, profilePicture: data.profilePicture }));
       setImgPreview(null); setImgFile(null);
     } catch (e: any) { setImgError(e.message); }
   };
@@ -726,17 +727,28 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
     setSaveError(null); setEditingCard(card);
     if (card === "personal") {
       setDraft({
-        first_name: user.first_name, middle_name: user.middle_name ?? "", last_name: user.last_name, gender: user.gender,
-        ...(isPatient ? { date_of_birth: (user as PatientUser).date_of_birth?.slice(0, 10) ?? "", national_id: (user as PatientUser).national_id ?? "" } : {}),
+        firstName:  user.firstName,
+        middleName: user.middleName ?? "",
+        lastName:   user.lastName,
+        gender:     user.gender,
+        ...(isPatient ? {
+          dateOfBirth: (user as PatientUser).dateOfBirth?.slice(0, 10) ?? "",
+          nationalId:  (user as PatientUser).nationalId ?? "",
+        } : {}),
       });
     } else if (card === "medical" && isPatient) {
       const p = user as PatientUser;
-      setDraft({ national_id: p.national_id ?? "", date_of_birth: p.date_of_birth?.slice(0, 10) ?? "", doctor_name: p.doctor_name ?? "", tech_name: p.tech_name ?? "" });
+      setDraft({ nationalId: p.nationalId ?? "", dateOfBirth: p.dateOfBirth?.slice(0, 10) ?? "", doctorName: p.doctorName ?? "", techName: p.techName ?? "" });
     } else if (card === "professional") {
-      if (isDoctor) { const d = user as DoctorUser; setDraft({ doctor_code: d.doctor_code, specialty: d.specialty, license_number: d.license_number, years_experience: d.years_experience }); }
-      else { const t = user as TechnicianUser; setDraft({ technician_code: t.technician_code, specialty: t.specialty, license_number: t.license_number, years_experience: t.years_experience }); }
+      if (isDoctor) {
+        const d = user as DoctorUser;
+        setDraft({ doctorCode: d.doctorCode, specialty: d.specialty, licenseNumber: d.licenseNumber, yearsExperience: d.yearsExperience });
+      } else {
+        const t = user as TechnicianUser;
+        setDraft({ technicianCode: t.technicianCode, specialty: t.specialty, licenseNumber: t.licenseNumber, yearsExperience: t.yearsExperience });
+      }
     } else if (card === "account") {
-      setDraft({ username: user.username, email: user.email, phone: user.phone, is_active: user.is_active, password: "" });
+      setDraft({ username: user.username, email: user.email, phone: user.phone, isActive: user.isActive, password: "" });
     }
   };
 
@@ -749,14 +761,17 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
     setSaving(true); setSaveError(null);
     try {
       const body: Record<string, unknown> = { id: user.id, role: user.role };
-      Object.entries(pendingPayload).forEach(([k, v]) => { if (k === "password" && (!v || String(v).trim() === "")) return; body[k] = v; });
+      Object.entries(pendingPayload).forEach(([k, v]) => {
+        if (k === "password" && (!v || String(v).trim() === "")) return;
+        body[k] = v;
+      });
       const res  = await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.status !== "ok") throw new Error(data.message || "Save failed");
       setUser((u) => {
         const updated = { ...u };
         Object.entries(pendingPayload).forEach(([k, v]) => { if (k !== "password") (updated as any)[k] = v; });
-        updated.updated_at = new Date().toISOString();
+        updated.updatedAt = new Date().toISOString();
         return updated as AnyUser;
       });
       setPendingPayload(null); setEditingCard(null); setDraft({}); setShowPassword(false);
@@ -794,17 +809,16 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
           {/* ── ROW 1: Profile + Personal Info ── */}
           <div className="auv-card bg-[#0D1A2D] border border-white/10 rounded-2xl p-4 sm:p-6 flex flex-row gap-4 sm:gap-8 items-start">
 
-          
             <div className="auv-avatar-wrap flex-shrink-0 flex flex-col gap-1 items-start w-44">
               <div className="relative w-full overflow-visible">
                 <div className="auv-avatar w-full aspect-square rounded-xl overflow-hidden relative bg-[#040A16] border border-white/10 z-0">
                   {imgPreview ? (
                     <img src={imgPreview} alt="preview" className="absolute inset-0 w-full h-full object-cover" />
-                  ) : user.profile_picture ? (
-                    <img src={`/api/images/${user.profile_picture.replace(/\/+$/, "").split("/").pop()}`} alt={user.first_name} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : user.profilePicture ? (
+                    <img src={`/api/images/${user.profilePicture.replace(/\/+$/, "").split("/").pop()}`} alt={user.firstName} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="auv-avatar-initials text-3xl text-[#4A7ACA] font-bold">{user.first_name?.[0]}{user.last_name?.[0]}</span>
+                      <span className="auv-avatar-initials text-3xl text-[#4A7ACA] font-bold">{user.firstName?.[0]}{user.lastName?.[0]}</span>
                     </div>
                   )}
                 </div>
@@ -836,24 +850,24 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
               <SectionTitle title="Personal Information" editing={editingCard === "personal"} onEdit={() => openEdit("personal")} onConfirm={requestSave} onCancel={cancelEdit} />
               {editingCard === "personal" ? (
                 <div className="auv-personal-grid auv-grid-gap grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
-                  <InputField label="First Name"  value={String(draft.first_name  ?? "")} onChange={(v) => set("first_name", v)} />
-                  <InputField label="Middle Name" value={String(draft.middle_name ?? "")} onChange={(v) => set("middle_name", v)} />
-                  <InputField label="Last Name"   value={String(draft.last_name   ?? "")} onChange={(v) => set("last_name", v)} />
+                  <InputField label="First Name"  value={String(draft.firstName  ?? "")} onChange={(v) => set("firstName", v)} />
+                  <InputField label="Middle Name" value={String(draft.middleName ?? "")} onChange={(v) => set("middleName", v)} />
+                  <InputField label="Last Name"   value={String(draft.lastName   ?? "")} onChange={(v) => set("lastName", v)} />
                   <SelectField label="Gender" value={String(draft.gender ?? "male")} onChange={(v) => set("gender", v)} options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} />
                   {isPatient && <>
-                    <InputField label="Date of Birth" type="date" value={String(draft.date_of_birth ?? "")} onChange={(v) => set("date_of_birth", v)} />
-                    <InputField label="National ID"   value={String(draft.national_id ?? "")} onChange={(v) => set("national_id", v)} />
+                    <InputField label="Date of Birth" type="date" value={String(draft.dateOfBirth ?? "")} onChange={(v) => set("dateOfBirth", v)} />
+                    <InputField label="National ID"   value={String(draft.nationalId ?? "")} onChange={(v) => set("nationalId", v)} />
                   </>}
                 </div>
               ) : (
                 <div className="auv-personal-grid auv-grid-gap grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
-                  <Field label="First Name"  value={user.first_name} />
-                  <Field label="Middle Name" value={user.middle_name} />
-                  <Field label="Last Name"   value={user.last_name} />
+                  <Field label="First Name"  value={user.firstName} />
+                  <Field label="Middle Name" value={user.middleName} />
+                  <Field label="Last Name"   value={user.lastName} />
                   <Field label="Gender"      value={user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : undefined} />
                   {isPatient && <>
-                    <Field label="Date of Birth"       value={formatDate((user as PatientUser).date_of_birth)} />
-                    <Field label="National ID / Iqama" value={(user as PatientUser).national_id} />
+                    <Field label="Date of Birth"       value={formatDate((user as PatientUser).dateOfBirth)} />
+                    <Field label="National ID / Iqama" value={(user as PatientUser).nationalId} />
                   </>}
                 </div>
               )}
@@ -868,18 +882,18 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                 {editingCard === "professional" ? (
                   <div className="auv-prof-grid auv-grid-gap grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                     <InputField label={isDoctor ? "Doctor Code" : "Technician Code"}
-                      value={String(isDoctor ? draft.doctor_code ?? "" : draft.technician_code ?? "")}
-                      onChange={(v) => set(isDoctor ? "doctor_code" : "technician_code", v)} />
+                      value={String(isDoctor ? draft.doctorCode ?? "" : draft.technicianCode ?? "")}
+                      onChange={(v) => set(isDoctor ? "doctorCode" : "technicianCode", v)} />
                     <InputField label="Specialty"        value={String(draft.specialty        ?? "")} onChange={(v) => set("specialty", v)} />
-                    <InputField label="License Number"   value={String(draft.license_number   ?? "")} onChange={(v) => set("license_number", v)} />
-                    <InputField label="Experience (yrs)" type="number" value={Number(draft.years_experience ?? 0)} onChange={(v) => set("years_experience", Number(v))} />
+                    <InputField label="License Number"   value={String(draft.licenseNumber    ?? "")} onChange={(v) => set("licenseNumber", v)} />
+                    <InputField label="Experience (yrs)" type="number" value={Number(draft.yearsExperience ?? 0)} onChange={(v) => set("yearsExperience", Number(v))} />
                   </div>
                 ) : (
                   <div className="auv-prof-grid auv-grid-gap grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                    <Field label={isDoctor ? "Doctor Code" : "Technician Code"} value={isDoctor ? (user as DoctorUser).doctor_code : (user as TechnicianUser).technician_code} />
+                    <Field label={isDoctor ? "Doctor Code" : "Technician Code"} value={isDoctor ? (user as DoctorUser).doctorCode : (user as TechnicianUser).technicianCode} />
                     <Field label="Specialty"      value={(user as DoctorUser | TechnicianUser).specialty} />
-                    <Field label="License Number" value={(user as DoctorUser | TechnicianUser).license_number} />
-                    <Field label="Experience"     value={`${(user as DoctorUser | TechnicianUser).years_experience} yrs`} />
+                    <Field label="License Number" value={(user as DoctorUser | TechnicianUser).licenseNumber} />
+                    <Field label="Experience"     value={`${(user as DoctorUser | TechnicianUser).yearsExperience} yrs`} />
                   </div>
                 )}
               </div>
@@ -895,18 +909,18 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                       <input type="text" value={(user as PatientUser).mrn ?? "—"} readOnly
                         className="auv-input bg-[#040A16]/50 border border-[#374151]/50 rounded-lg px-2 py-1.5 text-gray-400 text-sm outline-none cursor-not-allowed select-none" />
                     </div>
-                    <Field label="Created At" value={formatDate(user.created_at)} />
-                    <Field label="Updated At" value={formatDate(user.updated_at)} />
-                    <InputField label="Assigned Doctor"     value={String((user as PatientUser).doctor_name ?? "")} onChange={(v) => set("doctor_name", v)} />
-                    <InputField label="Assigned Technician" value={String((user as PatientUser).tech_name  ?? "")} onChange={(v) => set("tech_name", v)} />
+                    <Field label="Created At" value={formatDate(user.createdAt)} />
+                    <Field label="Updated At" value={formatDate(user.updatedAt)} />
+                    <InputField label="Assigned Doctor"     value={String((user as PatientUser).doctorName ?? "")} onChange={(v) => set("doctorName", v)} />
+                    <InputField label="Assigned Technician" value={String((user as PatientUser).techName   ?? "")} onChange={(v) => set("techName", v)} />
                   </div>
                 ) : (
                   <div className="auv-medical-grid auv-prof-grid auv-grid-gap grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                     <Field label="MRN"                 value={(user as PatientUser).mrn} />
-                    <Field label="Created At"          value={formatDate(user.created_at)} />
-                    <Field label="Updated At"          value={formatDate(user.updated_at)} />
-                    <Field label="Assigned Doctor"     value={(user as PatientUser).doctor_name} />
-                    <Field label="Assigned Technician" value={(user as PatientUser).tech_name} />
+                    <Field label="Created At"          value={formatDate(user.createdAt)} />
+                    <Field label="Updated At"          value={formatDate(user.updatedAt)} />
+                    <Field label="Assigned Doctor"     value={(user as PatientUser).doctorName} />
+                    <Field label="Assigned Technician" value={(user as PatientUser).techName} />
                   </div>
                 )}
               </div>
@@ -931,7 +945,7 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                       </button>
                     </div>
                   </div>
-                  <SelectField label="Status" value={String(draft.is_active ?? "1")} onChange={(v) => set("is_active", Number(v))}
+                  <SelectField label="Status" value={String(draft.isActive ?? "1")} onChange={(v) => set("isActive", Number(v))}
                     options={[{ label: "Active", value: "1" }, { label: "Inactive", value: "0" }]} />
                 </div>
               ) : (
@@ -941,11 +955,11 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                   <Field label="Phone"    value={user.phone} />
                   <div className="flex flex-col gap-1">
                     <span className="auv-field-label text-gray-500 text-xs tracking-wide">Status</span>
-                    <StatusBadge active={user.is_active} />
+                    <StatusBadge active={user.isActive} />
                   </div>
                   {(isDoctor || isTechnician) && <>
-                    <Field label="Created At" value={formatDate(user.created_at)} />
-                    <Field label="Updated At" value={formatDate(user.updated_at)} />
+                    <Field label="Created At" value={formatDate(user.createdAt)} />
+                    <Field label="Updated At" value={formatDate(user.updatedAt)} />
                   </>}
                 </div>
               )}
