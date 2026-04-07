@@ -46,6 +46,16 @@ const Header = () => {
     setIsManualMode(pathname === "/manualTF");
   }, [pathname, mounted]);
 
+  // reset
+  const resetView = () => {
+    const iframe = document.querySelector('iframe') as HTMLIFrameElement;
+
+    iframe?.contentWindow?.postMessage(
+      { type: 'RESET_VIEW' },
+      '*'
+    );
+  };
+
   // Watch for messages from the iframe to track when the volume is ready or done saving
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -286,6 +296,7 @@ const Header = () => {
 
         {showResetButton && (
           <button
+            onClick={resetView}
             className="text-white cursor-pointer rounded-xl md:rounded-2xl border border-white/30
                        transition-all font-semibold bg-[#0D1A2D]
                        px-2 py-1.5 sm:px-4 sm:py-2 md:px-6 md:py-4
