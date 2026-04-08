@@ -29,14 +29,7 @@ const defaultSteps: Step[] = [
   { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
 ];
 
-const presets = [
-  {
-    key: "bone",
-    label: "Bone",
-    icon: Bone,
-    filter: (step: Step) => step.rangeStart >= 700 && step.rangeEnd <= 3000,
-  },
-];
+
 
 const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
   const router = useRouter();
@@ -47,12 +40,23 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
 
   const [isPanelVisible, setIsPanelVisible]       = useState(true);
   const [activePresets, setActivePresets]         = useState<Set<string>>(new Set());
+  const [boneThreshold, setBoneThreshold] = useState(700);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
+const presets = [
+  {
+    key: "bone",
+    label: "Bone",
+    icon: Bone,
+    filter: (step: Step) => step.rangeStart >= boneThreshold,
+  },
+];
   useEffect(() => {
     if (onTransferFunctionChange) {
       const finalSteps = defaultSteps.map(step => {
         if (activePresets.size === 0) return { ...step };
+        if (activePresets.has("bone") && step.id === 8) {
+          return { ...step, rangeStart: boneThreshold };
+        }
         const isVisible = presets.some(
           preset => activePresets.has(preset.key) && preset.filter(step)
         );
@@ -60,7 +64,7 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
       });
       onTransferFunctionChange(finalSteps);
     }
-  }, [activePresets, onTransferFunctionChange]);
+  }, [activePresets, boneThreshold, onTransferFunctionChange]);
 
   if (role === "technician") return null;
 
@@ -119,10 +123,8 @@ const AutoTF = ({ onTransferFunctionChange }: AutoTFProps) => {
             </label>
             <label
               className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white"
-onClick={() => {
-  const accessionId = sessionStorage.getItem("viewimg_accession_id");
-  router.push(`/manualTF?volumeId=${volumeId}${accessionId ? `&accession_id=${accessionId}` : ""}`);
-}}            >
+              onClick={() => router.push(`/manualTF?volumeId=${volumeId}`)}
+            >
               <input type="radio" name="TFMode" className="peer hidden" />
               <span className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Manual
@@ -154,9 +156,25 @@ onClick={() => {
                     }`}
                   />
                 </button>
-              </div>
+             </div>
             );
           })}
+          {activePresets.has("bone") && (
+            <div className="px-2 pb-1">
+              <span className="text-[10px] text-white/70">
+  Start: {boneThreshold} HU
+</span>
+              <input
+                type="range"
+                min="-1000"
+                max="3000"
+                step="50"
+                value={boneThreshold}
+                onChange={(e) => setBoneThreshold(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+          )}
         </div>
 
         <div className="px-1.5 sm:px-2 pb-1.5 sm:pb-2">
