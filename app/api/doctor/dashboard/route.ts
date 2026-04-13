@@ -67,7 +67,7 @@ WHERE u.doctor_id = ? AND u.role = 'doctor'
         ORDER BY report_id DESC
         LIMIT 1
       )
-WHERE dpa.doctor_id = ?
+      WHERE dpa.doctor_id = ?
       ORDER BY p.patient_id ASC
       `,
       [doctorId]

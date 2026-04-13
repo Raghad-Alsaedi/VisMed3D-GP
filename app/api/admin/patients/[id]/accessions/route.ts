@@ -97,7 +97,7 @@ export async function POST(
   }
 }
 
-// DELETE — remove an accession by ID 
+
 
 export async function DELETE(
   req: Request,
