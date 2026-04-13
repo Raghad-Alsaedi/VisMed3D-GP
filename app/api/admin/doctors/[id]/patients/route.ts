@@ -58,7 +58,7 @@ export async function DELETE(
   try {
     const { id }           = await params;
     const { searchParams } = new URL(req.url);
-    const patientUserId    = searchParams.get("patient_id");
+    const patientUserId    = searchParams.get("patientId");
 
     if (!patientUserId)
       return NextResponse.json(
@@ -98,5 +98,40 @@ export async function DELETE(
       { status: "error", message: "Failed to remove assignment" },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const { patientUserId } = await req.json();
+
+    if (!patientUserId)
+      return NextResponse.json({ status: "error", message: "patientUserId required" }, { status: 400 });
+
+    const [[docRow]]: any = await db.query(
+      `SELECT doctor_id FROM users WHERE id = ? AND role = 'doctor' LIMIT 1`, [id]
+    );
+    if (!docRow?.doctor_id)
+      return NextResponse.json({ status: "error", message: "Doctor not found" }, { status: 404 });
+
+    const [[patRow]]: any = await db.query(
+      `SELECT patient_id FROM users WHERE id = ? AND role = 'patient' LIMIT 1`, [patientUserId]
+    );
+    if (!patRow?.patient_id)
+      return NextResponse.json({ status: "error", message: "Patient not found" }, { status: 404 });
+
+    await db.query(
+      `INSERT IGNORE INTO doctor_patient_assignments (doctor_id, patient_id) VALUES (?, ?)`,
+      [docRow.doctor_id, patRow.patient_id]
+    );
+
+    return NextResponse.json({ status: "ok" });
+  } catch (err) {
+    console.error("Doctor patient POST error:", err);
+    return NextResponse.json({ status: "error", message: "Failed to assign" }, { status: 500 });
   }
 }

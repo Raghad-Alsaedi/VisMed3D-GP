@@ -90,7 +90,6 @@ interface AdminUserViewProps {
   onClose: () => void;
 }
 
-
 const tooltipStyles = `
   .dt-tooltip {
     position: absolute;
@@ -134,7 +133,6 @@ const tooltipStyles = `
   .auv-field-label   { font-size: 0.72rem; }
   .auv-field-value   { font-size: 0.82rem; }
 
-  /* ── Medium (768–1023px) ── */
   @media (min-width: 768px) and (max-width: 1023px) {
     .auv-header-title  { font-size: 1.1rem !important; }
     .auv-section-title { font-size: 0.76rem !important; }
@@ -152,7 +150,6 @@ const tooltipStyles = `
     .auv-section-icon  { width: 12px !important; height: 12px !important; }
   }
 
-  /* ── Small (<768px) ── */
   @media (max-width: 767px) {
     .auv-page-wrap      { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 0.6rem !important; padding-bottom: 1rem !important; }
     .auv-header-title   { font-size: 0.9rem !important; }
@@ -295,7 +292,6 @@ const SectionTitle = ({ title, editing, onEdit, onConfirm, onCancel }: {
   </div>
 );
 
-
 const tableWrapCls = "auv-table-wrap custom-scroll overflow-y-auto overflow-x-auto border border-white/30 rounded-lg";
 const theadCls     = "sticky top-0 bg-[#040A16] z-10";
 const thCls        = "py-2 px-2.5 sm:py-2.5 sm:px-3 md:py-2.5 md:px-3 lg:py-3 lg:px-4 text-[11px] sm:text-xs md:text-xs lg:text-sm font-semibold text-gray-100 text-left whitespace-nowrap";
@@ -364,33 +360,20 @@ function AccessionTable({ userId }: { userId: number }) {
           {!loading && !error && <span className="auv-badge ml-1 bg-[#17387C]/60 text-blue-300 text-xs font-semibold px-2 py-0.5 rounded-full">{accessions.length}</span>}
         </div>
       </div>
-
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="relative w-36 sm:w-64 md:w-80">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="auv-search-input w-full bg-[#0D1A2D] border border-[#374151] rounded-lg py-2 pl-9 pr-3 text-white text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="auv-search-input w-full bg-[#0D1A2D] border border-[#374151] rounded-lg py-2 pl-9 pr-3 text-white text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="relative dt-group">
-          <button
-            onClick={handleAdd}
-            disabled={adding}
-            className="bg-[#0D1A2D] border border-[#374151] rounded-lg p-2 flex items-center justify-center hover:bg-[#1a2a3a] transition-colors text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {adding
-              ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              : <Plus size={16} />
-            }
+          <button onClick={handleAdd} disabled={adding}
+            className="bg-[#0D1A2D] border border-[#374151] rounded-lg p-2 flex items-center justify-center hover:bg-[#1a2a3a] transition-colors text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            {adding ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Plus size={16} />}
           </button>
           <span className="dt-tooltip">Add Accession</span>
         </div>
       </div>
-
       {loading && <div className="flex items-center gap-2 text-gray-500 text-sm py-4"><span className="inline-block w-4 h-4 border-2 border-[#17387C] border-t-transparent rounded-full animate-spin" />Loading accessions…</div>}
       {error && <div className="bg-red-900/20 border border-red-500/20 rounded-xl px-4 py-3 text-red-300 text-sm">{error}</div>}
       {addError && (
@@ -436,6 +419,9 @@ function AccessionTable({ userId }: { userId: number }) {
   );
 }
 
+/* ============================================================
+   REPORTS TABLE
+============================================================ */
 function ReportsTable({ userId, role }: { userId: number; role: "patient" | "doctor" }) {
   const [reports, setReports]         = useState<Report[]>([]);
   const [loading, setLoading]         = useState(false);
@@ -480,11 +466,11 @@ function ReportsTable({ userId, role }: { userId: number; role: "patient" | "doc
     { key: "accessionNumber", label: "Accession"  },
     { key: "bodyPart",        label: "Body Part"  },
     ...(isDoctor ? [{ key: "patientName", label: "Patient" }] : [{ key: "doctorName", label: "Doctor" }]),
-    { key: "modality",      label: "Modality"   },
-    { key: "examDate",      label: "Exam Date"  },
-    { key: "reportStatus",  label: "Status"     },
-    { key: "createdAt",     label: "Created At" },
-    { key: "signedAt",      label: "Signed At"  },
+    { key: "modality",     label: "Modality"   },
+    { key: "examDate",     label: "Exam Date"  },
+    { key: "reportStatus", label: "Status"     },
+    { key: "createdAt",    label: "Created At" },
+    { key: "signedAt",     label: "Signed At"  },
   ];
 
   return (
@@ -495,20 +481,13 @@ function ReportsTable({ userId, role }: { userId: number; role: "patient" | "doc
           {!loading && !error && <span className="auv-badge ml-1 bg-[#17387C]/60 text-blue-300 text-xs font-semibold px-2 py-0.5 rounded-full">{reports.length}</span>}
         </div>
       </div>
-
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="relative w-36 sm:w-64 md:w-80">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="auv-search-input w-full bg-[#0D1A2D] border border-[#374151] rounded-lg py-2 pl-9 pr-3 text-white text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="auv-search-input w-full bg-[#0D1A2D] border border-[#374151] rounded-lg py-2 pl-9 pr-3 text-white text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </div>
-
       {loading && <div className="flex items-center gap-2 text-gray-500 text-sm py-4"><span className="inline-block w-4 h-4 border-2 border-[#17387C] border-t-transparent rounded-full animate-spin" />Loading reports…</div>}
       {error && <div className="bg-red-900/20 border border-red-500/20 rounded-xl px-4 py-3 text-red-300 text-sm">{error}</div>}
       {deleteError && (
@@ -560,7 +539,9 @@ function ReportsTable({ userId, role }: { userId: number; role: "patient" | "doc
   );
 }
 
-
+/* ============================================================
+   ASSIGNED PATIENTS TABLE
+============================================================ */
 function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor" | "technician" }) {
   const [patients, setPatients]       = useState<AssignedPatient[]>([]);
   const [loading, setLoading]         = useState(false);
@@ -602,14 +583,14 @@ function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor
   });
 
   const columns = [
-    { key: "name",        label: "Name"          },
-    { key: "mrn",         label: "MRN"           },
-    { key: "nationalId",  label: "National ID"   },
-    { key: "dob",         label: "Date of Birth" },
-    { key: "gender",      label: "Gender"        },
-    { key: "phone",       label: "Phone"         },
-    { key: "status",      label: "Status"        },
-    { key: "assignedAt",  label: "Assigned At"   },
+    { key: "name",       label: "Name"          },
+    { key: "mrn",        label: "MRN"           },
+    { key: "nationalId", label: "National ID"   },
+    { key: "dob",        label: "Date of Birth" },
+    { key: "gender",     label: "Gender"        },
+    { key: "phone",      label: "Phone"         },
+    { key: "status",     label: "Status"        },
+    { key: "assignedAt", label: "Assigned At"   },
   ];
 
   return (
@@ -620,20 +601,13 @@ function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor
           {!loading && !error && <span className="auv-badge ml-1 bg-[#17387C]/60 text-blue-300 text-xs font-semibold px-2 py-0.5 rounded-full">{patients.length}</span>}
         </div>
       </div>
-
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="relative w-36 sm:w-64 md:w-80">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="auv-search-input w-full bg-[#0D1A2D] border border-[#374151] rounded-lg py-2 pl-9 pr-3 text-white text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="auv-search-input w-full bg-[#0D1A2D] border border-[#374151] rounded-lg py-2 pl-9 pr-3 text-white text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </div>
-
       {loading && <div className="flex items-center gap-2 text-gray-500 text-sm py-4"><span className="inline-block w-4 h-4 border-2 border-[#17387C] border-t-transparent rounded-full animate-spin" />Loading patients…</div>}
       {error && <div className="bg-red-900/20 border border-red-500/20 rounded-xl px-4 py-3 text-red-300 text-sm">{error}</div>}
       {deleteError && (
@@ -682,7 +656,9 @@ function AssignedPatientsTable({ userId, role }: { userId: number; role: "doctor
   );
 }
 
-
+/* ============================================================
+   MAIN COMPONENT
+============================================================ */
 export default function AdminUserView({ user: initialUser, onClose }: AdminUserViewProps) {
   const [user, setUser]                     = useState<AnyUser>(initialUser);
   const [editingCard, setEditingCard]       = useState<CardName | null>(null);
@@ -694,7 +670,23 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
   const [imgPreview, setImgPreview]         = useState<string | null>(null);
   const [imgError, setImgError]             = useState<string | null>(null);
   const [imgFile, setImgFile]               = useState<File | null>(null);
+  const [availableDoctors,     setAvailableDoctors]     = useState<{ id: number; firstName: string; lastName: string }[]>([]);
+  const [availableTechnicians, setAvailableTechnicians] = useState<{ id: number; firstName: string; lastName: string }[]>([]);
   const imgRef = useRef<HTMLInputElement>(null);
+
+  const isPatient    = user.role === "patient";
+  const isDoctor     = user.role === "doctor";
+  const isTechnician = user.role === "technician";
+
+  useEffect(() => {
+    if (!isPatient) return;
+    fetch("/api/admin/users?role=doctor")
+      .then((r) => r.json())
+      .then((d) => { if (d.status === "ok") setAvailableDoctors(d.users); });
+    fetch("/api/admin/users?role=technician")
+      .then((r) => r.json())
+      .then((d) => { if (d.status === "ok") setAvailableTechnicians(d.users); });
+  }, [isPatient]);
 
   const handleAvatarChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
     const file = ev.target.files?.[0] ?? null;
@@ -709,7 +701,7 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
     const fd = new FormData();
     fd.append("id", String(user.id));
     fd.append("role", user.role);
-    fd.append("profile_picture", imgFile); // FormData key stays snake_case for the API
+    fd.append("profile_picture", imgFile);
     try {
       const res = await fetch("/api/admin/users/avatar", { method: "POST", body: fd });
       const data = await res.json();
@@ -718,10 +710,6 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
       setImgPreview(null); setImgFile(null);
     } catch (e: any) { setImgError(e.message); }
   };
-
-  const isPatient    = user.role === "patient";
-  const isDoctor     = user.role === "doctor";
-  const isTechnician = user.role === "technician";
 
   const openEdit = (card: CardName) => {
     setSaveError(null); setEditingCard(card);
@@ -738,7 +726,18 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
       });
     } else if (card === "medical" && isPatient) {
       const p = user as PatientUser;
-      setDraft({ nationalId: p.nationalId ?? "", dateOfBirth: p.dateOfBirth?.slice(0, 10) ?? "", doctorName: p.doctorName ?? "", techName: p.techName ?? "" });
+      const currentDoctor = availableDoctors.find(
+        (d) => `${d.firstName} ${d.lastName}` === p.doctorName
+      );
+      const currentTech = availableTechnicians.find(
+        (t) => `${t.firstName} ${t.lastName}` === p.techName
+      );
+      setDraft({
+        nationalId:     p.nationalId    ?? "",
+        dateOfBirth:    p.dateOfBirth?.slice(0, 10) ?? "",
+        assignDoctorId: currentDoctor?.id ?? "",
+        assignTechId:   currentTech?.id   ?? "",
+      });
     } else if (card === "professional") {
       if (isDoctor) {
         const d = user as DoctorUser;
@@ -760,20 +759,77 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
     if (!pendingPayload) return;
     setSaving(true); setSaveError(null);
     try {
-      const body: Record<string, unknown> = { id: user.id, role: user.role };
-      Object.entries(pendingPayload).forEach(([k, v]) => {
-        if (k === "password" && (!v || String(v).trim() === "")) return;
-        body[k] = v;
-      });
-      const res  = await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (data.status !== "ok") throw new Error(data.message || "Save failed");
+      // Handle doctor assignment change
+      if (isPatient && "assignDoctorId" in pendingPayload) {
+        const newDoctorId = pendingPayload.assignDoctorId;
+        const oldDoctor = availableDoctors.find(
+          (d) => `${d.firstName} ${d.lastName}` === (user as PatientUser).doctorName
+        );
+        if (oldDoctor) {
+          await fetch(`/api/admin/doctors/${oldDoctor.id}/patients?patientId=${user.id}`, { method: "DELETE" });
+        }
+        if (newDoctorId) {
+          await fetch(`/api/admin/doctors/${newDoctorId}/patients`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patientUserId: user.id }),
+          });
+        }
+      }
+
+      // Handle technician assignment change
+      if (isPatient && "assignTechId" in pendingPayload) {
+        const newTechId = pendingPayload.assignTechId;
+        const oldTech = availableTechnicians.find(
+          (t) => `${t.firstName} ${t.lastName}` === (user as PatientUser).techName
+        );
+        if (oldTech) {
+          await fetch(`/api/admin/technicians/${oldTech.id}/patients?patientId=${user.id}`, { method: "DELETE" });
+        }
+        if (newTechId) {
+          await fetch(`/api/admin/technicians/${newTechId}/patients`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patientUserId: user.id }),
+          });
+        }
+      }
+
+      // Handle regular field updates
+      const regularFields = Object.fromEntries(
+        Object.entries(pendingPayload).filter(([k]) => !["assignDoctorId", "assignTechId"].includes(k))
+      );
+
+      if (Object.keys(regularFields).length > 0) {
+        const body: Record<string, unknown> = { id: user.id, role: user.role };
+        Object.entries(regularFields).forEach(([k, v]) => {
+          if (k === "password" && (!v || String(v).trim() === "")) return;
+          body[k] = v;
+        });
+        const res  = await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.status !== "ok") throw new Error(data.message || "Save failed");
+      }
+
+      // Update local user state
       setUser((u) => {
         const updated = { ...u };
-        Object.entries(pendingPayload).forEach(([k, v]) => { if (k !== "password") (updated as any)[k] = v; });
+        Object.entries(pendingPayload).forEach(([k, v]) => {
+          if (k === "password" || k === "assignDoctorId" || k === "assignTechId") return;
+          (updated as any)[k] = k === "isActive" ? Number(v) : v;
+        });
+        if ("assignDoctorId" in pendingPayload) {
+          const doc = availableDoctors.find((d) => d.id === Number(pendingPayload.assignDoctorId));
+          (updated as any).doctorName = doc ? `${doc.firstName} ${doc.lastName}` : "";
+        }
+        if ("assignTechId" in pendingPayload) {
+          const tech = availableTechnicians.find((t) => t.id === Number(pendingPayload.assignTechId));
+          (updated as any).techName = tech ? `${tech.firstName} ${tech.lastName}` : "";
+        }
         updated.updatedAt = new Date().toISOString();
         return updated as AnyUser;
       });
+
       setPendingPayload(null); setEditingCard(null); setDraft({}); setShowPassword(false);
     } catch (e: any) { setSaveError(e.message); setPendingPayload(null); }
     finally { setSaving(false); }
@@ -788,7 +844,6 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
 
       <div className="auv-page-wrap max-w-6xl mx-auto px-4 sm:px-6 md:px-10 pb-10 pt-6 flex flex-col min-h-screen">
 
-        {/* Header */}
         <div className="relative flex items-center mb-6">
           <button className="header-back-button" onClick={onClose} title="Go back"><ArrowLeft size={18} /></button>
           <h2 className="auv-header-title absolute left-1/2 -translate-x-1/2 text-white font-bold text-xl sm:text-2xl md:text-3xl whitespace-nowrap">
@@ -806,9 +861,8 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
 
         <div className="auv-row-gap flex flex-col gap-5">
 
-          {/* ── ROW 1: Profile + Personal Info ── */}
+          {/* ROW 1: Profile + Personal Info */}
           <div className="auv-card bg-[#0D1A2D] border border-white/10 rounded-2xl p-4 sm:p-6 flex flex-row gap-4 sm:gap-8 items-start">
-
             <div className="auv-avatar-wrap flex-shrink-0 flex flex-col gap-1 items-start w-44">
               <div className="relative w-full overflow-visible">
                 <div className="auv-avatar w-full aspect-square rounded-xl overflow-hidden relative bg-[#040A16] border border-white/10 z-0">
@@ -830,7 +884,6 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                   <span className="dt-tooltip">Change Photo</span>
                 </div>
               </div>
-
               <input ref={imgRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
               {imgError && <p className="text-red-400 text-[10px] text-center w-full">{imgError}</p>}
               {imgFile && !imgError && (
@@ -853,7 +906,8 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                   <InputField label="First Name"  value={String(draft.firstName  ?? "")} onChange={(v) => set("firstName", v)} />
                   <InputField label="Middle Name" value={String(draft.middleName ?? "")} onChange={(v) => set("middleName", v)} />
                   <InputField label="Last Name"   value={String(draft.lastName   ?? "")} onChange={(v) => set("lastName", v)} />
-                  <SelectField label="Gender" value={String(draft.gender ?? "male")} onChange={(v) => set("gender", v)} options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} />
+                  <SelectField label="Gender" value={String(draft.gender ?? "male")} onChange={(v) => set("gender", v)}
+                    options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} />
                   {isPatient && <>
                     <InputField label="Date of Birth" type="date" value={String(draft.dateOfBirth ?? "")} onChange={(v) => set("dateOfBirth", v)} />
                     <InputField label="National ID"   value={String(draft.nationalId ?? "")} onChange={(v) => set("nationalId", v)} />
@@ -911,8 +965,30 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
                     </div>
                     <Field label="Created At" value={formatDate(user.createdAt)} />
                     <Field label="Updated At" value={formatDate(user.updatedAt)} />
-                    <InputField label="Assigned Doctor"     value={String((user as PatientUser).doctorName ?? "")} onChange={(v) => set("doctorName", v)} />
-                    <InputField label="Assigned Technician" value={String((user as PatientUser).techName   ?? "")} onChange={(v) => set("techName", v)} />
+                    <SelectField
+                      label="Assigned Doctor"
+                      value={String(draft.assignDoctorId ?? "")}
+                      onChange={(v) => set("assignDoctorId", v)}
+                      options={[
+                        { label: "— None —", value: "" },
+                        ...availableDoctors.map((d) => ({
+                          label: `${d.firstName} ${d.lastName}`,
+                          value: String(d.id),
+                        })),
+                      ]}
+                    />
+                    <SelectField
+                      label="Assigned Technician"
+                      value={String(draft.assignTechId ?? "")}
+                      onChange={(v) => set("assignTechId", v)}
+                      options={[
+                        { label: "— None —", value: "" },
+                        ...availableTechnicians.map((t) => ({
+                          label: `${t.firstName} ${t.lastName}`,
+                          value: String(t.id),
+                        })),
+                      ]}
+                    />
                   </div>
                 ) : (
                   <div className="auv-medical-grid auv-prof-grid auv-grid-gap grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
@@ -967,9 +1043,7 @@ export default function AdminUserView({ user: initialUser, onClose }: AdminUserV
           </div>
 
           {isPatient && <AccessionTable userId={user.id} />}
-
           {(isDoctor || isTechnician) && <AssignedPatientsTable userId={user.id} role={user.role as "doctor" | "technician"} />}
-
           {(isPatient || isDoctor) && <ReportsTable userId={user.id} role={user.role as "patient" | "doctor"} />}
 
         </div>

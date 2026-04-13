@@ -56,7 +56,7 @@ export async function DELETE(
   try {
     const { id }           = await params;
     const { searchParams } = new URL(req.url);
-    const patientUserId    = searchParams.get("patient_id");
+    const patientUserId    = searchParams.get("patientId");
     if (!patientUserId)
       return NextResponse.json({ status: "error", message: "patient_id required" }, { status: 400 });
 
@@ -80,5 +80,40 @@ export async function DELETE(
   } catch (err) {
     console.error("Technician patient DELETE error:", err);
     return NextResponse.json({ status: "error", message: "Failed to remove assignment" }, { status: 500 });
+  }
+}
+
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const { patientUserId } = await req.json();
+
+    if (!patientUserId)
+      return NextResponse.json({ status: "error", message: "patientUserId required" }, { status: 400 });
+
+    const [[techRow]]: any = await db.query(
+      `SELECT technician_id FROM users WHERE id = ? AND role = 'technician' LIMIT 1`, [id]
+    );
+    if (!techRow?.technician_id)
+      return NextResponse.json({ status: "error", message: "Technician not found" }, { status: 404 });
+
+    const [[patRow]]: any = await db.query(
+      `SELECT patient_id FROM users WHERE id = ? AND role = 'patient' LIMIT 1`, [patientUserId]
+    );
+    if (!patRow?.patient_id)
+      return NextResponse.json({ status: "error", message: "Patient not found" }, { status: 404 });
+
+    await db.query(
+      `INSERT IGNORE INTO technician_patient_assignments (technician_id, patient_id) VALUES (?, ?)`,
+      [techRow.technician_id, patRow.patient_id]
+    );
+
+    return NextResponse.json({ status: "ok" });
+  } catch (err) {
+    console.error("Technician patient POST error:", err);
+    return NextResponse.json({ status: "error", message: "Failed to assign" }, { status: 500 });
   }
 }

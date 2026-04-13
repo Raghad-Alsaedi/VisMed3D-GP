@@ -77,16 +77,16 @@ const Report = ({ onStatusChange, onDataLoaded }: ReportProps) => {
   const getStorageKey = (id: string) => `statusBar_${id}`;
 
   // Updates the status bar message and persists it so it survives a page refresh
-  const showStatusMessage = useCallback((msg: string) => {
-    const time = lastSavedTimeRef.current;
-    setStatusBarMessage(msg);
-    if (accessionId) {
-      try {
-        localStorage.setItem(getStorageKey(accessionId), JSON.stringify({ event: msg, time }));
-      } catch (e) {}
-    }
-    onStatusChange?.(msg, time, false);
-  }, [onStatusChange, accessionId]);
+ const showStatusMessage = useCallback((msg: string, time?: string) => {
+  const resolvedTime = time ?? lastSavedTimeRef.current;
+  setStatusBarMessage(msg);
+  if (accessionId) {
+    try {
+      localStorage.setItem(getStorageKey(accessionId), JSON.stringify({ event: msg, time: resolvedTime }));
+    } catch (e) {}
+  }
+  onStatusChange?.(msg, resolvedTime, false);
+}, [onStatusChange, accessionId]);
 
   // Records the current time as the "last saved at" timestamp shown in the status bar
   const updateSavedTime = useCallback(() => {

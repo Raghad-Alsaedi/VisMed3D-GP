@@ -86,8 +86,16 @@ export default function AdminDoctorList() {
 
   // Show the detail view if a doctor row is selected
   if (selectedUser)
-    return <AdminUserView user={selectedUser} onClose={() => setSelectedUser(null)} />;
-
+  return (
+    <AdminUserView
+      user={selectedUser}
+      onClose={() => {
+        setSelectedUser(null);
+        fetchDoctors();
+      }}
+    />
+  );
+  
   // Show the add form if the add button was clicked
   if (showAdd)
     return (
@@ -101,15 +109,15 @@ export default function AdminDoctorList() {
     );
 
   return (
-    <section className="main-section-container w-full min-w-0 h-screen flex flex-col items-center justify-center overflow-hidden">
-      <div className="w-full px-1.5 sm:px-2 md:px-3 lg:px-4 overflow-hidden">
+    <section className="main-section-container w-full min-w-0 h-screen flex flex-col items-center justify-center overflow-visible">
+      <div className="w-full px-1.5 sm:px-2 md:px-3 lg:px-4 overflow-visible">
         {successMsg && (
           <div className="mb-2 md:mb-3 bg-green-900/30 border border-green-500/30 rounded-xl px-3 py-2 text-green-300 text-[10px] md:text-xs flex items-center gap-2">
             <CheckCircle size={13} className="flex-shrink-0 text-green-400" />
             <span>{successMsg}</span>
           </div>
         )}
-        <div className="bg-[#040A16] border border-white/30 rounded-[10px] p-2 md:p-3 lg:p-4 w-full min-w-0 overflow-hidden">
+        <div className="bg-[#040A16] border border-white/30 rounded-[10px] p-2 md:p-3 lg:p-4 w-full min-w-0 overflow-visible">
           <DataTable
             data={doctors}
             columns={columns}

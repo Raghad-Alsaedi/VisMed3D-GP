@@ -2,6 +2,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { Success, Error as ErrorIcon } from "@/components/icons";
 
 interface Step {
   id: number;
@@ -41,6 +42,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [openSteps, setOpenSteps]                 = useState<Set<number>>(new Set([1]));
   const [isSaving, setIsSaving]                   = useState(false);
+  const [saveToast, setSaveToast] = useState<"success" | "error" | null>(null);
 
   const updateStepRanges = () =>
     steps.map((step) => ({ ...step, rangeEnd: step.rangeStart + step.rangeValue }));
@@ -134,23 +136,48 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   // Sends the current updatedSteps to the API 
   // updatedSteps is used because it holds the final computed rangeEnd values.
   const handleSave = async () => {
-    if (!accessionId || isSaving) return;
-    setIsSaving(true);
-    try {
-      await fetch("/api/manual-tf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessionId: Number(accessionId), steps: updatedSteps }),
-      });
-    } catch (err) {
-      console.error("Failed to save manual TF steps:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  if (!accessionId || isSaving) return;
+  setIsSaving(true);
+  try {
+    await fetch("/api/manual-tf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessionId: Number(accessionId), steps: updatedSteps }),
+    });
+    setSaveToast("success");
+  } catch (err) {
+    console.error("Failed to save manual TF steps:", err);
+    setSaveToast("error");
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <>
+    {saveToast && (
+  <>
+    <style>{`
+      @keyframes toastFadeOut {
+        0%   { opacity: 1; }
+        70%  { opacity: 1; }
+        100% { opacity: 0; }
+      }
+      .toast-fade-out { animation: toastFadeOut 2s ease forwards; }
+    `}</style>
+    <div
+      className={`toast-fade-out fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white shadow-lg whitespace-nowrap ${
+        saveToast === "success" ? "bg-[#1F9C3E]" : "bg-red-600"
+      }`}
+      onAnimationEnd={() => setSaveToast(null)}
+    >
+      {saveToast === "success"
+        ? <><Success className="icon-svg-sm" /> Transfer function saved</>
+        : <><ErrorIcon className="icon-svg-sm" /> Failed to save</>
+      }
+    </div>
+  </>
+)}
       <button
         onClick={() => setIsPanelVisible(!isPanelVisible)}
         className="absolute top-4 right-1 z-20 rounded border border-white/20 bg-[#0D1A2D] p-1 sm:p-1.5 lg:p-2 text-white hover:border-white/70 hover:opacity-90 transition"

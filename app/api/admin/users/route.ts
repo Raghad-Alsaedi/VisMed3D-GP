@@ -155,8 +155,6 @@ export async function DELETE(req: Request) {
   }
 }
 
-//  PATCH : update user fields and role-specific profile 
-
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
@@ -168,14 +166,34 @@ export async function PATCH(req: Request) {
         { status: 400 }
       );
 
-    // Build the users table update — only allow safe fields
+    const toSnake: Record<string, string> = {
+      firstName:       "first_name",
+      middleName:      "middle_name",
+      lastName:        "last_name",
+      isActive:        "is_active",
+      email:           "email",
+      phone:           "phone",
+      gender:          "gender",
+      username:        "username",
+      dateOfBirth:     "date_of_birth",
+      nationalId:      "national_id",
+      doctorCode:      "doctor_code",
+      technicianCode:  "technician_code",
+      licenseNumber:   "license_number",
+      yearsExperience: "years_experience",
+      specialty:       "specialty",
+    };
+
     const allowedUserFields = ["first_name", "middle_name", "last_name", "gender", "email", "phone", "is_active", "username"];
     const userUpdates: Record<string, unknown> = {};
-    allowedUserFields.forEach((f) => { if (f in fields) userUpdates[f] = fields[f]; });
 
-    // Hash and include new password if provided
+    Object.entries(fields).forEach(([k, v]) => {
+      const snake = toSnake[k] ?? k;
+      if (allowedUserFields.includes(snake)) userUpdates[snake] = v;
+    });
+
     if (password && String(password).trim() !== "") {
-      const bcrypt              = await import("bcrypt");
+      const bcrypt = await import("bcrypt");
       userUpdates.password_hash = await bcrypt.hash(password, 10);
     }
 
@@ -185,13 +203,15 @@ export async function PATCH(req: Request) {
       await db.query(`UPDATE users SET ${set} WHERE id = ?`, values);
     }
 
-    // Update role-specific profile table
     if (role === "patient") {
       const [[row]]: any = await db.query(`SELECT patient_id FROM users WHERE id = ? LIMIT 1`, [id]);
       if (row?.patient_id) {
-        const allowed = ["national_id", "date_of_birth"];
+        const allowedPatient = ["national_id", "date_of_birth"];
         const upd: Record<string, unknown> = {};
-        allowed.forEach((f) => { if (f in fields) upd[f] = fields[f]; });
+        Object.entries(fields).forEach(([k, v]) => {
+          const snake = toSnake[k] ?? k;
+          if (allowedPatient.includes(snake)) upd[snake] = v;
+        });
         if (Object.keys(upd).length > 0) {
           const set = Object.keys(upd).map((k) => `${k} = ?`).join(", ");
           await db.query(`UPDATE patients SET ${set} WHERE patient_id = ?`, [...Object.values(upd), row.patient_id]);
@@ -201,9 +221,12 @@ export async function PATCH(req: Request) {
     } else if (role === "doctor") {
       const [[row]]: any = await db.query(`SELECT doctor_id FROM users WHERE id = ? LIMIT 1`, [id]);
       if (row?.doctor_id) {
-        const allowed = ["doctor_code", "specialty", "license_number", "years_experience"];
+        const allowedDoctor = ["doctor_code", "specialty", "license_number", "years_experience"];
         const upd: Record<string, unknown> = {};
-        allowed.forEach((f) => { if (f in fields) upd[f] = fields[f]; });
+        Object.entries(fields).forEach(([k, v]) => {
+          const snake = toSnake[k] ?? k;
+          if (allowedDoctor.includes(snake)) upd[snake] = v;
+        });
         if (Object.keys(upd).length > 0) {
           const set = Object.keys(upd).map((k) => `${k} = ?`).join(", ");
           await db.query(`UPDATE doctor_profiles SET ${set} WHERE doctor_id = ?`, [...Object.values(upd), row.doctor_id]);
@@ -213,9 +236,12 @@ export async function PATCH(req: Request) {
     } else if (role === "technician") {
       const [[row]]: any = await db.query(`SELECT technician_id FROM users WHERE id = ? LIMIT 1`, [id]);
       if (row?.technician_id) {
-        const allowed = ["technician_code", "specialty", "license_number", "years_experience"];
+        const allowedTech = ["technician_code", "specialty", "license_number", "years_experience"];
         const upd: Record<string, unknown> = {};
-        allowed.forEach((f) => { if (f in fields) upd[f] = fields[f]; });
+        Object.entries(fields).forEach(([k, v]) => {
+          const snake = toSnake[k] ?? k;
+          if (allowedTech.includes(snake)) upd[snake] = v;
+        });
         if (Object.keys(upd).length > 0) {
           const set = Object.keys(upd).map((k) => `${k} = ?`).join(", ");
           await db.query(`UPDATE technician_profiles SET ${set} WHERE technician_id = ?`, [...Object.values(upd), row.technician_id]);

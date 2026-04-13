@@ -27,7 +27,7 @@ export async function GET(req: Request) {
         dp.signature_path     AS signaturePath
       FROM users u
       JOIN doctor_profiles dp ON dp.doctor_id = u.doctor_id
-      WHERE u.id = ? AND u.role = 'doctor'
+WHERE u.doctor_id = ? AND u.role = 'doctor'
       LIMIT 1
       `,
       [doctorId]
@@ -67,7 +67,7 @@ export async function GET(req: Request) {
         ORDER BY report_id DESC
         LIMIT 1
       )
-      WHERE dpa.doctor_id = (SELECT doctor_id FROM users WHERE id = ?)
+WHERE dpa.doctor_id = ?
       ORDER BY p.patient_id ASC
       `,
       [doctorId]

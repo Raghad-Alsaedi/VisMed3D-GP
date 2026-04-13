@@ -15,17 +15,17 @@ const loginSchema = z.object({
 });
 
 const roleRoutes: Record<string, string> = {
-  "/admin":      "/admin",
-  "/doctor":     "/doctor",
-  "/patients":   "/patients",
+  "/admin": "/admin",
+  "/doctor": "/doctor",
+  "/patients": "/patients",
   "/radio_tech": "/radio_tech",
 };
 
 const Login = () => {
   const router = useRouter();
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [isInactive, setIsInactive]     = useState(false); 
-  const [loading, setLoading]           = useState(false);
+  const [isInactive, setIsInactive] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [usernameValue, setUsernameValue] = useState("");
   const [passwordValue, setPasswordValue] = useState("");
@@ -39,16 +39,18 @@ const Login = () => {
     const formData = new FormData(e.currentTarget);
     const username = (formData.get("username") as string) || "";
     const password = (formData.get("password") as string) || "";
-    const role     = (formData.get("role") as string) || "";
+    const role = (formData.get("role") as string) || "";
 
     const result = loginSchema.safeParse({ username, password, role });
 
     if (!result.success) {
       const fieldErrors = result.error.flatten().fieldErrors;
-      if (fieldErrors.username)      setGeneralError("Please fill in the username field");
-      else if (fieldErrors.password) setGeneralError("Please fill in the password field");
-      else if (fieldErrors.role)     setGeneralError("Please select a role");
-      else                           setGeneralError("Invalid input");
+      if (fieldErrors.username)
+        setGeneralError("Please fill in the username field");
+      else if (fieldErrors.password)
+        setGeneralError("Please fill in the password field");
+      else if (fieldErrors.role) setGeneralError("Please select a role");
+      else setGeneralError("Invalid input");
       setLoading(false);
       return;
     }
@@ -57,7 +59,7 @@ const Login = () => {
       const res = await signIn("credentials", {
         username: result.data.username,
         password: result.data.password,
-        role:     result.data.role,
+        role: result.data.role,
         redirect: false,
       });
 
@@ -75,7 +77,6 @@ const Login = () => {
         router.push(roleRoutes[result.data.role] ?? "/login");
         router.refresh();
       }
-
     } catch (error) {
       console.error("Login error:", error);
       setGeneralError("Network error. Please try again.");
@@ -86,11 +87,11 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      
-      
-
       <main className="login-card">
-        <div className="brand" style={{ marginTop: "-12px", marginBottom: "0px" }}>
+        <div
+          className="brand"
+          style={{ marginTop: "-12px", marginBottom: "0px" }}
+        >
           <Image
             src="/logo.png"
             alt="VisMed3D"
@@ -101,7 +102,10 @@ const Login = () => {
           />
         </div>
 
-        <h1 className="title" style={{ marginTop: "4px", marginBottom: "20px" }}>
+        <h1
+          className="title"
+          style={{ marginTop: "4px", marginBottom: "20px" }}
+        >
           WELCOME BACK
         </h1>
 

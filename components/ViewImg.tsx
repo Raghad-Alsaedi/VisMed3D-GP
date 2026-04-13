@@ -14,21 +14,20 @@ interface Step {
   opacity: number;
 }
 
-
 const ViewImg = () => {
   const [fps, setFps] = useState<number>(0);
-  
+
   const frameCount = useRef<number>(0);
   const lastTime = useRef<number>(performance.now());
-  
-  const requestRef = useRef<number | null>(null); 
+
+  const requestRef = useRef<number | null>(null);
 
   const handleTransferFunctionChange = (steps: Step[]) => {
     if ((window as any).sendStepsToWebGL) {
       (window as any).sendStepsToWebGL(steps);
     }
   };
-  
+
   useEffect(() => {
     const loop = (now: number) => {
       frameCount.current++;
@@ -44,7 +43,7 @@ const ViewImg = () => {
     };
 
     requestRef.current = requestAnimationFrame(loop);
-    
+
     return () => {
       if (requestRef.current !== null) {
         cancelAnimationFrame(requestRef.current);
@@ -60,21 +59,22 @@ const ViewImg = () => {
 
       <div className="mt-4 flex-1 bg-[#0D1A2D] border border-white/20 rounded-lg flex items-center justify-center relative min-h-0">
         <Img onTransferFunctionChange={handleTransferFunctionChange} />
-        
+
         <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
-           <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${fps > 50 ? 'bg-emerald-500' : 'bg-yellow-500'} animate-pulse`}></span>
-              <span className="text-[11px] uppercase tracking-tighter text-white/40 font-bold">Live FPS</span>
-           </div>
-           <div className="h-4 w-[1px] bg-white/10"></div>
-           <h2 className="text-white font-mono text-[14px] font-semibold">
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${fps > 50 ? "bg-emerald-500" : "bg-yellow-500"} animate-pulse`}
+            ></span>
+            <span className="text-[11px] uppercase tracking-tighter text-white/40 font-bold">
+              Live FPS
+            </span>
+          </div>
+          <div className="h-4 w-[1px] bg-white/10"></div>
+          <h2 className="text-white font-mono text-[14px] font-semibold">
             {fps}
-           </h2>
-          
-
+          </h2>
         </div>
-         <AutoTF onTransferFunctionChange={handleTransferFunctionChange}/>
-
+        <AutoTF onTransferFunctionChange={handleTransferFunctionChange} />
       </div>
 
       <div className="flex-shrink-0">

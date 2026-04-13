@@ -172,7 +172,7 @@ export function DataTable<T extends { id: number }>({
               <span className={tooltipCls}>Filter &amp; Sort</span>
 
               {showFilter && (
-                <div className={`absolute right-0 top-7 z-50 bg-[#0D1A2D] border border-white/20 rounded-lg p-2 md:p-3 w-44 md:w-52 shadow-xl max-h-[75vh] overflow-y-auto ${scrollbarCls}`}>
+                <div className={`absolute right-0 top-7 z-50 bg-[#0D1A2D] border border-white/20 rounded-lg p-2 md:p-3 w-44 md:w-52 shadow-xl max-h-[260px] overflow-y-auto ${scrollbarCls}`}>
 
                   {!hideSort && (
                     <>

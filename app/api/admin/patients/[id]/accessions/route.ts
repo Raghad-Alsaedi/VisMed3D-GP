@@ -105,7 +105,7 @@ export async function DELETE(
 ) {
   try {
     const { searchParams } = new URL(req.url);
-    const accessionId = searchParams.get("accession_id");
+    const accessionId = searchParams.get("accessionId");
     if (!accessionId)
       return NextResponse.json({ status: "error", message: "accession_id required" }, { status: 400 });
 

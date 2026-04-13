@@ -18,17 +18,14 @@ interface AddUserPageProps {
 }
 
 const V = {
-  // Allows Arabic and Latin letters only, between 2 and 10 characters
   name: (v: string) =>
     /^[a-zA-Z\u0600-\u06FF\s'-]{2,10}$/.test(v.trim())
       ? null : "Letters only, 2–10 chars",
 
-  // Allows letters, numbers, and common symbols between 3 and 30 chars
   username: (v: string) =>
     /^[a-zA-Z0-9_!@#$%^&*]{3,30}$/.test(v.trim())
       ? null : "3–30 chars, letters/numbers/symbols",
 
-  // Enforces a strong password: length, lowercase, uppercase, digit, and symbol
   password: (v: string) => {
     if (v.length < 8)     return "Minimum 8 characters";
     if (!/[a-z]/.test(v)) return "Must contain at least one lowercase letter";
@@ -42,7 +39,6 @@ const V = {
   email: (v: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : "Invalid email format",
 
-  // Strips the +966 prefix and leading zero, then validates a 9-digit Saudi number starting with 53/54/55
   phone: (v: string) => {
     const digits = v.replace(/^\+966/, "").replace(/^0/, "").replace(/\D/g, "");
     if (digits.length === 0)     return "Required";
@@ -66,7 +62,6 @@ const V = {
 
   required: (v: string) => v.trim() !== "" ? null : "Required",
 
-  // Validates the selected profile picture: type and max size
   image: (file: File | null) => {
     if (!file) return null;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return "JPG, PNG or WEBP only";
@@ -75,7 +70,6 @@ const V = {
   },
 };
 
-/* ── Shared UI ── */
 const Star = () => <span className="text-red-400 ml-0.5">*</span>;
 const Err  = ({ msg }: { msg?: string | null }) =>
   msg ? <p className="text-red-400 text-[10px] mt-0.5">{msg}</p> : null;
@@ -100,7 +94,6 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const inp = (err?: string | null) =>
   `w-full bg-[#040A16] border ${err ? "border-red-500/50" : "border-[#1e2d42]"} focus:border-[#17387C] rounded-lg px-2 py-1.5 lg:px-3 lg:py-2 text-white text-xs lg:text-sm outline-none transition-colors`;
 
-/* ── Custom Dropdown ── */
 function DD({ label, value, onChange, options, required, error, placeholder }: {
   label: string; value: string; onChange: (v: string) => void;
   options: { label: string; value: string }[];
@@ -111,7 +104,6 @@ function DD({ label, value, onChange, options, required, error, placeholder }: {
   const btnRef = useRef<HTMLButtonElement>(null);
   const ref    = useRef<HTMLDivElement>(null);
 
-  // Close the dropdown when clicking outside
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node) &&
@@ -121,7 +113,6 @@ function DD({ label, value, onChange, options, required, error, placeholder }: {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  // Calculate dropdown position relative to the viewport before opening
   const handleOpen = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
@@ -161,7 +152,6 @@ function DD({ label, value, onChange, options, required, error, placeholder }: {
   );
 }
 
-/* ── Stepper for years of experience ── */
 function ExperienceCounter({ value, onChange, error }: {
   value: string; onChange: (v: string) => void; error?: string | null;
 }) {
@@ -187,12 +177,10 @@ function ExperienceCounter({ value, onChange, error }: {
   );
 }
 
-/* ============================================================ MAIN COMPONENT */
 export default function AddUser({ type, onBack }: AddUserPageProps) {
   const [doctors,     setDoctors]     = useState<DocTech[]>([]);
   const [technicians, setTechnicians] = useState<DocTech[]>([]);
 
-  // Load doctor and technician lists only when adding a patient (needed for assignment dropdowns)
   useEffect(() => {
     if (type !== "patient") return;
     fetch("/api/admin/users?role=doctor")
@@ -202,10 +190,10 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
   }, [type]);
 
   const [form, setForm] = useState({
-    first_name: "", middle_name: "", last_name: "", gender: "",
-    username: "", password: "", email: "", phone: "", is_active: "1",
-    national_id: "", date_of_birth: "", assign_doctor: "", assign_tech: "",
-    code: "", specialty: "", license_number: "", years_experience: "0",
+    firstName: "", middleName: "", lastName: "", gender: "",
+    username: "", password: "", email: "", phone: "", isActive: "1",
+    nationalId: "", dateOfBirth: "", assignDoctor: "", assignTech: "",
+    code: "", specialty: "", licenseNumber: "", yearsExperience: "0",
   });
 
   const [image,     setImage]     = useState<File | null>(null);
@@ -216,12 +204,14 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
   const [serverErr, setServerErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Helper: update a single form field
   const f = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
-  // Helper: update a single field error
   const e = (key: string, val: string | null) => setErrors((p) => ({ ...p, [key]: val }));
 
-  // Live check: hit the API to see if the username is already taken
+  const numericKeyDown = (ev: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
+    if (!/^\d$/.test(ev.key) && !allowed.includes(ev.key)) ev.preventDefault();
+  };
+
   const checkUsername = async (val: string) => {
     const localErr = V.username(val);
     if (localErr) { e("username", localErr); return; }
@@ -232,7 +222,6 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
     } catch { e("username", null); }
   };
 
-  // Handle profile image selection: validate then generate a preview URL
   const handleImage = (ev: React.ChangeEvent<HTMLInputElement>) => {
     const file = ev.target.files?.[0] ?? null;
     const err  = V.image(file);
@@ -240,52 +229,51 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
     if (!err && file) { setImage(file); setPreview(URL.createObjectURL(file)); }
   };
 
-  // Run all field validators before submitting — returns true only if everything passes
   const validate = () => {
     const errs: Record<string, string | null> = {};
-    errs.first_name   = V.name(form.first_name);
-    errs.last_name    = V.name(form.last_name);
-    errs.middle_name  = form.middle_name.trim() ? V.name(form.middle_name) : null;
-    errs.gender       = V.required(form.gender);
-    errs.username     = V.username(form.username);
-    errs.password     = V.password(form.password);
-    errs.email        = form.email.trim() ? V.email(form.email) : null;
-    errs.phone        = V.phone(form.phone);
+    errs.firstName        = V.name(form.firstName);
+    errs.lastName         = V.name(form.lastName);
+    errs.middleName       = form.middleName.trim() ? V.name(form.middleName) : null;
+    errs.gender           = V.required(form.gender);
+    errs.username         = V.username(form.username);
+    errs.password         = V.password(form.password);
+    errs.email            = form.email.trim() ? V.email(form.email) : null;
+    errs.phone            = V.phone(form.phone);
     if (type === "patient") {
-      errs.national_id   = V.nationalId(form.national_id);
-      const dobParts = form.date_of_birth ? form.date_of_birth.split("-") : [];
-      errs.date_of_birth = (dobParts.length === 3 && dobParts.every(p => p.trim() !== "")) ? null : "Required";
-      errs.assign_doctor = V.required(form.assign_doctor);
-      errs.assign_tech   = V.required(form.assign_tech);
+      errs.nationalId     = V.nationalId(form.nationalId);
+      const dobParts      = form.dateOfBirth ? form.dateOfBirth.split("-") : [];
+      errs.dateOfBirth    = (dobParts.length === 3 && dobParts.every(p => p.trim() !== "")) ? null : "Required";
+      errs.assignDoctor   = V.required(form.assignDoctor);
+      errs.assignTech     = V.required(form.assignTech);
     }
     if (type === "doctor" || type === "technician") {
-      errs.code             = V.required(form.code);
-      errs.specialty        = V.specialty(form.specialty);
-      errs.license_number   = V.licenseNumber(form.license_number);
-      errs.years_experience = V.required(form.years_experience);
+      errs.code            = V.required(form.code);
+      errs.specialty       = V.specialty(form.specialty);
+      errs.licenseNumber   = V.licenseNumber(form.licenseNumber);
+      errs.yearsExperience = V.required(form.yearsExperience);
     }
     setErrors((prev) => ({ ...prev, ...errs, username: errs.username ?? prev.username }));
     return Object.values({ ...errs }).every((v) => !v) && !errors.username;
   };
 
-  // Build a FormData payload and POST to the create endpoint
   const handleSubmit = async () => {
     if (!validate()) return;
     setSaving(true); setServerErr(null);
     try {
       const fd = new FormData();
       fd.append("type", type);
-      Object.entries(form).forEach(([k, v]) => {
-        if (v === "") return;
-        fd.append(k, v);
+
+      Object.entries(form).forEach(([key, val]) => {
+        if (val === "") return;
+        fd.append(key, val);
       });
-      if (image) fd.append("profile_picture", image);
+
+      if (image) fd.append("profilePicture", image);
 
       const res  = await fetch("/api/admin/users/create", { method: "POST", body: fd });
       const data = await res.json();
 
       if (data.status !== "ok") {
-        // Show field-level error if the server returns a specific field name
         if (data.field) {
           setErrors((prev) => ({ ...prev, [data.field]: data.message }));
         } else {
@@ -294,7 +282,6 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
         return;
       }
 
-      // Navigate back to the list and pass a success message
       const label = type === "patient" ? "Patient" : type === "doctor" ? "Doctor" : "Technician";
       onBack(`${label} added successfully`);
     } catch {
@@ -342,10 +329,8 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
           <div className="bg-[#0D1A2D] border border-white/10 rounded-2xl flex flex-col flex-1 min-h-0 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6 flex flex-col gap-3 lg:gap-4 min-h-0">
 
-              {/* ── Avatar + Personal Info ── */}
               <div className="flex flex-row gap-3 md:gap-5 lg:gap-7 items-start flex-shrink-0">
 
-                {/* Avatar uploader */}
                 <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                   <div className="relative w-[120px] h-[120px] md:w-[130px] md:h-[130px] lg:w-[150px] lg:h-[150px]">
                     <div
@@ -361,7 +346,7 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                           <Upload size={18} className="md:hidden" />
                           <Upload size={22} className="hidden md:block lg:hidden" />
                           <Upload size={26} className="hidden lg:block" />
-                          <span className="text-[9px] md:text-[10px] lg:text-[11px] text-center leading-snug px-1">JPG, PNG,or WEBP only<br />Max 5MB</span>
+                          <span className="text-[9px] md:text-[10px] lg:text-[11px] text-center leading-snug px-1">JPG, PNG, or WEBP only<br />Max 5MB</span>
                         </div>
                       )}
                     </div>
@@ -378,32 +363,31 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                   <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleImage} />
                 </div>
 
-                {/* Personal information fields */}
                 <div className="flex-1 min-w-0 flex flex-col gap-2 md:gap-3">
                   <SectionLabel>Personal Information</SectionLabel>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 md:gap-x-4 lg:gap-x-5 gap-y-3 lg:gap-y-4">
 
-                    <Field label="First Name" required error={errors.first_name}>
-                      <input className={inp(errors.first_name)} value={form.first_name}
+                    <Field label="First Name" required error={errors.firstName}>
+                      <input className={inp(errors.firstName)} value={form.firstName}
                         onChange={(ev) => {
                           const val = ev.target.value.replace(/[^a-zA-Z\u0600-\u06FF\s'-]/g, "");
-                          f("first_name", val); e("first_name", V.name(val));
+                          f("firstName", val); e("firstName", V.name(val));
                         }} />
                     </Field>
 
-                    <Field label="Middle Name" error={errors.middle_name}>
-                      <input className={inp(errors.middle_name)} value={form.middle_name}
+                    <Field label="Middle Name" error={errors.middleName}>
+                      <input className={inp(errors.middleName)} value={form.middleName}
                         onChange={(ev) => {
                           const val = ev.target.value.replace(/[^a-zA-Z\u0600-\u06FF\s'-]/g, "");
-                          f("middle_name", val); e("middle_name", val.trim() ? V.name(val) : null);
+                          f("middleName", val); e("middleName", val.trim() ? V.name(val) : null);
                         }} />
                     </Field>
 
-                    <Field label="Last Name" required error={errors.last_name}>
-                      <input className={inp(errors.last_name)} value={form.last_name}
+                    <Field label="Last Name" required error={errors.lastName}>
+                      <input className={inp(errors.lastName)} value={form.lastName}
                         onChange={(ev) => {
                           const val = ev.target.value.replace(/[^a-zA-Z\u0600-\u06FF\s'-]/g, "");
-                          f("last_name", val); e("last_name", V.name(val));
+                          f("lastName", val); e("lastName", V.name(val));
                         }} />
                     </Field>
 
@@ -412,23 +396,23 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                       options={[{ label: "Male", value: "male" }, { label: "Female", value: "female" }]} />
 
                     {type === "patient" && <>
-                      <Field label="National ID/Iqama" required error={errors.national_id}>
-                        <input className={inp(errors.national_id)} placeholder="10 digits"
-                          value={form.national_id}
-                          onKeyDown={(ev) => { if (!/[\d\b]/.test(ev.key) && !["ArrowLeft","ArrowRight","Delete","Tab"].includes(ev.key)) ev.preventDefault(); }}
+                      <Field label="National ID/Iqama" required error={errors.nationalId}>
+                        <input className={inp(errors.nationalId)} placeholder="10 digits"
+                          value={form.nationalId}
+                          onKeyDown={numericKeyDown}
                           onChange={(ev) => {
                             const val = ev.target.value.replace(/\D/g, "").slice(0, 10);
-                            f("national_id", val); e("national_id", V.nationalId(val));
+                            f("nationalId", val); e("nationalId", V.nationalId(val));
                           }} />
                       </Field>
 
-                      <Field label="Date of Birth" required error={errors.date_of_birth}>
+                      <Field label="Date of Birth" required error={errors.dateOfBirth}>
                         <input type="date" lang="en"
-                          className={inp(errors.date_of_birth) + " cursor-pointer"}
-                          value={form.date_of_birth}
+                          className={inp(errors.dateOfBirth) + " cursor-pointer"}
+                          value={form.dateOfBirth}
                           max={new Date().toISOString().split("T")[0]}
                           style={{ colorScheme: "dark" }}
-                          onChange={(ev) => { f("date_of_birth", ev.target.value); e("date_of_birth", V.required(ev.target.value)); }} />
+                          onChange={(ev) => { f("dateOfBirth", ev.target.value); e("dateOfBirth", V.required(ev.target.value)); }} />
                       </Field>
                     </>}
 
@@ -442,7 +426,6 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                 </div>
               </div>
 
-              {/* ── Account Information ── */}
               <div className="flex flex-col gap-2 lg:gap-4">
                 <SectionLabel>Account Information</SectionLabel>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 md:gap-x-4 lg:gap-x-5 gap-y-3 lg:gap-y-4">
@@ -450,7 +433,6 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                   <Field label="Username" required error={errors.username}>
                     <input className={inp(errors.username)} value={form.username}
                       onChange={(ev) => { f("username", ev.target.value); }}
-                      // Trigger uniqueness check when the user leaves the field
                       onBlur={(ev) => checkUsername(ev.target.value)} />
                   </Field>
 
@@ -475,7 +457,6 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                       }} />
                   </Field>
 
-                  {/* Phone with a fixed +966 prefix */}
                   <Field label="Phone" required error={errors.phone}>
                     <div className={`flex items-center bg-[#040A16] border ${errors.phone ? "border-red-500/50" : "border-[#1e2d42]"} focus-within:border-[#17387C] rounded-lg overflow-hidden transition-colors`}>
                       <span className="text-gray-400 text-xs lg:text-sm px-2 lg:px-3 border-r border-[#1e2d42] whitespace-nowrap select-none">+966</span>
@@ -484,7 +465,7 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                         placeholder="53/54/55XXXXXXX"
                         value={form.phone.replace(/^\+966/, "").replace(/^0/, "")}
                         maxLength={9}
-                        onKeyDown={(ev) => { if (!/[\d\b]/.test(ev.key) && !["ArrowLeft","ArrowRight","Delete","Tab"].includes(ev.key)) ev.preventDefault(); }}
+                        onKeyDown={numericKeyDown}
                         onChange={(ev) => {
                           const raw = ev.target.value.replace(/\D/g, "").slice(0, 9);
                           f("phone", "+966" + raw);
@@ -494,36 +475,35 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                     </div>
                   </Field>
 
-                  <DD label="Status" required value={form.is_active} error={errors.is_active}
-                    onChange={(v) => f("is_active", v)}
+                  <DD label="Status" required value={form.isActive} error={errors.isActive}
+                    onChange={(v) => f("isActive", v)}
                     options={[{ label: "Active", value: "1" }, { label: "Inactive", value: "0" }]} />
 
                   {type === "patient" && <>
-                    <DD label="Assign Doctor" required value={form.assign_doctor} error={errors.assign_doctor}
-                      onChange={(v) => { f("assign_doctor", v); e("assign_doctor", null); }} placeholder="Select…"
+                    <DD label="Assign Doctor" required value={form.assignDoctor} error={errors.assignDoctor}
+                      onChange={(v) => { f("assignDoctor", v); e("assignDoctor", null); }} placeholder="Select…"
                       options={doctors.map((d) => ({ label: `${d.firstName} ${d.lastName}`, value: String(d.id) }))} />
-                    <DD label="Assign Technician" required value={form.assign_tech} error={errors.assign_tech}
-                      onChange={(v) => { f("assign_tech", v); e("assign_tech", null); }} placeholder="Select…"
+                    <DD label="Assign Technician" required value={form.assignTech} error={errors.assignTech}
+                      onChange={(v) => { f("assignTech", v); e("assignTech", null); }} placeholder="Select…"
                       options={technicians.map((t) => ({ label: `${t.firstName} ${t.lastName}`, value: String(t.id) }))} />
                   </>}
                 </div>
               </div>
 
-              {/* ── Professional Information (doctor / technician only) ── */}
               {(type === "doctor" || type === "technician") && <>
                 <div className="border-t border-white/8" />
                 <div className="flex flex-col gap-2 lg:gap-4">
                   <SectionLabel>Professional Information</SectionLabel>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 md:gap-x-4 lg:gap-x-5 gap-y-3 lg:gap-y-4">
 
-                    <Field label="License Number" required error={errors.license_number}>
+                    <Field label="License Number" required error={errors.licenseNumber}>
                       <input
-                        className={inp(errors.license_number)}
-                        value={form.license_number}
+                        className={inp(errors.licenseNumber)}
+                        value={form.licenseNumber}
                         maxLength={20}
                         onChange={(ev) => {
-                          f("license_number", ev.target.value);
-                          e("license_number", V.licenseNumber(ev.target.value));
+                          f("licenseNumber", ev.target.value);
+                          e("licenseNumber", V.licenseNumber(ev.target.value));
                         }} />
                     </Field>
 
@@ -536,9 +516,9 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
                     </Field>
 
                     <ExperienceCounter
-                      value={form.years_experience}
-                      onChange={(v) => { f("years_experience", v); e("years_experience", V.required(v)); }}
-                      error={errors.years_experience}
+                      value={form.yearsExperience}
+                      onChange={(v) => { f("yearsExperience", v); e("yearsExperience", V.required(v)); }}
+                      error={errors.yearsExperience}
                     />
 
                   </div>
@@ -547,7 +527,6 @@ export default function AddUser({ type, onBack }: AddUserPageProps) {
 
             </div>
 
-            {/* ── Footer actions ── */}
             <div className="flex items-center justify-end gap-2 md:gap-3 lg:gap-4 py-3 lg:py-4 px-3 md:px-4 lg:px-6 flex-shrink-0">
               <button onClick={() => onBack()}
                 className="px-4 md:px-6 lg:px-10 py-2 lg:py-2.5 rounded-full border border-white/25 text-white text-xs lg:text-sm hover:bg-white/5 transition-colors cursor-pointer">
