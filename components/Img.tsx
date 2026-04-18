@@ -17,13 +17,19 @@ interface ImgProps {
   onTransferFunctionChange?: (steps: Step[]) => void;
   volumeId?: number | null;
   savedSteps?: any[] | null;
+  accessionId?: string | null;
 }
 
-const Img = ({ onTransferFunctionChange, volumeId: propVolumeId, savedSteps }: ImgProps) => {
+const Img = ({ onTransferFunctionChange, volumeId: propVolumeId, savedSteps, accessionId }: ImgProps) => {
   const searchParams = useSearchParams();
   const urlVolumeId  = searchParams.get('volumeId');
 
   const resolvedVolumeId = propVolumeId ?? urlVolumeId;
+
+  const resolvedAccessionId =
+    accessionId ??
+    searchParams.get('accession_id') ??
+    sessionStorage.getItem("viewimg_accession_id");
 
   const iframeRef    = useRef<HTMLIFrameElement>(null);
   const isWebGLReady = useRef(false);
@@ -43,7 +49,15 @@ const Img = ({ onTransferFunctionChange, volumeId: propVolumeId, savedSteps }: I
       if (event.data.type === 'WEBGL_READY') {
         isWebGLReady.current = true;
         setIsLoading(false);
-        const saved = sessionStorage.getItem("manualTF_steps");
+
+        // Read from the slot that belongs to this specific scan, not a shared slot.
+        // Using the accession ID in the key makes sure two open scans never mix data.
+        const storageKey = resolvedAccessionId
+          ? `manualTF_steps_${resolvedAccessionId}`
+          : null;
+
+        const saved = storageKey ? sessionStorage.getItem(storageKey) : null;
+
         if (saved) {
           try {
             const steps = JSON.parse(saved);
@@ -57,7 +71,7 @@ const Img = ({ onTransferFunctionChange, volumeId: propVolumeId, savedSteps }: I
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [resolvedAccessionId]);
 
   //save maunalTF
   useEffect(() => {

@@ -1011,8 +1011,12 @@ let currentSteps = [];
       gl.uniform1f(rangeStartLoc, step.rangeStart);
 
       // Range End
-      const rangeEndLoc = gl.getUniformLocation(final_program, `uTFRangeEnds[${i}]`);
-      gl.uniform1f(rangeEndLoc, step.rangeEnd);
+       const rangeEndLoc = gl.getUniformLocation(final_program, `uTFRangeEnds[${i}]`);
+      if (step.rangeEnd !== undefined) {
+        if (i !== currentSteps.length - 1) {
+          gl.uniform1f(rangeEndLoc, step.rangeEnd);
+        }
+      }
 
       // Color
       const rgb = hexToRgb(step.color);
@@ -1036,7 +1040,7 @@ let currentSteps = [];
     { rangeStart: 35,    rangeEnd: 55,   color: "#C7A887", opacity: 0.2784 },
     { rangeStart: 100,   rangeEnd: 300,  color: "#E8B4B0", opacity: 0.0190 },
     { rangeStart: 700,   rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
-    { rangeStart: 3001,  rangeEnd: 0,    color: "#FFFFFF", opacity: 1.0 }
+    { rangeStart: 3001,  color: "#FFFFFF", opacity: 1.0 }
   ];
   updateShaderUniforms(); 
 

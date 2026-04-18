@@ -48,7 +48,11 @@ const WritingReport = () => {
             opacity:    s.opacity,
             isOpen:     false,
           }));
-          sessionStorage.setItem("manualTF_steps", JSON.stringify(steps));
+
+          // Store the steps using the accession ID as part of the key so each
+          // scan has its own slot in sessionStorage and they never mix together
+          sessionStorage.setItem(`manualTF_steps_${accessionId}`, JSON.stringify(steps));
+
           setSavedTFSteps(steps);
         }
       })
@@ -146,7 +150,16 @@ const WritingReport = () => {
             {!volumeChecked && <LoadingSpinner />}
             {volumeChecked && !volumeId && noScanPane()}
             {volumeChecked && volumeId && imgLoading && <LoadingSpinner />}
-            {volumeChecked && volumeId && <Img volumeId={volumeId} savedSteps={savedTFSteps} />}
+
+            {/* Pass the accessionId down so Img reads from the right sessionStorage slot */}
+            {volumeChecked && volumeId && (
+              <Img
+                volumeId={volumeId}
+                savedSteps={savedTFSteps}
+                accessionId={accessionId}
+              />
+            )}
+
             {/*
               The scan is inside an iframe, which normally captures all mouse clicks for itself.
               This invisible div sits on top of the entire panel and intercepts those clicks,
@@ -188,7 +201,16 @@ const WritingReport = () => {
             {!volumeChecked && <LoadingSpinner />}
             {volumeChecked && !volumeId && noScanPane("220px")}
             {volumeChecked && volumeId && imgLoading && <LoadingSpinner />}
-            {volumeChecked && volumeId && <Img volumeId={volumeId} savedSteps={savedTFSteps} />}
+
+            {/* Pass the accessionId down so Img reads from the right sessionStorage slot */}
+            {volumeChecked && volumeId && (
+              <Img
+                volumeId={volumeId}
+                savedSteps={savedTFSteps}
+                accessionId={accessionId}
+              />
+            )}
+
             {volumeChecked && volumeId && <div className="absolute inset-0 z-10" />}
           </div>
 

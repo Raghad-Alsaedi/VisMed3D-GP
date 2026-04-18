@@ -15,6 +15,8 @@ interface Step {
 
 interface ManualTFProps {
   onTransferFunctionChange?: (steps: Step[]) => void;
+  // The steps that were previously saved for this scan — passed in from the parent
+  savedSteps?: Step[] | null;
 }
 
 const defaultSteps: Step[] = [
@@ -26,26 +28,64 @@ const defaultSteps: Step[] = [
   { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784 },
   { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190 },
   { id: 8, rangeValue: 2300, rangeStart: 700, rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
-  { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
+  { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 99999, color: "#FFFFFF", opacity: 1.0 },
 ];
 
-const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
+const ManualTF = ({ onTransferFunctionChange, savedSteps }: ManualTFProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const volumeId = searchParams.get('volumeId');
-  const accessionId = searchParams.get('accession_id');
+  const accessionId = searchParams.get('accession_id') 
+  ?? sessionStorage.getItem("viewimg_accession_id");
   const { data: session } = useSession();
   const role = (session?.user as any)?.role as string | undefined;
 
   const [isPanelVisible, setIsPanelVisible]       = useState(true);
-  const [steps, setSteps]                         = useState<Step[]>(defaultSteps);
+
+  // Start with savedSteps if they exist, otherwise fall back to the default preset.
+  // This way the doctor sees their last saved values right away instead of defaults.
+  const [steps, setSteps]                         = useState<Step[]>(savedSteps ?? defaultSteps);
+
+  const [isLoadingSteps, setIsLoadingSteps] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [openSteps, setOpenSteps]                 = useState<Set<number>>(new Set([1]));
   const [isSaving, setIsSaving]                   = useState(false);
   const [saveToast, setSaveToast] = useState<"success" | "error" | null>(null);
 
+  // If savedSteps arrives late (fetched async after the component already mounted),
+  // this picks them up and replaces the defaults so the UI stays in sync
+  useEffect(() => {
+    if (savedSteps && savedSteps.length > 0) {
+      setSteps(savedSteps);
+    }
+  }, [savedSteps]);
+
+  // On mount, check if this scan already has steps saved in sessionStorage.
+  // We use the accession ID in the key so two different scans never share the same slot.
+  useEffect(() => {
+    if (!accessionId) return;
+    const stored = sessionStorage.getItem(`manualTF_steps_${accessionId}`);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSteps(parsed);
+        }
+      } catch {
+        // If parsing fails just keep whatever state we already have
+      }
+    }
+  }, [accessionId]);
+
   const updateStepRanges = () =>
-    steps.map((step) => ({ ...step, rangeEnd: step.rangeStart + step.rangeValue }));
+  steps.map((step, index) => {
+    const isLast = index === steps.length - 1;
+
+    return {
+      ...step,
+      rangeEnd: isLast ? step.rangeStart : step.rangeStart + step.rangeValue,
+    };
+  });
 
   const updatedSteps = updateStepRanges();
 
@@ -136,6 +176,7 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
   // Sends the current updatedSteps to the API 
   // updatedSteps is used because it holds the final computed rangeEnd values.
   const handleSave = async () => {
+    
   if (!accessionId || isSaving) return;
   setIsSaving(true);
   try {
@@ -144,6 +185,11 @@ const ManualTF = ({ onTransferFunctionChange }: ManualTFProps) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accessionId: Number(accessionId), steps: updatedSteps }),
     });
+
+    // After a successful save, update sessionStorage with the latest steps.
+    // The key includes the accession ID so this scan's data never overwrites another scan's data.
+    sessionStorage.setItem(`manualTF_steps_${accessionId}`, JSON.stringify(updatedSteps));
+
     setSaveToast("success");
   } catch (err) {
     console.error("Failed to save manual TF steps:", err);

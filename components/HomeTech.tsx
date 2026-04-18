@@ -40,38 +40,16 @@ type InfoItem = {
 };
 
 //If a photo is available, it will appear. If not, the system will show the default-avatar
-const ProfileImage = ({
-  src,
-  alt,
-  className,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-}) => {
-  const [useFallback, setUseFallback] = useState(false);
-
-  if (useFallback) {
-    return (
-      <img
-        src={src}
-        alt={alt}
-        className={className}
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = "/images/default-avatar.png";
-        }}
-      />
-    );
-  }
-
+const ProfileImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   return (
-    <Image
+    <img
       src={src}
       alt={alt}
-      fill
-      priority
       className={className}
-      onError={() => setUseFallback(true)}
+      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "/api/images/default";
+      }}
     />
   );
 };

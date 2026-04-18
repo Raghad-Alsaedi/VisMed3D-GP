@@ -26,7 +26,7 @@ const defaultSteps: Step[] = [
   { id: 6, rangeValue: 20, rangeStart: 35, rangeEnd: 55, color: "#C7A887", opacity: 0.2784 },
   { id: 7, rangeValue: 200, rangeStart: 100, rangeEnd: 300, color: "#E8B4B0", opacity: 0.0190 },
   { id: 8, rangeValue: 2300, rangeStart: 700, rangeEnd: 3000, color: "#F5F5F0", opacity: 1.0 },
-  { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 0, color: "#FFFFFF", opacity: 1.0 },
+  { id: 9, rangeValue: 0, rangeStart: 3001, rangeEnd: 99999, color: "#FFFFFF", opacity: 1.0 },
 ];
 
 
@@ -123,8 +123,11 @@ const presets = [
             </label>
             <label
               className="flex cursor-pointer items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white"
-              onClick={() => router.push(`/manualTF?volumeId=${volumeId}`)}
-            >
+            onClick={() => {
+  const accessionId = sessionStorage.getItem("viewimg_accession_id");
+  console.log("accessionId before navigate:", accessionId); // للتحقق
+  router.push(`/manualTF?volumeId=${volumeId}${accessionId ? `&accession_id=${accessionId}` : ""}`);
+}}>
               <input type="radio" name="TFMode" className="peer hidden" />
               <span className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border border-white peer-checked:border-[#1F9C3E] peer-checked:bg-[#1F9C3E]"></span>
               Manual
