@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import DropFile from "@/components/DropFile";
 import { Suspense } from "react";
 

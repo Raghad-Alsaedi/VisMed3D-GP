@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import WritingReport from '@/components/WritingReport'
 import { Suspense } from 'react'
 
@@ -10,3 +12,4 @@ const page = () => {
 }
 
 export default page
+
