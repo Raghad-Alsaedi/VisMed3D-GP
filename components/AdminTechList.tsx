@@ -5,7 +5,6 @@ import { DataTable, Column } from "@/components/DataTable";
 import AdminUserView, { AnyUser } from "@/components/AdminUserView";
 import AddUserPage from "@/components/AddUser";
 
-// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Technician {
   id: number;
@@ -26,7 +25,6 @@ interface Technician {
   updatedAt?: string;
 }
 
-// ── Table column definitions ───────────────────────────────────────────────
 
 const columns: Column[] = [
   { key: "technicianCode",  label: "Technician ID" },

@@ -5,7 +5,6 @@ import { DataTable, Column } from "@/components/DataTable";
 import AdminUserView, { AnyUser } from "@/components/AdminUserView";
 import AddUserPage from "@/components/AddUser";
 
-// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Doctor {
   id: number;
@@ -26,7 +25,6 @@ interface Doctor {
   updatedAt?: string;
 }
 
-// ── Table column definitions ───────────────────────────────────────────────
 
 const columns: Column[] = [
   { key: "doctorCode",      label: "Doctor ID"  },
@@ -38,7 +36,7 @@ const columns: Column[] = [
   { key: "isActive",        label: "Status"     },
 ];
 
-// ── AdminDoctorList — displays the full list of doctors ───────────────────
+// AdminDoctorList — displays the full list of doctors
 
 export default function AdminDoctorList() {
   const [doctors,      setDoctors]      = useState<Doctor[]>([]);
@@ -95,7 +93,7 @@ export default function AdminDoctorList() {
       }}
     />
   );
-  
+
   // Show the add form if the add button was clicked
   if (showAdd)
     return (

@@ -1,4 +1,6 @@
 const bcrypt = require("bcryptjs");
+const mysql = require("mysql2/promise");
+
 const SALT_ROUNDS = 10;
 
 const users = [
@@ -10,10 +12,24 @@ const users = [
   { username: "pat3003",  password: "Patient3@123", role: "patient",     name: "Hessa Alotaibi" },
   { username: "admin001", password: "Admin@123",    role: "admin",       name: "System Admin" },
 ];
-
 (async () => {
+  const connection = await mysql.createConnection({
+    host: 'roundhouse.proxy.rlwy.net',
+    port: 37600,
+    user: 'root',
+    password: 'VAPqAZpRWmMqRJpUDxRAoAqVPkpRFJXM',
+    database: 'railway'
+  });
+
   for (const u of users) {
     const hash = await bcrypt.hash(u.password, SALT_ROUNDS);
-    console.log(`UPDATE users SET password_hash='${hash}' WHERE username='${u.username}';`);
+    await connection.execute(
+      'UPDATE users SET password_hash = ? WHERE username = ?',
+      [hash, u.username]
+    );
+    console.log(` Updated: ${u.username}`);
   }
+
+  await connection.end();
+  console.log('All passwords updated!');
 })();

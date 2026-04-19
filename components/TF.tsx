@@ -5,6 +5,7 @@ import Header from './Header';
 import Img from './Img';
 import ManualTF from './ManualTF';
 import Footer from './Footer';
+import Fps from './Fps';
 
 interface Step {
   id: number;
@@ -47,6 +48,7 @@ const TF = () => {
         </div>
 
         <ManualTF onTransferFunctionChange={handleTransferFunctionChange} />
+        <Fps />
       </div>
 
       <div className="flex-shrink-0">

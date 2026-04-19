@@ -5,7 +5,6 @@ import { DataTable, Column } from "@/components/DataTable";
 import AdminUserView, { AnyUser } from "@/components/AdminUserView";
 import AddUserPage from "@/components/AddUser";
 
-// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Patient {
   id: number;
@@ -27,7 +26,6 @@ interface Patient {
   techName: string;
 }
 
-// ── Table column definitions ───────────────────────────────────────────────
 
 const columns: Column[] = [
   { key: "mrn",        label: "MRN"        },
