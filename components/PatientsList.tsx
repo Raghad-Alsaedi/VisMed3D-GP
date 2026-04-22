@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Search, Upload_Action, Img, Report, ChevronRight, Success, Error as ErrorIcon } from "@/components/icons";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface Patient {
   patientId:           number;
@@ -60,6 +61,7 @@ const PatientList = () => {
   const [showDetails, setShowDetails]             = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [savedToast, setSavedToast]               = useState<"success" | "error" | null>(null);
+  const [loading, setLoading]                     = useState(true);
 
   // Refs keep the latest state values accessible
   const allPatientsRef = useRef<Patient[]>([]);
@@ -112,6 +114,8 @@ const PatientList = () => {
         }
       } catch (err) {
         console.error("Fetch all patients error:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchAllPatients();
@@ -189,6 +193,14 @@ const PatientList = () => {
     if (reportStatus === "completed") return { label: "Completed" };
     return { label: "Draft" };
   };
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="relative w-full bg-[#0D1A2D]" style={{ minHeight: "100dvh" }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <>

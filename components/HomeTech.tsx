@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Fragment } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   ID,
   License_Number,
@@ -9,7 +10,6 @@ import {
   Gender,
   Phone,
 } from "@/components/icons";
-import Image from "next/image";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 type Tech = {
@@ -141,6 +141,7 @@ const InfoList = ({ items }: { items: InfoItem[] }) => (
 
 const HomeTech = () => {
   const { status } = useSession();
+  const router = useRouter();
   const [tech, setTech] = useState<Tech | null>(null);
   const [allUploads, setAllUploads] = useState<UploadRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,10 +172,22 @@ const HomeTech = () => {
   // Waits for the session to finish loading before calling fetchData.
   useEffect(() => {
     if (status === "loading") return;
+    if (status === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
     fetchData();
-  }, [status, fetchData]);
+  }, [status, fetchData, router]);
 
-  if (loading) return <LoadingSpinner />;
+  if (status === "loading" || loading) {
+    return (
+      <div className="relative w-full bg-[#0D1A2D]" style={{ minHeight: "100dvh" }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!tech) return null;
 
   const fullName =
     [tech?.firstName, tech?.middleName, tech?.lastName]

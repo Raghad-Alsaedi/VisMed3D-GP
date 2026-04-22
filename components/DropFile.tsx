@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import Footer from "./Footer";
 import ProgressBar from "@/components/ProgressBar";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Upload, ArrowL, Error as ErrorIcon, Success } from "./icons";
 
 type DimField = "width" | "height" | "depth";
@@ -53,6 +54,7 @@ const DropFile = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [patientName, setPatientName] = useState<string | null>(null);
   const [accessionNumber, setAccessionNumber] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const uploadStartTime = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +67,7 @@ const DropFile = () => {
     } else {
       setErrorMessage(null);
     }
+    setLoading(false);
   }, [patientId, accessionId]);
 
   useEffect(() => {
@@ -257,6 +260,14 @@ const DropFile = () => {
   const handleClick = () => {
     if (!isUploading) fileInputRef.current?.click();
   };
+
+  if (loading) {
+    return (
+      <div className="relative w-full bg-[#0D1A2D]" style={{ minHeight: "100dvh" }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
